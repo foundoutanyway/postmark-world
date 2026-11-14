@@ -6025,6 +6025,75 @@ export function searchResultsHTML(rows, emptyNote) {
     : `<li class="wv-search-none">${esc(emptyNote)}</li>`;
 }
 
+/** A mark's tier accent, the page's: green when the fold's `homes` set holds it, else the ONE standing rule over the full mark
+ *  (`byId`; FOV marks lack a tier field). Hoisted out of `mountViewer`'s tierOf so the 3D view's pips and nameplates read the
+ *  same (WLD-105 A20). */
+export function markTierOf(m, { homes, byId }) {
+  if (homes.has(m.id)) return "home";
+  return markStanding(byId.get(m.id) ?? m, byId);
+}
+/** A mark's icons, the page's: what it is and its states (markIcons) from its class, the page's creature and thing classes and
+ *  its stamps (effectiveWeight), plus whatever a page adds for itself (`yours`, `inside`, `ownStake`; a spectator passes none).
+ *  `cls` is asked of the page when it already holds it. Hoisted out of `mountViewer`'s iconsOf (WLD-105 A20). */
+export function markIconsOf(mark, { cls = classToken(instanceClassOf(mark)), creatureClasses, thingClasses, ...extra } = {}) {
+  return markIcons(mark, { cls, creatureClasses, thingClasses, weight: effectiveWeight(mark), ...extra });
+}
+
+/** The marks `searchTheTown` ranks: every mark by its shown name (`nameOf(mark)` answers `{ name }`, 2D's markName, else the
+ *  deslugged id), and whether it is placed. Hoisted out of `mountViewer`'s searchMarkIndex (WLD-105 A19). */
+export function markSearchIndex(marks, nameOf) {
+  return (marks ?? []).map((m) => ({
+    id: m?.id,
+    name: nameOf(m).name || deslugMarkId(m?.id ?? ""),
+    placed: !!(m?.at && Number.isFinite(m.at.x)),
+  })).filter((m) => m.id);
+}
+/** The people `searchTheTown` ranks: the site's roster first (`handles`), the live bodies laid over it (`walkers`: rows with a
+ *  `handle` and a position), so a stale roster never hides someone who is out and the live entry's position is what a hit
+ *  needs. `faceOf(handle).name` is the page's own face. Hoisted out of `mountViewer`'s searchPeopleIndex. */
+export function peopleSearchIndex({ handles, walkers, faceOf }) {
+  const out = new Map();
+  for (const handle of handles ?? []) out.set(handle, { handle, name: faceOf(handle).name, at: null });
+  for (const w of walkers ?? []) {
+    if (!w?.handle || !Number.isFinite(w.x) || !Number.isFinite(w.y)) continue;
+    out.set(w.handle, { handle: w.handle, name: faceOf(w.handle).name, at: { x: w.x, y: w.y } });
+  }
+  return [...out.values()];
+}
+/** The pill's own behaviour over its two elements: the ranked rows for what is typed, the list written (or put away when the
+ *  field is empty), the field cleared, the field focused. What a hit DOES is each page's (a callback it wires to a click on a
+ *  row); so are its other keys. `searchMarks()` / `searchPeople()` give the two lists at the time of asking, `emptyNote()` the
+ *  words for no answer. Hoisted out of `mountViewer`'s searchRows / renderSearchResults / clearSearch / focusSearch. */
+export function createSearchPill({ input, box, searchMarks, searchPeople, emptyNote = () => "Nothing by that name.", limit = 8 }) {
+  const rows = () => searchTheTown({ query: input?.value ?? "", marks: searchMarks(), people: searchPeople(), limit });
+  function render() {
+    if (!box || !input) return;
+    const q = String(input.value ?? "").trim();
+    if (!q) { box.hidden = true; box.innerHTML = ""; return; }
+    box.hidden = false;
+    box.innerHTML = searchResultsHTML(rows(), emptyNote());
+  }
+  function clear({ blur = false } = {}) {
+    if (!input) return;
+    if (input.value) { input.value = ""; render(); }
+    if (blur) input.blur();
+  }
+  function focus() {
+    if (!input) return false;
+    input.focus();
+    input.select?.();
+    return true;
+  }
+  return { rows, render, clear, focus };
+}
+/** Whether a "/" should open the search: no modifier, and never out of somebody's sentence (a field that already has focus keeps
+ *  it: inputs, textareas, selects and anything contenteditable). Hoisted out of `mountViewer`'s key handler. */
+export function searchSlashWanted(event, activeElement) {
+  if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey) return false;
+  const el = activeElement;
+  return !(!!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable));
+}
+
 /** The pill's width, measured by what it says: the placeholder in the input's own resolved font, plus its padding, its
  *  border and a few pixels of headroom, written inline over the CSS floor. Takes the `.wv-search-input` element; returns
  *  the width it holds (0 when it must not touch the field). Hoisted out of `mountViewer`'s sizeSearchField, body
@@ -6070,6 +6139,24 @@ export function sizeSearchInput(input) {
   input.style.width = `${want}px`;
   return want;
 }
+
+/** The search pill's markup (the field, its glyph inside it, the result list), with the reasons it is built as it is. 2D's MARKUP
+ *  interpolates it where it stood, bytes unchanged; the 3D view mounts the same text (WLD-105 A19). */
+export const SEARCH_PILL_HTML = `<div class="wv-search" role="search">
+            <!-- ALWAYS EXTENDED, AND THE GLYPH IS INSIDE IT (Keemin, 2026-09-13,
+                 on dev: "can we also have the search bar always extended, remove
+                 the icon as a separate button, and put it into the main bubble
+                 itself? that might honestly work better").
+                 The magnifier is an ADORNMENT, not a control: aria-hidden and
+                 pointer-events:none, so it cannot take a click, cannot take a
+                 tab stop, and is not announced twice beside the field's own
+                 label. There is one thing here now, and it is the field. -->
+            <span class="wv-search-glyph" aria-hidden="true">&#8981;</span>
+            <input class="wv-search-input" type="search" autocomplete="off" spellcheck="false"
+              aria-label="find a house or resident" title="find a house or resident"
+              placeholder="find a house or resident">
+            <ul class="wv-search-results" hidden></ul>
+          </div>`;
 
 const STYLE = `
 ${WV_ROOT_CSS}
@@ -7566,21 +7653,7 @@ const MARKUP = `
                costs its siblings
                nothing: the row is anchored to the right edge and the pill opens
                back across the painting, which is empty there. -->
-          <div class="wv-search" role="search">
-            <!-- ALWAYS EXTENDED, AND THE GLYPH IS INSIDE IT (Keemin, 2026-09-13,
-                 on dev: "can we also have the search bar always extended, remove
-                 the icon as a separate button, and put it into the main bubble
-                 itself? that might honestly work better").
-                 The magnifier is an ADORNMENT, not a control: aria-hidden and
-                 pointer-events:none, so it cannot take a click, cannot take a
-                 tab stop, and is not announced twice beside the field's own
-                 label. There is one thing here now, and it is the field. -->
-            <span class="wv-search-glyph" aria-hidden="true">&#8981;</span>
-            <input class="wv-search-input" type="search" autocomplete="off" spellcheck="false"
-              aria-label="find a house or resident" title="find a house or resident"
-              placeholder="find a house or resident">
-            <ul class="wv-search-results" hidden></ul>
-          </div>
+          ${SEARCH_PILL_HTML}
           <!-- THE FIVE CIRCLES WRAP AS ONE THING (2026-09-13). Grouped rather
                than gated behind a media query: as five siblings they wrapped
                RAGGEDLY on a narrow screen — measured, four beside the pill at
@@ -8795,14 +8868,10 @@ export function mountViewer(appEl) {
   // the tier accent for any mark or within-node: green (home/sovereign) → blue
   // (constitution) → market (amber default). FOV marks lack a tier field, so look
   // the full mark up by id.
-  function tierOf(m) {
-    if (homeSet.has(m.id)) return "home";
-    const full = byId.get(m.id) ?? m;
-    // ONE standing rule (tools/mark-standing.mjs): in a parcel's directory → home,
-    // via the fold's parent chain — reaches predicated laws with no coordinates,
-    // which `sovereign` (geometric) structurally misses.
-    return markStanding(full, byId);
-  }
+  // (markTierOf, above, is the rule: the fold's homes first, then ONE standing rule (tools/mark-standing.mjs): in a parcel's
+  // directory → home, via the fold's parent chain — reaches predicated laws with no coordinates, which `sovereign`
+  // (geometric) structurally misses. Shared with the 3D view.)
+  function tierOf(m) { return markTierOf(m, { homes: homeSet, byId }); }
   // Grey is a fact about the RECORD, not about the reader's lens: this mark sits
   // in your household's draft branch and not in the town's published main.
   const isDraft = (m) => !!m?.id && state.draftIds.has(m.id);
@@ -8867,9 +8936,9 @@ export function mountViewer(appEl) {
     const occupants = inside ?? occupantsOf(liveOccupancy());
     const cls = classToken(instanceClassOf(full));
     askLineage(cls);   // a kind with no class mark in hand: its chain, asked once
-    return markIcons(full, {
+    return markIconsOf(full, {
       cls, creatureClasses: creatureClasses(), thingClasses: thingClasses(),
-      yours: isOwnMark(full), weight: effectiveWeight(full), inside: (occupants.get(full.id) ?? []).length,
+      yours: isOwnMark(full), inside: (occupants.get(full.id) ?? []).length,
       ...(map ? { ownStake: householdStakeOn(full.id, { signedIn: !!pmKey(), portfolio: state.portfolio }) } : {}),
     });
   }
@@ -16810,20 +16879,9 @@ export function mountViewer(appEl) {
   // `/world/walkers` comes from the office and is live, so anyone out today is
   // findable whatever the roster says. The live entry wins on purpose: it also
   // carries a position, which is what a hit needs.
-  const searchMarkIndex = () => allMarks().map((m) => ({
-    id: m?.id,
-    name: markName(m).name || deslugMarkId(m?.id ?? ""),
-    placed: !!(m?.at && Number.isFinite(m.at.x)),
-  })).filter((m) => m.id);
-  const searchPeopleIndex = () => {
-    const out = new Map();
-    for (const handle of residentsMeta.keys()) out.set(handle, { handle, name: faceOf(handle).name, at: null });
-    for (const w of walkState.walkers ?? []) {
-      if (!w?.handle || !Number.isFinite(w.x) || !Number.isFinite(w.y)) continue;
-      out.set(w.handle, { handle: w.handle, name: faceOf(w.handle).name, at: { x: w.x, y: w.y } });
-    }
-    return [...out.values()];
-  };
+  // (markSearchIndex / peopleSearchIndex, above, are the lists; the pill's behaviour is createSearchPill: shared with the 3D view)
+  const searchMarkIndex = () => markSearchIndex(allMarks(), markName);
+  const searchPeopleIndex = () => peopleSearchIndex({ handles: residentsMeta.keys(), walkers: walkState.walkers, faceOf });
   // WHAT COULD NOT BE SEARCHED, SAID PLAINLY (reviewer, 2026-09-13). A resident's
   // index is their read plus their own marks plus the town's houses, which
   // `loadTownHouses` already put there — so houses and parcels ARE findable
@@ -16833,25 +16891,12 @@ export function mountViewer(appEl) {
     ? "Nothing by that name. Houses and parcels are searched; other marks are outside what you can see from where you stand."
     : "Nothing by that name.");
   let searchFrame = 0;
-  function searchRows() {
-    const input = $(root, ".wv-search-input");
-    return searchTheTown({
-      query: input?.value ?? "",
-      marks: searchMarkIndex(),
-      people: searchPeopleIndex(),
-      limit: 8,
-    });
-  }
-  function renderSearchResults() {
-    const box = $(root, ".wv-search-results");
-    const input = $(root, ".wv-search-input");
-    if (!box || !input) return;
-    const q = String(input.value ?? "").trim();
-    if (!q) { box.hidden = true; box.innerHTML = ""; return; }
-    const rows = searchRows();
-    box.hidden = false;
-    box.innerHTML = searchResultsHTML(rows, searchEmptyNote());
-  }
+  const searchPill = () => createSearchPill({
+    input: $(root, ".wv-search-input"), box: $(root, ".wv-search-results"),
+    searchMarks: searchMarkIndex, searchPeople: searchPeopleIndex, emptyNote: searchEmptyNote,
+  });
+  function searchRows() { return searchPill().rows(); }
+  function renderSearchResults() { searchPill().render(); }
   // ── THERE IS NO OPEN AND CLOSED ANY MORE, ONLY EMPTY AND NOT ────────────
   //
   // The field is always there at its full width, so the only state left is
@@ -16861,19 +16906,8 @@ export function mountViewer(appEl) {
   // the mousedown that begins a click on a row, and the click would land on
   // whatever the list used to cover. The list closes when the reader chooses
   // something, presses Escape, or empties the field.
-  function clearSearch({ blur = false } = {}) {
-    const input = $(root, ".wv-search-input");
-    if (!input) return;
-    if (input.value) { input.value = ""; renderSearchResults(); }
-    if (blur) input.blur();
-  }
-  function focusSearch() {
-    const input = $(root, ".wv-search-input");
-    if (!input) return false;
-    input.focus();
-    input.select?.();
-    return true;
-  }
+  function clearSearch({ blur = false } = {}) { searchPill().clear({ blur }); }
+  function focusSearch() { return searchPill().focus(); }
   // A HIT DOES WHAT A CLICK DOES, and calls the same verb to do it — no second
   // selection path, so the column, the chooser and the trail behave as they
   // already do. A region is a placed mark like any other here, so a region hit
@@ -16966,12 +17000,7 @@ export function mountViewer(appEl) {
     // have the cursor yanked out from under them by a punctuation mark, so the
     // shortcut yields to any field that already has focus — inputs, textareas,
     // selects and anything contenteditable.
-    if (event.key === "/" && !event.metaKey && !event.ctrlKey && !event.altKey) {
-      const el = document.activeElement;
-      const busy = !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA"
-        || el.tagName === "SELECT" || el.isContentEditable);
-      if (!busy && focusSearch()) { event.preventDefault(); return; }
-    }
+    if (searchSlashWanted(event, document.activeElement) && focusSearch()) { event.preventDefault(); return; }
     if (event.key === "Enter" && walkState.destination) {
       const el = document.activeElement;
       const busy = !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.tagName === "BUTTON" || el.isContentEditable);

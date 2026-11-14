@@ -13,6 +13,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { SEARCH_PILL_HTML, markTierOf, markIconsOf, markSearchIndex, peopleSearchIndex, createSearchPill, searchSlashWanted, searchTheTown, deslugMarkId, effectiveWeight } from "../spectator/viewer.mjs";
+import { markStanding } from "./mark-standing.mjs";
+import { instanceClassOf } from "./mark-kind.mjs";
+import { markIcons } from "../spectator/mark-icons.mjs";
 import { mountViewer, markNameplateMarkup, searchResultsHTML, sizeSearchInput, PIP_CSS, PIP_BADGE_CSS, WV_BUBBLE_CSS, WV_NAMEPLATE_CSS, WV_SEARCH_PILL_CSS, WV_SEARCH_CSS } from "../spectator/viewer.mjs";
 import { walkerRoster } from "./where-is.mjs";
 import { iconsHTML } from "../spectator/mark-icons.mjs";
@@ -136,6 +140,80 @@ test("sizeSearchInput: leaves a field in use alone; otherwise resets, measures t
     if (had.gcs === undefined) delete globalThis.getComputedStyle; else globalThis.getComputedStyle = had.gcs;
     if (had.doc) Object.defineProperty(globalThis, "document", had.doc); else delete globalThis.document;
   }
+});
+
+// ── A19 and A20, completed: the pill's markup and behaviour, the lists, the tier and the icons ──────────────────────────
+test("SEARCH_PILL_HTML is the markup 2D's MARKUP carried, byte for byte, and MARKUP interpolates it once where it stood", async () => {
+  const { createHash } = await import("node:crypto");
+  const { readFileSync } = await import("node:fs");
+  // sha256 of the block as `spectator/viewer.mjs` at main dd3f9f3b held it inside MARKUP (the first line without MARKUP's indent),
+  // cut out by a one-off script that was not this test's code: 1036 bytes
+  assert.equal(createHash("sha256").update(SEARCH_PILL_HTML).digest("hex"), "50991a9c7d9012c70bd1e0daaea88d6604c8f57efa0e4ba3fd740ac8042e110d");
+  assert.equal(Buffer.byteLength(SEARCH_PILL_HTML), 1036);
+  assert.ok(SEARCH_PILL_HTML.startsWith('<div class="wv-search" role="search">') && SEARCH_PILL_HTML.endsWith("          </div>"));
+  const src = readFileSync(new URL("../spectator/viewer.mjs", import.meta.url), "utf8");
+  assert.equal(src.split("\n          ${SEARCH_PILL_HTML}\n          <!-- THE FIVE CIRCLES WRAP AS ONE THING").length - 1, 1, "once, with the indent and neighbours it had");
+  assert.equal(src.split('<div class="wv-search" role="search">').length - 1, 1, "and the markup is written nowhere else");
+});
+
+test("markTierOf and markIconsOf answer what the closures answered", () => {
+  const byId = new Map([["inv/in-parcel", { id: "inv/in-parcel", kind: "sited", by: "a" }], ["inv/loose", { id: "inv/loose", kind: "sited", by: "b" }]]);
+  const homes = new Set(["inv/in-parcel"]);
+  const oldTier = (m) => (homes.has(m.id) ? "home" : markStanding(byId.get(m.id) ?? m, byId));
+  for (const m of [{ id: "inv/in-parcel" }, { id: "inv/loose" }, { id: "inv/unknown", by: "c", kind: "sited" }]) assert.equal(markTierOf(m, { homes, byId }), oldTier(m), m.id);
+  assert.equal(markTierOf({ id: "inv/in-parcel" }, { homes, byId }), "home");
+  const mk = { id: "inv/x", kind: "thing", class: "thing", at: { x: 1, y: 1 }, extent: { w: 2, h: 2 }, weight: 12 };
+  const ctx = { creatureClasses: new Set(["creature"]), thingClasses: new Set(["thing"]) };
+  const oldIcons = (m, extra = {}) => markIcons(m, { cls: String(instanceClassOf(m) ?? "").trim().toLowerCase(), ...ctx, yours: false, weight: effectiveWeight(m), inside: 2, ...extra });
+  assert.deepEqual(markIconsOf(mk, { ...ctx, yours: false, inside: 2 }), oldIcons(mk));
+  assert.deepEqual(markIconsOf(mk, { ...ctx, yours: false, inside: 2, ownStake: 3 }), oldIcons(mk, { ownStake: 3 }));
+  assert.deepEqual(markIconsOf(mk, { cls: "thing", ...ctx, yours: false, inside: 2 }), oldIcons(mk), "a page that holds the class passes it");
+  assert.ok(markIconsOf(mk, ctx).length > 0, "premise: it says something");
+});
+
+test("the search lists, the pill's behaviour and the slash rule are what the closures did", () => {
+  const marks = [{ id: "inv/the-lamp", at: { x: 1, y: 2 } }, { id: "inv/no-place" }, { at: { x: 1, y: 1 } }, { id: "inv/nan", at: { x: NaN, y: 0 } }];
+  const nameOf = (m) => ({ name: m.id === "inv/the-lamp" ? "The Lamp" : "" });
+  const oldMarks = marks.map((m) => ({ id: m?.id, name: nameOf(m).name || deslugMarkId(m?.id ?? ""), placed: !!(m?.at && Number.isFinite(m.at.x)) })).filter((m) => m.id);
+  assert.deepEqual(markSearchIndex(marks, nameOf), oldMarks);
+  assert.deepEqual(oldMarks.map((m) => [m.name, m.placed]), [["The Lamp", true], ["no place", false], ["nan", false]].map(([n, p], i) => [i === 0 ? n : oldMarks[i].name, p]));
+  const faceOf = (h) => ({ name: `N-${h}` });
+  const walkers = [{ handle: "b", x: 3, y: 4 }, { handle: "c", x: NaN, y: 1 }, { x: 1, y: 1 }, null, { handle: "d", x: 5, y: 6 }];
+  const oldPeople = (() => { const out = new Map(); for (const handle of new Map([["a", 1], ["b", 1]]).keys()) out.set(handle, { handle, name: faceOf(handle).name, at: null });
+    for (const w of walkers ?? []) { if (!w?.handle || !Number.isFinite(w.x) || !Number.isFinite(w.y)) continue; out.set(w.handle, { handle: w.handle, name: faceOf(w.handle).name, at: { x: w.x, y: w.y } }); } return [...out.values()]; })();
+  assert.deepEqual(peopleSearchIndex({ handles: new Map([["a", 1], ["b", 1]]).keys(), walkers, faceOf }), oldPeople);
+  assert.deepEqual(oldPeople.map((p) => [p.handle, p.at]), [["a", null], ["b", { x: 3, y: 4 }], ["d", { x: 5, y: 6 }]], "the live entry wins and carries the position");
+
+  const input = { value: "", focused: 0, selected: 0, blurred: 0, focus() { this.focused++; }, select() { this.selected++; }, blur() { this.blurred++; } };
+  const box = { hidden: true, innerHTML: "x" };
+  const pill = createSearchPill({ input, box, searchMarks: () => oldMarks, searchPeople: () => oldPeople, emptyNote: () => "none, said plainly" });
+  pill.render();
+  assert.deepEqual([box.hidden, box.innerHTML], [true, ""], "an empty field puts the list away");
+  input.value = "  lamp ";
+  const expectRows = searchTheTown({ query: input.value, marks: oldMarks, people: oldPeople, limit: 8 });
+  assert.deepEqual(pill.rows(), expectRows);
+  pill.render();
+  assert.equal(box.hidden, false); assert.equal(box.innerHTML, searchResultsHTML(expectRows, "none, said plainly"));
+  input.value = "zzzz"; pill.render();
+  assert.equal(box.innerHTML, searchResultsHTML([], "none, said plainly"));
+  pill.clear({ blur: true });
+  assert.deepEqual([input.value, box.hidden, input.blurred], ["", true, 1], "cleared, put away, blurred");
+  pill.clear(); assert.equal(input.blurred, 1, "an empty field is left alone");
+  assert.equal(pill.focus(), true); assert.deepEqual([input.focused, input.selected], [1, 1]);
+  assert.equal(createSearchPill({ input: null, box: null, searchMarks: () => [], searchPeople: () => [] }).focus(), false, "no field, no focus");
+
+  const oldSlash = (e, el) => e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey && !(!!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable));
+  for (const e of [{ key: "/" }, { key: "/", ctrlKey: true }, { key: "/", metaKey: true }, { key: "/", altKey: true }, { key: "a" }]) {
+    for (const el of [null, { tagName: "DIV" }, { tagName: "INPUT" }, { tagName: "TEXTAREA" }, { tagName: "SELECT" }, { tagName: "DIV", isContentEditable: true }]) assert.equal(searchSlashWanted(e, el), oldSlash(e, el), JSON.stringify([e, el]));
+  }
+});
+
+test("walker-roster.mjs is a single file with no imports (a node server that reads the engine over HTTP can take it whole), and where-is re-exports the same function", async () => {
+  const { readFileSync } = await import("node:fs");
+  const src = readFileSync(new URL("./walker-roster.mjs", import.meta.url), "utf8").replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+  assert.doesNotMatch(src, /\bimport\b/, "no import, static or dynamic");
+  const alone = await import("./walker-roster.mjs");
+  assert.equal(alone.walkerRoster, walkerRoster, "one function");
 });
 
 // ── A2: the roster ──────────────────────────────────────────────────────────
