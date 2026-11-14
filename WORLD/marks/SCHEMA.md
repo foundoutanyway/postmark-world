@@ -427,10 +427,13 @@ parent_spark: pica/the-lamp-song
 - **The place:** its rooms', frozen when made. For one room, the centre and size of
   the room's bounds. A one-speaker room's bounds may keep a zero side (a point or a
   line) and are kept so, with no padding; such a spark is placed by where its points
-  lie. How several rooms combine into one place is still open (POS-1035), so the
-  record carries the place it is written with. With no `rooms`, or an empty list, its
-  `extent` is the locked circle, twice `the-town/spark-radius` (60 m), about the
-  maker's `at`.
+  lie. Several rooms combine into the existing rectangular frame, the **envelope**
+  of every member room's absolute bounds: least `x0` and `y0`, greatest `x1` and
+  `y1`, then the centre and the sides (`tools/spark.mjs § roomsPlace`). The gaps
+  between rooms are inside it, so a parcel holder's word in a gap reaches the spark.
+  With no `rooms`, or an empty list, its `extent` is the locked circle, twice
+  `the-town/spark-radius` (60 m), about the maker's `at`. An unknown room history
+  is not "no room".
 - **`present`:** the households with a public act at the place in its window (CORE-70
   call 4), as the Office spells a household.
 - **The circle:** `circle` (a say's act number) needs `circle_path` (its ancestry,

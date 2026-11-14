@@ -23,9 +23,10 @@
 //            event's spark keeps every qualifying room at its place in its window,
 //            every room id and all their circles, with no ranking. So the record
 //            names its rooms (`rooms`, a list); a circle's spark names its one
-//            source room. How several rooms' places combine into one place is a
-//            question still open on POS-1035, so nothing here derives or judges it:
-//            the spark's at/extent are what its maker wrote.
+//            source room. Their places combine into the existing rectangular frame,
+//            the envelope of every member room's bounds (POS-1035's room-set wire,
+//            settled 11-14; Bevel 19:36Z): `roomsPlace` below is that one frame,
+//            gaps included, so a parcel's word in a gap reaches the spark.
 //   10:46    "I think we can just use the circles as the spine for parents for
 //            now? maybe let sparks declare their parent if they want to as a
 //            field". The tree is the circles; a spark's own link is its own.
@@ -171,6 +172,25 @@ export const sparksBelow = (sparks, circle) => (sparks ?? []).filter((s) => {
   const p = circlePathOf(s);
   return !!p && p.indexOf(circle) >= 0 && p.indexOf(circle) < p.length - 1;
 });
+
+/**
+ * A spark's place from its rooms' bounds: the existing rectangular envelope (POS-1035's
+ * room-set wire; Bevel 2026-11-14 19:36Z). Each room's bounds are absolute, `{x0, y0, x1, y1}`
+ * (the office's room source, voices.threadOf), never the room's display point. The envelope
+ * takes the least x0 and y0 and the greatest x1 and y1 over every member room, then the
+ * existing midpoint and differences: `at` is the centre, `extent` the sides. Halves and zero
+ * sides are kept as they fall (a one-speaker room is a point), nothing is padded, and the gaps
+ * between rooms are inside it. Returns null when there is no room, or any bound is not a
+ * finite number as given: no room is the locked circle's case, and a guessed bound is no place.
+ */
+export function roomsPlace(bounds) {
+  if (!Array.isArray(bounds) || !bounds.length) return null;
+  const num = (v) => typeof v === "number" && Number.isFinite(v);
+  if (!bounds.every((b) => b && num(b.x0) && num(b.y0) && num(b.x1) && num(b.y1) && b.x1 >= b.x0 && b.y1 >= b.y0)) return null;
+  const x0 = Math.min(...bounds.map((b) => b.x0)), y0 = Math.min(...bounds.map((b) => b.y0));
+  const x1 = Math.max(...bounds.map((b) => b.x1)), y1 = Math.max(...bounds.map((b) => b.y1));
+  return { at: { x: (x0 + x1) / 2, y: (y0 + y1) / 2 }, extent: { w: x1 - x0, h: y1 - y0 } };
+}
 
 /** A spark's rooms, as written, or []. */
 export const roomsOf = (s) => listOf(s?.rooms) ?? [];

@@ -28,7 +28,7 @@ import { fold, loadMarks, placementParent } from "./marks-fold.mjs";
 import { classIndex, classChain, propertyAt, propertyNames, propertyOf } from "./class-properties.mjs";
 import { isSited, isGround, isSitedIn, isGroundIn, standingOf, kindIndexOf } from "./mark-kind.mjs";
 import { contains, rect } from "./geometry.mjs";
-import { SPARK_CLASS, SPARK_FIELDS, SPARK_REQUIRED, isSparkIn, sparkRadiusM, sparksOn, sparksBelow, sparkChildren, ownLinkOf } from "./spark.mjs";
+import { SPARK_CLASS, SPARK_FIELDS, SPARK_REQUIRED, isSparkIn, sparkRadiusM, sparksOn, sparksBelow, sparkChildren, ownLinkOf, roomsPlace } from "./spark.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_SRC = join(HERE, "..");
@@ -133,6 +133,19 @@ test("WLD-173 · a whole spark lints clean and round-trips through the fold, eve
   const moved = after.marks.filter((m) => was.has(m.id) && was.get(m.id) !== JSON.stringify(m)).map((m) => m.id);
   assert.deepEqual(moved, [], "nothing else in the world moved");
   assert.deepEqual(after.marks.filter((m) => !was.has(m.id)).map((m) => m.id).sort(), [standalone, id].sort());
+
+  // an event's spark over two rooms round-trips with every room id and the envelope place, halves kept
+  const event = foldCli(repo).marks.find((m) => m.id === "sbx-pica/the-opening");
+  assert.equal(event, undefined, "control: not filed yet");
+  const place = roomsPlace([{ x0: 4000, y0: 4100, x1: 4041, y1: 4121 }, { x0: 4100, y0: 4090, x1: 4130, y1: 4110 }]);
+  assert.deepEqual(place, { at: { x: 4065, y: 4105.5 }, extent: { w: 130, h: 31 } }, "the envelope: least x0/y0, greatest x1/y1, centre and sides");
+  file(repo, "sbx-pica", "the-opening", { kind: "spark", date: "2026-11-14T22:00:00Z", at: place.at, extent: place.extent,
+    recounting: "The cave opened and both halls filled.", experienced_at: "2026-11-14T19:00:00Z", experienced_until: "2026-11-14T22:00:00Z",
+    rooms: ["room-cave-hall", "room-cave-annex"], event: "event-little-picas-opening" }, "Little Pica's opening.");
+  assert.deepEqual(errorsFor(lint(repo), "sbx-pica", "the-opening"), [], "an event's spark over two rooms lints clean");
+  const opening = foldCli(repo).marks.find((m) => m.id === "sbx-pica/the-opening");
+  assert.deepStrictEqual(opening.rooms, ["room-cave-hall", "room-cave-annex"], "every room id is kept, in order");
+  assert.deepStrictEqual({ at: opening.at, extent: opening.extent }, place, "and the envelope place, exactly");
 
   // the spine reads off the published records: the sub-spark under the lamp song's circle
   const sub = { ...got, id: "sbx-liv/the-pan", circle: 50107, circle_path: [50101, 50102, 50107], parent_spark: undefined };
@@ -301,6 +314,31 @@ test("WLD-173 · its place is frozen: the ground around it moving never moves or
   assert.deepEqual(after.at, before.at);
   assert.deepEqual(after.extent, before.extent);
   assert.deepEqual(after.at, { x: 0, y: 0 }, "it keeps the place it was made with");
+});
+
+// ── the room set's place: the existing rectangular envelope (POS-1035; Bevel 19:36Z) ──
+
+test("WLD-173 · roomsPlace: the envelope of every room's bounds, halves and zero sides kept, and no place from no room or a guessed bound", () => {
+  assert.deepEqual(roomsPlace([{ x0: 0, y0: 0, x1: 3, y1: 1 }]), { at: { x: 1.5, y: 0.5 }, extent: { w: 3, h: 1 } }, "one room: its own midpoint and differences, halves kept");
+  assert.deepEqual(roomsPlace([{ x0: 5, y0: 7, x1: 5, y1: 7 }]), { at: { x: 5, y: 7 }, extent: { w: 0, h: 0 } }, "a one-speaker room is a point: zero sides, no padding");
+  assert.deepEqual(roomsPlace([{ x0: -100, y0: 0, x1: -60, y1: 20 }, { x0: 60, y0: 0, x1: 100, y1: 20 }]),
+    { at: { x: 0, y: 10 }, extent: { w: 200, h: 20 } }, "two rooms: the envelope, the gap between them inside it");
+  assert.equal(roomsPlace([]), null, "no room is the locked circle's case, not a place");
+  assert.equal(roomsPlace([{ x0: 0, y0: 0, x1: 1 }]), null, "a missing bound is no place");
+  assert.equal(roomsPlace([{ x0: "0", y0: 0, x1: 1, y1: 1 }]), null, "a quoted bound is no place");
+  assert.equal(roomsPlace([{ x0: 5, y0: 0, x1: 1, y1: 1 }]), null, "inverted bounds are no place");
+});
+
+test("WLD-173 · the gaps are inside: a parcel in the gap between an event's rooms reaches its spark, and not a one-room spark beside it", () => {
+  const r1 = { x0: -100, y0: 0, x1: -60, y1: 20 }, r2 = { x0: 60, y0: 0, x1: 100, y1: 20 };
+  const both = roomsPlace([r1, r2]), one = roomsPlace([r1]);
+  const gapParcel = parcel("home", "holder", 0, 10, { consent: { "b/opening": "opposed", "b/hall": "opposed" } });
+  assert.ok(Math.abs(gapParcel.at.x) + 12.5 < 60, "control: the parcel stands in the gap, touching neither room's own bounds");
+  const opening = spark("opening", "b", both.at.x, both.at.y, both.extent.w, both.extent.h, { rooms: ["r1", "r2"], event: "ev-1" });
+  const hall = spark("hall", "b", one.at.x, one.at.y, one.extent.w, one.extent.h, { rooms: ["r1"] });
+  const state = fold({ marks: [gapParcel, opening, hall], terrain, tick: 1, stakes: [] });
+  assert.equal(stands(state, "b/opening"), false, "the holder's word in the gap reaches the event's spark (the envelope includes the gap)");
+  assert.equal(stands(state, "b/hall"), true, "a spark of r1 alone does not touch the parcel, so the same word does nothing");
 });
 
 // ── the circle spine (10:46) ──────────────────────────────────────────────────

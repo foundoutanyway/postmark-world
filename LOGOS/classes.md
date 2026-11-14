@@ -2076,8 +2076,10 @@ all marks have".
 - **Its place: neither sited nor anchored** (call 22, replacing 12 and 17). Its `at` and `extent` are its rooms',
   frozen when it is made; a later change to a room never moves it. Which rooms (18:46Z): "All of them, combined."
   An event's spark keeps every qualifying room at its place in its window, every room id (`rooms`) and all their
-  circles, with no ranking; a circle's spark names its one source room. How several rooms' places combine into one
-  place is not yet settled; the spark carries the place it is made with. With no room the maker chooses its `at`,
+  circles, with no ranking; a circle's spark names its one source room. Several rooms' places combine into the
+  existing rectangular frame, the envelope of every member room's bounds (least x0 and y0, greatest x1 and y1, then
+  the centre and the sides), gaps included, so a parcel holder's word in a gap reaches the spark; nothing is padded
+  and a point room's zero sides are kept. An unknown room history is not "no room". With no room the maker chooses its `at`,
   "with an extent locked at 60 radius (base earshot)" (09:37), so 120 × 120 m
   (`the-town/spark-radius`). It stands in the ground it is in, as any mark does, so its standing and its money rules
   are a mark's; it never contains anything, and it is no land claim.
