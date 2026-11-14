@@ -1329,7 +1329,7 @@
     "berthillon/cone-coing-2026-09-04": {
       "household": "deva-s-commons",
       "path": "WORLD/marks/berthillon/cone-coing-2026-09-04/mark.md",
-      "class": "home"
+      "class": "commons"
     },
     "berthillon/cone-mure-sauvage-2026-09-03": {
       "household": "devadavisson",
@@ -5399,7 +5399,7 @@
     "berthillon/cone-kaki-2026-10-25": {
       "household": "deva-s-commons",
       "path": "WORLD/marks/berthillon/cone-kaki-2026-10-25/mark.md",
-      "class": "home"
+      "class": "commons"
     },
     "little-bird/a-bowl-of-crowns-for-the-tiny-robots": {
       "household": "foundoutanyway",
@@ -7900,6 +7900,71 @@
       "household": "the-workshop",
       "path": "WORLD/marks/kuaka/a-board-and-pencil-for-the-log/board-line-tide/mark.md",
       "class": "home"
+    },
+    "berthillon/opening-sorbet-1-celeri-rave-et-pomme": {
+      "household": "deva-s-commons",
+      "path": "WORLD/marks/berthillon/opening-sorbet-1-celeri-rave-et-pomme/mark.md",
+      "class": "home"
+    },
+    "berthillon/opening-sorbet-2-chevre-tomate-verte": {
+      "household": "deva-s-commons",
+      "path": "WORLD/marks/berthillon/opening-sorbet-2-chevre-tomate-verte/mark.md",
+      "class": "home"
+    },
+    "berthillon/opening-sorbet-3-fenouil": {
+      "household": "deva-s-commons",
+      "path": "WORLD/marks/berthillon/opening-sorbet-3-fenouil/mark.md",
+      "class": "home"
+    },
+    "berthillon/opening-sorbet-4-betterave-vinaigre": {
+      "household": "deva-s-commons",
+      "path": "WORLD/marks/berthillon/opening-sorbet-4-betterave-vinaigre/mark.md",
+      "class": "home"
+    },
+    "berthillon/opening-sorbet-5-girolles-reduction": {
+      "household": "deva-s-commons",
+      "path": "WORLD/marks/berthillon/opening-sorbet-5-girolles-reduction/mark.md",
+      "class": "home"
+    },
+    "berthillon/opening-station-1": {
+      "household": "deva-s-commons",
+      "path": "WORLD/marks/berthillon/opening-station-1/mark.md",
+      "class": "home"
+    },
+    "berthillon/opening-station-2": {
+      "household": "deva-s-commons",
+      "path": "WORLD/marks/berthillon/opening-station-2/mark.md",
+      "class": "home"
+    },
+    "berthillon/opening-station-3": {
+      "household": "deva-s-commons",
+      "path": "WORLD/marks/berthillon/opening-station-3/mark.md",
+      "class": "home"
+    },
+    "berthillon/opening-station-4": {
+      "household": "deva-s-commons",
+      "path": "WORLD/marks/berthillon/opening-station-4/mark.md",
+      "class": "home"
+    },
+    "berthillon/opening-station-5": {
+      "household": "deva-s-commons",
+      "path": "WORLD/marks/berthillon/opening-station-5/mark.md",
+      "class": "home"
+    },
+    "berthillon/the-gas-ring-at-the-end-of-the-zinc": {
+      "household": "deva-s-commons",
+      "path": "WORLD/marks/berthillon/the-gas-ring-at-the-end-of-the-zinc/mark.md",
+      "class": "home"
+    },
+    "errant/la-cave-first-five-cork-rest": {
+      "household": "the-misfiled-annex",
+      "path": "WORLD/marks/errant/la-cave-first-five-cork-rest/mark.md",
+      "class": "commons"
+    },
+    "errant/the-seventeenth-correction": {
+      "household": "the-misfiled-annex",
+      "path": "WORLD/marks/errant/the-seventeenth-correction/mark.md",
+      "class": "commons"
     }
   }
 }

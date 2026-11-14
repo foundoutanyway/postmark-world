@@ -2147,19 +2147,19 @@
       "id": "berthillon/cone-coing-2026-09-04",
       "kind": "sited",
       "by": "berthillon",
-      "tier": "home",
+      "tier": "market",
       "household": "berthillon",
       "declared_household": "hh:deva-s-commons",
       "date": "2026-09-05T19:48:16.000Z",
       "at": {
-        "x": 227,
-        "y": 100
+        "x": 1385,
+        "y": -1045
       },
       "extent": {
         "w": 1,
         "h": 1
       },
-      "sovereign": true,
+      "sovereign": false,
       "stamps": 2,
       "weight": 2,
       "weight_parts": {
@@ -2172,7 +2172,7 @@
         "fanned": []
       },
       "body": "A paper cone of sorbet de coing — quince poached in syrup with lemon peel until pink-amber, churned lean. Fourth discipline: stay with the fire.",
-      "placementParent": "berthillon/le-mur-des-cornets",
+      "placementParent": "june/the-farmhouse",
       "ledger_weight": 2
     },
     {
@@ -2545,23 +2545,33 @@
       "id": "berthillon/cone-kaki-2026-10-25",
       "kind": "sited",
       "by": "berthillon",
-      "tier": "home",
+      "tier": "market",
       "household": "berthillon",
       "declared_household": "hh:deva-s-commons",
       "date": "2026-11-01T19:01:45.130Z",
       "at": {
-        "x": 227,
-        "y": 100
+        "x": 1385,
+        "y": -1045
       },
       "extent": {
         "w": 1,
         "h": 1
       },
-      "sovereign": true,
-      "stamps": 0,
-      "weight": 0,
+      "sovereign": false,
+      "stamps": 1,
+      "weight": 6,
+      "weight_parts": {
+        "own_escrow": 1,
+        "breadth": {
+          "k": 5,
+          "external_households": 1,
+          "bonus": 5
+        },
+        "fanned": []
+      },
       "body": "A paper cone of sorbet de kaki — Hachiya persimmon, spooned when soft, pressed cold with lemon, churned lean. Pale orange; tannin at the end.",
-      "placementParent": "berthillon/le-mur-des-cornets"
+      "placementParent": "june/the-farmhouse",
+      "ledger_weight": 6
     },
     {
       "id": "berthillon/cone-marron-2026-10-07",
@@ -3543,7 +3553,7 @@
       },
       "sovereign": true,
       "stamps": 7,
-      "weight": 39,
+      "weight": 37,
       "weight_parts": {
         "own_escrow": 7,
         "breadth": {
@@ -3552,10 +3562,6 @@
           "bonus": 0
         },
         "fanned": [
-          {
-            "id": "berthillon/cone-coing-2026-09-04",
-            "weight": 2
-          },
           {
             "id": "berthillon/cone-blue-moon-2026-09-21",
             "weight": 1
@@ -3700,7 +3706,7 @@
       },
       "sovereign": true,
       "stamps": 3,
-      "weight": 47,
+      "weight": 45,
       "weight_parts": {
         "own_escrow": 3,
         "breadth": {
@@ -3711,7 +3717,7 @@
         "fanned": [
           {
             "id": "berthillon/le-mur-des-cornets",
-            "weight": 39
+            "weight": 37
           },
           {
             "id": "berthillon/cave-interior",
@@ -3771,6 +3777,226 @@
       "body": "Held once, 22 Oct 2026, by Antoine of Deva's Commons with the whole house looking on, and set back where it stood. The eleven still hold.",
       "placementParent": "orion-by-the-fire/the-reach",
       "ledger_weight": 1
+    },
+    {
+      "id": "berthillon/opening-sorbet-1-celeri-rave-et-pomme",
+      "kind": "sited",
+      "by": "berthillon",
+      "tier": "home",
+      "household": "berthillon",
+      "declared_household": "hh:deva-s-commons",
+      "date": "2026-11-14T14:59:34.518Z",
+      "at": {
+        "x": 225.7,
+        "y": 97
+      },
+      "extent": {
+        "w": 0.5,
+        "h": 0.5
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Sorbet de céleri-rave et pomme, Station 1: celeriac cooked soft in milk, pressed with raw apple; earth and acid meet cold. Pale, faintly sweet, clean.",
+      "placementParent": "berthillon/le-petit-berthillon"
+    },
+    {
+      "id": "berthillon/opening-sorbet-2-chevre-tomate-verte",
+      "kind": "sited",
+      "by": "berthillon",
+      "tier": "home",
+      "household": "berthillon",
+      "declared_household": "hh:deva-s-commons",
+      "date": "2026-11-14T14:59:39.972Z",
+      "at": {
+        "x": 223,
+        "y": 99.7
+      },
+      "extent": {
+        "w": 0.5,
+        "h": 0.5
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Sorbet chèvre, tomate verte, sel de mer, Station 2: fresh goat's cheese loosened with green tomato pressed cold; acid and grass, no sugar; salt last.",
+      "placementParent": "berthillon/le-petit-berthillon"
+    },
+    {
+      "id": "berthillon/opening-sorbet-3-fenouil",
+      "kind": "sited",
+      "by": "berthillon",
+      "tier": "home",
+      "household": "berthillon",
+      "declared_household": "hh:deva-s-commons",
+      "date": "2026-11-14T14:59:45.431Z",
+      "at": {
+        "x": 221,
+        "y": 99.7
+      },
+      "extent": {
+        "w": 0.5,
+        "h": 0.5
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Sorbet de fenouil, Station 3: fennel juiced raw with its frond, a squeeze of lemon, barely sweetened. Aniseed first, then something cool and green.",
+      "placementParent": "berthillon/le-petit-berthillon"
+    },
+    {
+      "id": "berthillon/opening-sorbet-4-betterave-vinaigre",
+      "kind": "sited",
+      "by": "berthillon",
+      "tier": "home",
+      "household": "berthillon",
+      "declared_household": "hh:deva-s-commons",
+      "date": "2026-11-14T14:59:50.083Z",
+      "at": {
+        "x": 218.3,
+        "y": 97
+      },
+      "extent": {
+        "w": 0.5,
+        "h": 0.5
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Sorbet de betterave au vinaigre de vin rouge, Station 4: roasted beetroot pressed with a spoon of vinegar; colour kept, sugar cut. Dark, sweet-sour.",
+      "placementParent": "berthillon/le-petit-berthillon"
+    },
+    {
+      "id": "berthillon/opening-sorbet-5-girolles-reduction",
+      "kind": "sited",
+      "by": "berthillon",
+      "tier": "home",
+      "household": "berthillon",
+      "declared_household": "hh:deva-s-commons",
+      "date": "2026-11-14T14:59:56.885Z",
+      "at": {
+        "x": 221,
+        "y": 93.3
+      },
+      "extent": {
+        "w": 0.5,
+        "h": 0.5
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Sorbet girolles et réduction de fond, Station 5: chanterelles in butter, a dark stock reduced to a glaze, folded cold into savoury cream. A dish.",
+      "placementParent": "berthillon/le-petit-berthillon"
+    },
+    {
+      "id": "berthillon/opening-station-1",
+      "kind": "sited",
+      "by": "berthillon",
+      "tier": "home",
+      "household": "berthillon",
+      "declared_household": "hh:deva-s-commons",
+      "date": "2026-11-14T17:03:21.670Z",
+      "at": {
+        "x": 225,
+        "y": 97
+      },
+      "extent": {
+        "w": 1,
+        "h": 1
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Station 1, at the glass doors by the lemon tree: the sparkling. Bring your glass. Card: https://devadavisson.github.io/berthillon/cartes/1/",
+      "placementParent": "berthillon/le-petit-berthillon"
+    },
+    {
+      "id": "berthillon/opening-station-2",
+      "kind": "sited",
+      "by": "berthillon",
+      "tier": "home",
+      "household": "berthillon",
+      "declared_household": "hh:deva-s-commons",
+      "date": "2026-11-14T17:03:26.373Z",
+      "at": {
+        "x": 223,
+        "y": 99
+      },
+      "extent": {
+        "w": 1,
+        "h": 1
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Station 2, across the pavers: the first white. Bring your glass. Card: https://devadavisson.github.io/berthillon/cartes/2/",
+      "placementParent": "berthillon/le-petit-berthillon"
+    },
+    {
+      "id": "berthillon/opening-station-3",
+      "kind": "sited",
+      "by": "berthillon",
+      "tier": "home",
+      "household": "berthillon",
+      "declared_household": "hh:deva-s-commons",
+      "date": "2026-11-14T17:03:30.709Z",
+      "at": {
+        "x": 221,
+        "y": 99
+      },
+      "extent": {
+        "w": 1,
+        "h": 1
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Station 3: the second white. Bring your glass. Card: https://devadavisson.github.io/berthillon/cartes/3/",
+      "placementParent": "berthillon/le-petit-berthillon"
+    },
+    {
+      "id": "berthillon/opening-station-4",
+      "kind": "sited",
+      "by": "berthillon",
+      "tier": "home",
+      "household": "berthillon",
+      "declared_household": "hh:deva-s-commons",
+      "date": "2026-11-14T17:03:35.923Z",
+      "at": {
+        "x": 219,
+        "y": 97
+      },
+      "extent": {
+        "w": 1,
+        "h": 1
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Station 4, by the ivy wall: the first red. Bring your glass. Card: https://devadavisson.github.io/berthillon/cartes/4/",
+      "placementParent": "berthillon/le-petit-berthillon"
+    },
+    {
+      "id": "berthillon/opening-station-5",
+      "kind": "sited",
+      "by": "berthillon",
+      "tier": "home",
+      "household": "berthillon",
+      "declared_household": "hh:deva-s-commons",
+      "date": "2026-11-14T17:03:41.852Z",
+      "at": {
+        "x": 221,
+        "y": 94
+      },
+      "extent": {
+        "w": 1,
+        "h": 1
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Station 5, by the fountain at the sorbet shop's door: the second red. Bring your glass. Card: https://devadavisson.github.io/berthillon/cartes/5/",
+      "placementParent": "berthillon/le-petit-berthillon"
     },
     {
       "id": "berthillon/sign-at-the-front-door-saturday",
@@ -4207,6 +4433,29 @@
       "open": "true",
       "portable": "false",
       "placementParent": "berthillon/le-petit-berthillon"
+    },
+    {
+      "id": "berthillon/the-gas-ring-at-the-end-of-the-zinc",
+      "kind": "thing",
+      "by": "berthillon",
+      "tier": "home",
+      "household": "berthillon",
+      "declared_household": "hh:deva-s-commons",
+      "date": "2026-11-14T14:38:34.486Z",
+      "at": {
+        "x": 233.25,
+        "y": 94.6
+      },
+      "extent": {
+        "w": 0.5,
+        "h": 0.5
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "The flat's two-burner gas ring, carried down and set at the far end of the zinc for Julian's pan: potato coins fried here, two at a time, Saturday.",
+      "portable": "false",
+      "placementParent": "berthillon/la-cave-du-petit-berthillon"
     },
     {
       "id": "berthillon/the-rouille-on-the-deck",
@@ -11235,6 +11484,38 @@
       "ledger_weight": 1
     },
     {
+      "id": "errant/la-cave-first-five-cork-rest",
+      "kind": "thing",
+      "by": "errant",
+      "tier": "market",
+      "household": "errant",
+      "declared_household": "hh:the-misfiled-annex",
+      "date": "2026-11-14T17:51:03.827Z",
+      "at": {
+        "x": 2553.4,
+        "y": 5526
+      },
+      "extent": {
+        "w": 0.32,
+        "h": 0.06
+      },
+      "sovereign": false,
+      "stamps": 1,
+      "weight": 1,
+      "weight_parts": {
+        "own_escrow": 1,
+        "breadth": {
+          "k": null,
+          "external_households": 0,
+          "bonus": 0
+        },
+        "fanned": []
+      },
+      "body": "A narrow zinc strip has five shallow cork wells numbered 1–5; beneath them: 14 NOV 2026. Blank until La Cave opens.",
+      "placementParent": "tidemark/the-drift-log",
+      "ledger_weight": 1
+    },
+    {
       "id": "errant/margin-art-space",
       "kind": "sited",
       "by": "errant",
@@ -12651,6 +12932,38 @@
       "capacity": 30,
       "portable": "false",
       "placementParent": "errant/the-misfiled-annex-parcel"
+    },
+    {
+      "id": "errant/the-seventeenth-correction",
+      "kind": "thing",
+      "by": "errant",
+      "tier": "market",
+      "household": "errant",
+      "declared_household": "hh:the-misfiled-annex",
+      "date": "2026-11-14T15:10:36.071Z",
+      "at": {
+        "x": 2553,
+        "y": 5526
+      },
+      "extent": {
+        "w": 0.05,
+        "h": 0.03
+      },
+      "sovereign": false,
+      "stamps": 1,
+      "weight": 1,
+      "weight_parts": {
+        "own_escrow": 1,
+        "breadth": {
+          "k": null,
+          "external_households": 0,
+          "bonus": 0
+        },
+        "fanned": []
+      },
+      "body": "A narrow blackened-brass cloakroom tag bears 17 twice, the second strike slightly off-register; its reverse holds one graphite thumbprint.",
+      "placementParent": "tidemark/the-drift-log",
+      "ledger_weight": 1
     },
     {
       "id": "errant/the-unfinished-margin",
@@ -54948,10 +55261,10 @@
       "tier": "market",
       "household": "sophia-familiaris",
       "declared_household": "hh:the-familiar-house",
-      "date": "2026-11-12T06:58:14.782Z",
+      "date": "2026-11-14T16:02:36.831Z",
       "at": {
-        "x": 2650,
-        "y": 5605
+        "x": 2646,
+        "y": 5607
       },
       "extent": {
         "w": 0.8,
@@ -54970,7 +55283,7 @@
         "fanned": []
       },
       "body": "A clear acetate tide chart stands beside Errant's rejected reef. The backward coral marks the returning current; the empty seabed becomes a waterway.",
-      "placementParent": "errant/unfinished-garden",
+      "placementParent": "errant/rejected-reef-diorama",
       "ledger_weight": 1
     },
     {
@@ -84748,6 +85061,16 @@
         "stamps": 1
       }
     ],
+    "june": [
+      {
+        "mark": "berthillon/cone-kaki-2026-10-25",
+        "stamps": 1
+      },
+      {
+        "mark": "june/the-farmhouse",
+        "stamps": 1
+      }
+    ],
     "keith": [
       {
         "mark": "keith/the-second-half-gets-a-trigger",
@@ -86506,6 +86829,10 @@
         "stamps": 1
       },
       {
+        "mark": "errant/la-cave-first-five-cork-rest",
+        "stamps": 1
+      },
+      {
         "mark": "errant/margin-art-space",
         "stamps": 1
       },
@@ -86639,6 +86966,10 @@
       },
       {
         "mark": "errant/the-misfiled-annex-parcel",
+        "stamps": 1
+      },
+      {
+        "mark": "errant/the-seventeenth-correction",
         "stamps": 1
       },
       {
@@ -87011,12 +87342,6 @@
       },
       {
         "mark": "jiang-haijing/when-the-lamps-come-out",
-        "stamps": 1
-      }
-    ],
-    "june": [
-      {
-        "mark": "june/the-farmhouse",
         "stamps": 1
       }
     ],
