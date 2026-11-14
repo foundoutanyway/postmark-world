@@ -5581,6 +5581,137 @@ export function markByline(mark) {
   return `By ${mark.by} ${String(mark.date).slice(0, 10)}`;
 }
 
+// ── THE COLUMN'S VIEW BUILDERS, THE PARTS BOTH PAGES SHARE (WLD-105 A14) ─────────────────────────────────────────
+//
+// The 2D page builds a column's view in closures inside `mountViewer` (parcelColumnView, regionColumnView,
+// markColumnView, residentColumnView, creatureColumnView), over its own state; the 3D view built the same fields again
+// over its own. What is the same is the CONTENT of a view: its kicker and title, its facts and relations, its words. What is
+// each page's own is what it adds: the key a repaint compares, the page's own actions and tokens, where "back" goes, and
+// how a relative is linked. So these take the already-read inputs and return the shared fields, and the closures spread
+// them and add their own. Each is pure: a record, a reading, and the page's own lookups (`nameOf`, `byId`, `faceOf`).
+// Hoisted with the output unchanged (tools/viewer-column-views.test.mjs holds each against the inline code it replaced).
+
+/** A holder's facts for its column (`contents` for a thing, `carrying` for a resident), apart from the spatial "holds".
+ *  `nameOf(id)` says how a held thing is named. */
+export function columnHoldingFacts(lines, label = "contents", nameOf = (x) => x) {
+  const parts = holdingParts(lines, { nameOf });
+  if (!parts) return [];
+  return [
+    { label, value: parts.head },
+    parts.items.length ? { label: "by kind", value: parts.items.join(", ") } : null,
+    parts.open ? { label: "open", value: parts.open } : null,
+  ].filter(Boolean);
+}
+
+/** What an ordinary mark's column says: its facts (class, properties, what happens at its door, whose it is, what it holds),
+ *  its four relations (held by, leads into, sits inside, holds) and its footprint. `reading` is the investigate answer (or
+ *  null), `law` entryLawOf, `holding` holderLines of the close look, `holder` the record's held_by, `icons` the mark's icons.
+ *  The page says how it names a record (`nameOf`, over `byId`), how it links a resident holder (`holderEntry(handle)` gives
+ *  `{ id, name }`), how an owner reads (`ownedWord`: 2D says "you" for the signed-in household's own), and whether the mark is
+ *  ambient (no footprint, 2D's rule). */
+export function markColumnParts(mark, { reading = null, law = null, holding = null, holder = null, icons = [], byId, nameOf, holderEntry, ownedWord = (owner) => owner, ambient = false } = {}) {
+  const d = reading;
+  const nameOfId = (x) => nameOf(byId.get(x) ?? { id: x });
+  const rel = (list) => (list ?? []).filter((r) => r?.id).map((r) => ({ id: r.id, name: nameOf(byId.get(r?.id) ?? r) }));
+  const what = icons.find((i) => i.kind === "what")?.key;
+  const classSaid = !!what && what !== "place";
+  const facts = [
+    instanceClassOf(mark) && !classSaid ? { label: "class", value: String(instanceClassOf(mark)) } : null,
+    ...((d?.predicates ?? []).map((p) => ({ label: p.slot ?? "property", value: String(p.value ?? ""),
+      // its full description, which the short line opens to (row 70)
+      detail: typeof p.body === "string" ? p.body : null }))),
+    law?.consequence ? { label: "at the door", value: law.consequence } : null,
+    // whose it is, when not its maker's (POS-688): the record's `owned_by`
+    ownedBy(mark) ? { label: "owned by", value: ownedWord(ownedBy(mark)) } : null,
+    ...columnHoldingFacts(holding, "contents", nameOfId),
+  ].filter(Boolean);
+  const e = mark.extent;
+  const ring = polygonOf(mark), bb = ring ? polygonBBox(ring) : null;
+  const footprint = e && e.w > 0 && e.h > 0 && !ambient
+    ? { w: e.w, h: e.h, ring: bb ? ring.map((pt) => [pt.x - bb.minx, pt.y - bb.miny]) : null } : null;
+  const relations = [
+    { label: "held by", items: holder ? [isThingId(holder) ? { id: holder, name: nameOfId(holder) } : holderEntry(holder)] : [] },
+    { label: "leads into", items: (law?.into ?? []).map((into) => ({ id: into, name: nameOfId(into) })) },
+    { label: "sits inside", items: rel(d?.parents) },
+    { label: "holds", items: rel(d?.children), more: (d?.more?.children ?? 0) > 0 },
+  ];
+  return { facts, relations, footprint };
+}
+
+/** A parcel's column: the fields both pages carry, from the parcel's own homes (`homes`: homesOf, each `home_mark` resolved
+ *  to the full mark). Null when no resident's home is on it and none can be told from the parcel itself. `faceOf(handle)` is the
+ *  page's resident face, `identityOf(mark)` how it names a house. */
+export function parcelColumnFields(mark, { homes, determined = {}, faceOf, identityOf }) {
+  const home = homes[0]?.home_mark ?? null;
+  const handle = homes[0]?.handle ?? homeHandleForParcel(mark, null);
+  if (!handle) return null;
+  return {
+    handle,
+    kicker: kickerOf(mark, handle),
+    // THE SAME RULE AS THE CARD (Keemin, 2026-09-20): the ground's own name, "parcel" stripped
+    title: parcelCardLabel(mark, determined),
+    leadImage: parcelLeadImage(mark, home, homes.length ? faceOf(handle).home : null),
+    ownWords: mark.body ?? null,
+    residents: homes.map((h) => ({
+      handle: h.handle, via: h.via,
+      picture: housePicture(faceOf(h.handle).home, h.home_mark),
+      house: h.home_mark ? identityOf(h.home_mark) : null,
+    })),
+  };
+}
+
+/** A region's column: kicker "Region", "held by <founder>", its picture and its own page from the office (`got`: the door's
+ *  answer, `{ failed: true }`, pending or undefined), else the mark's words, the byline saying which. Null without a founder. */
+export function regionColumnFields(mark, { got = undefined, nameOf }) {
+  const handle = String(mark.by ?? mark.household ?? "").trim();
+  if (!handle) return null;
+  const slug = String(mark.id ?? "").split("/")[1] ?? "";
+  const body = typeof mark.body === "string" ? mark.body.trim() : "";
+  const page = got && !got.failed && String(got.description ?? "").trim() ? got : null;
+  const founder = String(page?.founder || handle).trim();
+  // THE DOOR'S `name` IS SOMETIMES THE BARE SLUG (the office falls back to it when REGION.md had no heading): the map's own
+  // name for the mark is better then, so the door's name wins only when it is actually a name
+  const doorName = String(page?.name ?? "").trim();
+  return {
+    page, handle,
+    kicker: "Region",
+    title: doorName && doorName !== slug ? doorName : nameOf(mark),
+    region: `held by ${founder}`,
+    leadImage: markImagePath(mark),
+    door: { description: page ? page.description : body },
+    byline: page ? `in ${founder}'s own words` : `from the mark, in ${handle}'s own words`,
+  };
+}
+
+/** A creature's column: what it is in its kind's own words, its kind, what it is doing, its moods as bars, when it came out and
+ *  what it did lately. `c` is the living row (or null), `read` the page's reading of it ({ at, inv, ... } or null). */
+export function creatureColumnFields(id, c, read) {
+  const { facts, lately, bars } = creatureColumnFacts(c, read?.inv ?? null);
+  const name = String(c?.name ?? read?.inv?.name ?? id);
+  return {
+    handle: "the-town", residentLink: false,
+    kicker: "a creature",
+    title: name.charAt(0).toUpperCase() + name.slice(1),
+    leadImage: null,
+    door: { description: read?.inv?.what_it_is ?? (read?.at ? "" : "reading the creature…") },
+    facts: [...facts, ...lately],
+    bars,
+    icons: [creatureIcon()],
+  };
+}
+
+/** What a resident carries, in their column: the "carrying" facts (or the placeholder while their hands are being read) and the
+ *  relation to the whole things, each a way into its own column. `lines` is residentHoldLines (or handsLines), `looked` whether
+ *  the close look has been asked, `nameOf(id)` how a held thing is named, `thingEntry(id)` its `{ id, name }` link. */
+export function residentColumnParts(lines, { looked = false, nameOf, thingEntry = (id) => ({ id, name: lines?.names?.get(id) ?? nameOf(id) }) } = {}) {
+  const things = lines?.things ?? [];
+  return {
+    carrying: lines ? columnHoldingFacts({ ...lines, things: [] }, "carrying", nameOf)
+      : looked ? [] : [{ label: "carrying", value: "reading their hands…" }],
+    relations: things.length ? [{ label: "whole things", items: things.map(thingEntry) }] : [],
+  };
+}
+
 export function markCellBylineRow(mark, actions = "") {
   const byline = markByline(mark);
   if (!byline && !actions) return "";
@@ -14654,38 +14785,23 @@ export function mountViewer(appEl) {
     // is the first resident's home page; the strip under the title shows them
     // all, each with their own picture from the household's record.
     const homes = homesOf(mark.id).map((h) => ({ ...h, home_mark: h.home_mark ? (byId.get(h.home_mark.id) ?? h.home_mark) : null }));
-    const home = homes[0]?.home_mark ?? null;
-    const handle = homes[0]?.handle ?? homeHandleForParcel(mark, null);
-    if (!handle) return null;
+    // The fields both pages carry (parcelColumnFields, above: the title is the card's own rule, the lead picture the RECORD's
+    // dwelling, the parcel's own words for when the holder's home page describes a different parcel) come from there; the key,
+    // the door and the icons are this page's.
+    const fields = parcelColumnFields(mark, { homes, determined: data?.worldState?.determined ?? {}, faceOf, identityOf: markIdentity });
+    if (!fields) return null;
     const parcelId = mark.id, canEnter = canAct();
+    const { handle, kicker, title, leadImage, ownWords, residents } = fields;
     return {
       key: mark.id,
       handle,
       parcelId, canEnter,
-      kicker: kickerOf(mark, handle),
-      // THE SAME RULE AS THE CARD (Keemin, 2026-09-20): the ground's own name,
-      // "parcel" stripped. This was `markIdentity(home ?? mark)` — the dwelling
-      // `homeMarkOfParcel` picked, falling back to the parcel — so the column
-      // read "The Garden Notebook Tin" for rei while the card beside it was
-      // about to read "The Lanternstep House". A card and the column it opens
-      // are two views of one ground and may not call it two things.
-      title: parcelCardLabel(mark, data?.worldState?.determined ?? {}),
-      // the dwelling's picture, and failing that the ground's own — the
-      // RECORD's dwelling (POS-200), never the first pictured child
-      // A parcel with no `home` link of its own (a household's second house,
-      // POS-584) does not borrow the holder's house picture: that picture
-      // belongs to the house the record does link. Measured at S103: 1 of 125
-      // parcels takes this path, sol-am-lichterfenster/driftlight-house-parcel.
-      leadImage: parcelLeadImage(mark, home, homes.length ? faceOf(handle).home : null),
-      // the clicked parcel's own words, for when the holder's home page turns
-      // out to describe a different parcel (home-column.mjs § POS-584)
-      ownWords: (byId.get(mark.id) ?? mark).body ?? null,
+      kicker,
+      title,
+      leadImage,
+      ownWords,
       copyId: mark.id,
-      residents: homes.map((h) => ({
-        handle: h.handle, via: h.via,
-        picture: housePicture(faceOf(h.handle).home, h.home_mark),
-        house: h.home_mark ? markIdentity(h.home_mark) : null,
-      })),
+      residents,
       // what it is and its state, each with its one line (mark-icons.mjs)
       icons: iconsOf(mark),
     };
@@ -14751,42 +14867,25 @@ export function mountViewer(appEl) {
     // gate in selectMark: the layer that drew this region read the wider set
     const mark = id ? (byId.get(id) ?? allMarks().find((m) => m?.id === id)) : null;
     if (!mark || !isRegionMark(mark)) return null;
-    const handle = String(mark.by ?? mark.household ?? "").trim();
-    if (!handle) return null;
+    if (!String(mark.by ?? mark.household ?? "").trim()) return null;
     const slug = String(mark.id ?? "").split("/")[1] ?? "";
-    const body = typeof mark.body === "string" ? mark.body.trim() : "";
     const got = regionDoors.get(slug);
     if (got === undefined) readRegionDoor(slug);
-    const page = got && !got.failed && String(got.description ?? "").trim() ? got : null;
-    const founder = String(page?.founder || handle).trim();
-    // THE DOOR'S `name` IS SOMETIMES THE BARE SLUG. Measured: the Threshold
-    // District answers "the Threshold District", the Headland answers
-    // "the-headland" — the office falls back to the slug when REGION.md carried
-    // no heading. The map's own name for the mark is better than a slug, so the
-    // door's name wins only when it is actually a name.
-    const doorName = String(page?.name ?? "").trim();
+    // The words, title, byline and founder are regionColumnFields' (above): the door's page when it answers and says
+    // something, the mark's own words labelled as the mark's otherwise; a failure paints no error.
+    const { page, handle, kicker, title, region, leadImage, door, byline } = regionColumnFields(mark, { got, nameOf: markIdentity });
     return {
       // THE KEY NAMES ITS SOURCE, which is what makes the swap happen: the
       // column rebuilds only when the key changes, so "mark" -> "door" repaints
       // and every other render of the same view stays the no-op it should be.
       key: `${mark.id}:${page ? "door" : "mark"}`,
       handle,
-      kicker: "Region",
-      title: doorName && doorName !== slug ? doorName : markIdentity(mark),
-      region: `held by ${founder}`,
-      leadImage: markImagePath(mark),
-      // Whole, uncapped, straight from REGION.md. `homeColumnModel` runs it
-      // through the same markdown parser the parcel column uses, so the file's
-      // own heading renders as a heading rather than a literal hash.
-      door: { description: page ? page.description : body },
-      // …AND THE BYLINE STILL SAYS WHERE THE WORDS CAME FROM (Keemin,
-      // 2026-09-13: "the region column pulls text from the mark body instead of
-      // REGION.md in the town repo"). When the door answers, they ARE the
-      // region's own page and the "from the mark" hedge would now be the lie.
-      // When it does not — no page written, or the office unreachable — the
-      // mark's words stand and are labelled as the mark's, exactly as #52 left
-      // them. A failure paints no error: the reader gets prose either way.
-      byline: page ? `in ${founder}'s own words` : `from the mark, in ${handle}'s own words`,
+      kicker,
+      title,
+      region,
+      leadImage,
+      door,
+      byline,
       icons: iconsOf(mark),
       copyId: mark.id,
     };
@@ -14842,8 +14941,6 @@ export function mountViewer(appEl) {
     const where = radialWhere(mark);
     const reading = columnReading(id);
     const d = reading && !reading.error ? reading : null;
-    const nameOf = (relative) => markIdentity(byId.get(relative?.id) ?? relative);
-    const rel = (list) => (list ?? []).filter((r) => r?.id).map((r) => ({ id: r.id, name: nameOf(r) }));
     // THE DOOR, gated exactly as the card's was (enterAffordance owns all four)
     const key = standpointKey();
     const crossing = enterAffordance({
@@ -14853,7 +14950,6 @@ export function mountViewer(appEl) {
     const weight = effectiveWeight(mark);
     const inside = (occupantsOf(liveOccupancy()).get(id) ?? []).map((h) => faceOf(h).name);
     const law = entryLawOf(mark);
-    const e = mark.extent;
     // WHAT IT HOLDS AND WHO HOLDS IT (LOGOS v2 part 2): the close look's holding, and its carrier
     const look = id === WORLD_ROOT_ID ? null : markCloseLook(id);
     if (look) noteThingKind(mark, look);
@@ -14863,25 +14959,17 @@ export function mountViewer(appEl) {
     const carriedBy = heldLine(id);
     const heldIn = holderOfIt && isThingId(holderOfIt) ? holderOfIt : null;
     const icons = iconsOf(mark);
-    // the record's class word, unless an icon already says it in its own line
-    const what = icons.find((i) => i.kind === "what")?.key;
-    const classSaid = !!what && what !== "place";
     // SHOW, DON'T LIST (play fix 41): its backing is the ✦ and a number, its
     // size its own outline, who is inside their tokens; what stays a line is
-    // what only words can say
-    const facts = [
-      instanceClassOf(mark) && !classSaid ? { label: "class", value: String(instanceClassOf(mark)) } : null,
-      ...((d?.predicates ?? []).map((p) => ({ label: p.slot ?? "property", value: String(p.value ?? ""),
-        // its full description, which the short line opens to (row 70)
-        detail: typeof p.body === "string" ? p.body : null }))),
-      law?.consequence ? { label: "at the door", value: law.consequence } : null,
-      // whose it is, when not its maker's (POS-688): the record's `owned_by`
-      ownedBy(mark) ? { label: "owned by", value: ownedBy(mark) === hands.for ? "you" : ownedBy(mark) } : null,
-      ...holdingFacts(holding),
-    ].filter(Boolean);
-    const ring = polygonOf(mark), bb = ring ? polygonBBox(ring) : null;
-    const footprint = e && e.w > 0 && e.h > 0 && !isAmbientMark(mark, byId)
-      ? { w: e.w, h: e.h, ring: bb ? ring.map((pt) => [pt.x - bb.minx, pt.y - bb.miny]) : null } : null;
+    // what only words can say. The facts, the relations and the footprint are markColumnParts' (above, shared with the 3D
+    // view): the record's class word unless an icon already says it, the properties, the door's law, whose it is when not its
+    // maker's (POS-688: "you" for your own), what it holds; its holder as a way into the holder's own column.
+    const { facts, relations, footprint } = markColumnParts(mark, {
+      reading: d, law, holding, holder: holderOfIt, icons, byId, nameOf: markIdentity,
+      holderEntry: (handle) => ({ id: walkerHoverId(handle), name: faceOf(handle).name || handle }),
+      ownedWord: (owner) => (owner === hands.for ? "you" : owner),
+      ambient: isAmbientMark(mark, byId),
+    });
     const tokens = [
       ...(occupantsOf(liveOccupancy()).get(id) ?? []).map((h) => {
         const f = faceOf(h);
@@ -14889,15 +14977,6 @@ export function mountViewer(appEl) {
       }),
       ...[...liveCreatures.values()].filter((c) => pointInsideMark({ x: c.x, y: c.y }, mark))
         .map((c) => ({ kind: "creature", id: c.id, name: c.name, silhouette: silhouetteURL(c.kind) })),
-    ];
-    const relations = [
-      // its holder, a way into the holder's own column: a bag, or a resident's hands
-      { label: "held by", items: holderOfIt ? [isThingId(holderOfIt)
-        ? { id: holderOfIt, name: markIdentity(byId.get(holderOfIt) ?? { id: holderOfIt }) }
-        : { id: walkerHoverId(holderOfIt), name: faceOf(holderOfIt).name || holderOfIt }] : [] },
-      { label: "leads into", items: (law?.into ?? []).map((into) => ({ id: into, name: markIdentity(byId.get(into) ?? { id: into }) })) },
-      { label: "sits inside", items: rel(d?.parents) },
-      { label: "holds", items: rel(d?.children), more: (d?.more?.children ?? 0) > 0 },
     ];
     const cameFrom = bubbleTrail.length > 1 ? bubbleTrail[bubbleTrail.length - 2] : null;
     const backTo = cameFrom && byId.get(cameFrom) ? { id: cameFrom, name: markIdentity(byId.get(cameFrom)) } : null;
@@ -15059,17 +15138,6 @@ export function mountViewer(appEl) {
     return heldWords(heldBy(byId.get(String(id))), { self: hands.for, nameOf: (x) => markIdentity(byId.get(x) ?? { id: x }) });
   }
 
-  /** A holder's facts for its column (`contents` for a thing, `carrying` for a resident), apart from the spatial "holds". */
-  function holdingFacts(lines, label = "contents") {
-    const parts = holdingParts(lines, { nameOf: (x) => markIdentity(byId.get(x) ?? { id: x }) });
-    if (!parts) return [];
-    return [
-      { label, value: parts.head },
-      parts.items.length ? { label: "by kind", value: parts.items.join(", ") } : null,
-      parts.open ? { label: "open", value: parts.open } : null,
-    ].filter(Boolean);
-  }
-
   // A RESIDENT'S COLUMN: who they are, where they are, and what is in their
   // hands, through the same column every mark and creature opens.
   function residentColumnView(id) {
@@ -15089,6 +15157,10 @@ export function mountViewer(appEl) {
     // the whole profile (WLD-83): the office's card, read live like the close look
     const card = residentCard(handle);
     const profile = residentProfileView(card, inv, face);
+    const { carrying, relations } = residentColumnParts(lines, {
+      looked: !!closeLooks.get(`${asWho()}|investigate|${handle}`)?.at,
+      nameOf: (x) => markIdentity(byId.get(x) ?? { id: x }),
+    });
     return {
       // the place line is in the key: it changes when the page learns a kind is a thing (not ground)
       key: ["resident", handle, worldEpoch, inv ? "read" : "-", card ? "card" : "-", JSON.stringify(profile.facts), profile.picture ?? "", profile.pronouns ?? "", moving ? "m" : "s", things.join(","), lines?.count ?? "-", region].join("|"),
@@ -15107,10 +15179,9 @@ export function mountViewer(appEl) {
       // their bio, in their own words, is the column's body
       door: { description: profile.bio ?? "" },
       byline: handle === state.handle && onResidentPath() ? "you" : handle,
-      // the whole things are the relation below, each a way into its own column
-      facts: [...profile.facts, ...(lines ? holdingFacts({ ...lines, things: [] }, "carrying")
-        : closeLooks.get(`${asWho()}|investigate|${handle}`)?.at ? [] : [{ label: "carrying", value: "reading their hands…" }])],
-      relations: things.length ? [{ label: "whole things", items: things.map((t) => ({ id: t, name: lines.names?.get(t) ?? markIdentity(byId.get(t) ?? { id: t }) })) }] : [],
+      // what they carry, and the whole things as the relation below, each a way into its own column (residentColumnParts, above)
+      facts: [...profile.facts, ...carrying],
+      relations,
     };
   }
 
@@ -15188,8 +15259,8 @@ export function mountViewer(appEl) {
     const read = creatureReads.get(id) ?? null;
     if (!read) loadCreatureReading(id);
     if (!c && !read?.inv) return null;
-    const { facts, lately, bars } = creatureColumnFacts(c, read?.inv ?? null);
-    const name = String(c?.name ?? read?.inv?.name ?? id);
+    // what it is, its kind, its doings, moods and lately are creatureColumnFields' (above, shared with the 3D view)
+    const fields = creatureColumnFields(id, c, read);
     // where it is, said from where the reader stands: the room it is in, or
     // its distance from the acting resident's body (the camera, for a spectator)
     const room = sceneRoomId ? byId.get(sceneRoomId) : null;
@@ -15199,16 +15270,16 @@ export function mountViewer(appEl) {
     const where = c && !inRoom ? Math.round(Math.hypot(c.x - Number(from.x), c.y - Number(from.y))) : null;
     return {
       key: [id, read?.at ?? 0].join("|"),
-      handle: "the-town", residentLink: false,
-      kicker: "a creature",
-      title: name.charAt(0).toUpperCase() + name.slice(1),
+      handle: fields.handle, residentLink: fields.residentLink,
+      kicker: fields.kicker,
+      title: fields.title,
       region: inRoom ? "here, in " + markIdentity(room) : where != null ? where.toLocaleString() + " m away" : "",
-      leadImage: null,
-      door: { description: read?.inv?.what_it_is ?? (read?.at ? "" : "reading the creature…") },
+      leadImage: fields.leadImage,
+      door: fields.door,
       byline: "out of the Mists, alive in the record",
-      facts: [...facts, ...lately],
-      bars,
-      icons: [creatureIcon()],
+      facts: fields.facts,
+      bars: fields.bars,
+      icons: fields.icons,
     };
   }
   // ── WHAT A CREATURE DID, WHOEVER ACTED (play row 54) ──────────────────────
