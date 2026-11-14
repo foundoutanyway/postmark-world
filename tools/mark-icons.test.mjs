@@ -123,10 +123,14 @@ test("on the map: the glyph is cut into the dot, replacing the doorway; states r
 
 test("[pin] the plate wears what the mark is before its name and its states after; a mark with no icon keeps the dot", () => {
   const SOURCE = readFileSync(new URL("../spectator/viewer.mjs", import.meta.url), "utf8");
-  const fn = SOURCE.match(/function markNameplateHTML\(id\) \{[\s\S]*?\n  \}\n/)[0];
+  // WLD-105 A20: the plate's markup was hoisted out of the closure into the exported markNameplateMarkup (the 3D view
+  // imports it); the closure only gathers the three reads and passes the tier classes
+  const fn = SOURCE.match(/export function markNameplateMarkup\([^)]*\) \{[\s\S]*?\n\}\n/)[0];
   assert.ok(fn.indexOf("wv-np-what") < fn.indexOf("wv-np-name") && fn.indexOf("wv-np-name") < fn.indexOf("wv-np-icons"),
     "icon, name, states");
-  assert.match(fn, /: `<span class="wv-np-dot \$\{markClasses\(full\)\}" aria-hidden="true"><\/span>`/, "the dot when there is no icon");
+  assert.match(fn, /: `<span class="wv-np-dot \$\{classes\}" aria-hidden="true"><\/span>`/, "the dot when there is no icon");
+  const closure = SOURCE.match(/function markNameplateHTML\(id\) \{[\s\S]*?\n  \}\n/)[0];
+  assert.match(closure, /markNameplateMarkup\(full, \{ identity: markName\(full\), icons: iconsOf\(full\), classes: markClasses\(full\) \}\)/, "the plate is that markup, the mark's own tier classes on the dot");
 });
 
 test("one resident icon: the walker's token, in sovereign green; a creature is a red diamond (WLD-82); never the stamps' purple (play fix 43)", () => {

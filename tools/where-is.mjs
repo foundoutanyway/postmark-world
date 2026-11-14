@@ -312,6 +312,20 @@ export function whereIs(handle, { world = null, departures = [], at = fractional
 // `handles` is who to consider. Callers pass the roster they know (parcel
 // households plus anyone with a walk record); this owns the shape, so the office
 // door and the local spectator cannot drift apart the way they just did.
+/**
+ * The roster `publicResidents` is asked about: everyone with a walk record, then every parcel's household, empty
+ * handles dropped, in that order (duplicates left for `publicResidents` to fold). The local spectator
+ * (spectator/server.mjs) built this inline; the 3D view's movement read built its own copy (HANDOFF A2), and a roster
+ * with the households' lists added drew 62 residents with no walk and no home at the porch. One function, both callers
+ * (WLD-105). `world` is the folded world-state (its `parcels`), or null for a ledger-only answer.
+ */
+export function walkerRoster(departures, world = null) {
+  return [
+    ...(departures ?? []).map((d) => d.handle),
+    ...((world?.parcels ?? []).map((pc) => pc.household)),
+  ].filter(Boolean);
+}
+
 export function publicResidents(handles, { world = null, departures = [], at = fractionalCrossing() } = {}) {
   const seen = new Set();
   const out = [];

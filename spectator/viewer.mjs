@@ -4647,6 +4647,20 @@ export function creatureNameplateHTML(c) {
     + '<span class="wv-np-name">' + esc(c.name) + '</span></div>';
 }
 
+/** A mark's nameplate (the hover plate): what it is before its name, its states after, the plain tier dot when it has
+ *  no icon. Pure: `identity` is `{ name, determined }` (resolveMarkName), `icons` the mark's markIcons, `classes` the
+ *  mark's tier class string (markStateClasses). Hoisted out of `mountViewer`'s markNameplateHTML so the 3D view's
+ *  nameplate is this markup and not a copy of it (WLD-105 A20); the closure passes the same three reads it made inline. */
+export function markNameplateMarkup(mark, { identity, icons, classes }) {
+  const what = icons[0]?.kind === "what" ? icons[0] : null;
+  const states = what ? icons.slice(1) : icons;
+  return `<div class="wv-nameplate" data-nameplate="${esc(mark.id)}">`
+    + (what ? `<span class="wv-np-what">${iconsHTML([what])}</span>` : `<span class="wv-np-dot ${classes}" aria-hidden="true"></span>`)
+    + `<span class="wv-np-name${identity.determined ? " is-determined" : ""}">${esc(identity.name || mark.id)}</span>`
+    + (states.length ? `<span class="wv-np-icons">${iconsHTML(states)}</span>` : "")
+    + `</div>`;
+}
+
 /** The living creatures in an apex find answer: [{ id, kind, name, x, y, fades_in }]. Pure. */
 export function liveCreaturesFrom(answer) {
   const rows = answer?.found?.creatures ?? answer?.creatures ?? [];
@@ -5804,6 +5818,128 @@ export const WV_ENTER_CSS = `/* the door, on the card it belongs to */
 .wv-enter:hover { background:rgba(224,160,42,.12); }
 .wv-enter[disabled] { opacity:.6; cursor:default; }`;
 
+/** The pip's dot rules from STYLE: the tier fills and the doorway cut into a portal-ground's dot. Exported so the 3D
+ *  view, which draws the same pips as sprites, imports them instead of copying them (WLD-105 A20). Bytes unchanged. */
+export const PIP_CSS = `.ov-pip { fill:var(--pm-gold); opacity:.65; }
+.ov-pip.t-constitution { fill:var(--blue); }
+.ov-pip.t-home { fill:var(--green); }
+/* a portal-ground on the map: the tier dot it always was, with a doorway cut
+   into it in the page's own dark. The tier still says whose ground this is;
+   the opening says you can go through it. */
+.ov-pip-door { fill:var(--night); opacity:.8; }`;
+/** The pill a state rides in on a pip's rim (the one rule of the map's icons that a pip's badges need). WLD-105 A20. */
+export const PIP_BADGE_CSS = `.ov-badge-bg { fill:rgba(13,20,38,.92); stroke:rgba(232,224,207,.32); stroke-width:.6; }`;
+/** The bubble's base rules: the box and its three tier accents. WLD-105 A20. */
+export const WV_BUBBLE_CSS = `.wv-bubble { position:absolute; top:0; left:0; width:max-content; max-width:min(31rem,72%);
+  --wv-mark-accent:var(--pm-gold);
+  border:1px solid var(--line); border-left:3px solid var(--wv-mark-accent); border-radius:6px;
+  background:rgba(13,15,19,.97); box-shadow:0 10px 30px rgba(0,0,0,.55);
+  will-change:transform; }
+.wv-bubble[hidden] { display:none; }
+.wv-bubble.t-constitution { --wv-mark-accent:var(--blue); }
+.wv-bubble.t-home { --wv-mark-accent:var(--green); }
+.wv-bubble.t-market { --wv-mark-accent:var(--pm-gold); }`;
+/** The hover nameplate's rules (Darko, 2026-10-15): the plate on the bubble and its icon, name and dot. WLD-105 A20. */
+export const WV_NAMEPLATE_CSS = `/* THE NAMEPLATE (Darko, 2026-10-15): the glance is a name and nothing to read,
+   so it is one line, small, and narrow enough to stand beside a mark */
+.wv-bubble.is-nameplate { max-width:min(19rem,60%); border-radius:5px; box-shadow:0 4px 14px rgba(0,0,0,.45);
+  pointer-events:auto; cursor:pointer; }
+.wv-np-icons { display:inline-flex; align-items:center; gap:5px; flex:none; }
+.wv-np-what { display:inline-flex; flex:none; }
+.wv-nameplate { display:flex; align-items:center; gap:7px; padding:3px 9px 3px 8px; min-width:0; }
+.wv-np-name { color:var(--paper); font-size:.82rem; font-weight:700; line-height:1.35;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.wv-np-name.is-determined { color:var(--amber); }
+.wv-np-dot { flex:none; width:9px; height:9px; border-radius:50%; background:var(--amber); }
+.wv-np-dot.t-home { background:var(--green); }
+.wv-np-dot.t-constitution { background:var(--blue); }
+.wv-np-dot.is-draft { background:var(--draft); }`;
+
+/** The search pill's own box (WLD-105 A19). Exported with WV_SEARCH_CSS so the 3D view's pill wears 2D's rules, not a copy. */
+export const WV_SEARCH_PILL_CSS = `.wv-search { position:relative; display:flex; align-items:center; }`;
+/** The search field, its glyph, the result list, a hit and the empty note: one contiguous slice of STYLE, interpolated
+ *  at its original place, bytes unchanged. */
+export const WV_SEARCH_CSS = `.wv-search-input { width:calc(25ch + 2.55rem); min-width:calc(25ch + 2.55rem); margin:0;
+  height:2.15rem; box-sizing:border-box; font-family:var(--mono); font-size:.82rem;
+  color:var(--amber); background:rgba(13,15,19,.92);
+  /* room for the glyph sitting inside the left of the pill */
+  padding:0 .7rem 0 1.85rem;
+  border:1px solid rgba(232,197,106,.34); border-radius:999px; }
+/* an adornment, never a target: the field beneath it takes every click */
+.wv-search-glyph { position:absolute; left:.62rem; top:50%; transform:translateY(-50%);
+  pointer-events:none; font-family:var(--mono); font-size:.95rem; line-height:1;
+  color:rgba(232,197,106,.62); }
+.wv-search-input::placeholder { color:rgba(232,197,106,.5); }
+.wv-search-input:focus { outline:none; border-color:rgba(232,197,106,.7); }
+.wv-search-results { position:absolute; top:calc(2.15rem + 6px); right:0; z-index:7;
+  width:min(20rem, 66vw); max-height:min(22rem, 52vh); overflow-y:auto;
+  margin:0; padding:4px; list-style:none;
+  background:rgba(13,15,19,.975); border:1px solid rgba(232,197,106,.34);
+  border-radius:10px; box-shadow:0 8px 26px rgba(0,0,0,.5); }
+.wv-search-results[hidden] { display:none; }
+.wv-search-hit { display:block; width:100%; text-align:left; cursor:pointer;
+  padding:5px 8px; border:0; border-radius:7px; background:transparent;
+  color:var(--paper); font-family:inherit; font-size:.82rem; line-height:1.3; }
+.wv-search-hit:hover, .wv-search-hit:focus { background:rgba(232,197,106,.16); outline:none; }
+.wv-search-hit .sub { display:block; color:var(--dim); font-family:var(--mono); font-size:.7rem; }
+.wv-search-none { padding:6px 8px; color:var(--dim); font-size:.78rem; line-height:1.35; }`;
+/** The result list's rows for what `searchTheTown` returned, or the empty note's row. Pure; the page writes it into
+ *  `.wv-search-results`. Hoisted out of `mountViewer`'s renderSearchResults, markup unchanged (WLD-105 A19). */
+export function searchResultsHTML(rows, emptyNote) {
+  return rows.length
+    ? rows.map((r) => `<li><button type="button" class="wv-search-hit"`
+        + ` data-kind="${esc(r.kind)}" data-hit="${esc(r.kind === "person" ? r.handle : r.id)}">`
+        + `${esc(r.label)}<span class="sub">${esc(r.kind === "person" ? `resident · ${r.sub}` : r.sub)}</span>`
+        + `</button></li>`).join("")
+    : `<li class="wv-search-none">${esc(emptyNote)}</li>`;
+}
+
+/** The pill's width, measured by what it says: the placeholder in the input's own resolved font, plus its padding, its
+ *  border and a few pixels of headroom, written inline over the CSS floor. Takes the `.wv-search-input` element; returns
+ *  the width it holds (0 when it must not touch the field). Hoisted out of `mountViewer`'s sizeSearchField, body
+ *  unchanged, so the 3D view's pill is measured by this and not by a copy of it (WLD-105 A19). */
+const SEARCH_WIDTH_HEADROOM_PX = 3;
+export function sizeSearchInput(input) {
+  if (!input || !input.placeholder) return 0;
+  // never reach into a field somebody is using: this borrows the value for one
+  // synchronous measurement, and a reader mid-query would see it flicker
+  if (input.value || document.activeElement === input) return 0;
+
+  // ⛑ MEASURE WITH THE INPUT, NOT BESIDE IT (2026-09-13, second pass). An
+  // offscreen span and a canvas measureText both say this placeholder is 173.1
+  // px wide in the input's exact computed font, and the input renders it 227 —
+  // measured here and independently in the founder's Chrome. Chrome lays text
+  // out inside an <input> with integer-snapped glyph advances, so any outside
+  // measurement under-measures by about half a pixel per glyph, and 24 glyphs
+  // of that is the clipped "t" he reported. The ::placeholder pseudo carries
+  // the identical font; it is the input's own text path that differs.
+  //
+  // ⛑ AND scrollWidth IS FLOORED AT clientWidth, which is why this resets to
+  // the CSS floor first. Reading scrollWidth at the current width and adding
+  // headroom CREEPS: measured, 232 → 235 → 238 → 241 over four passes, because
+  // once the box is wide enough scrollWidth just reports the box. Clearing the
+  // inline width first lets a narrower face shrink back to the floor, and the
+  // grow below then happens exactly once.
+  //
+  // ⛑ AND NOT BY COLLAPSING TO ZERO either. At width 0–40 the content box is
+  // clamped by the padding and scrollWidth reports 214 — the span's own
+  // under-measure, the very number this is here to avoid. The reading is only
+  // the true one while the text genuinely overflows a non-degenerate box, which
+  // it does at every width from 60 up to the floor.
+  input.style.width = "";
+  const keep = input.value;
+  input.value = input.placeholder;
+  const sw = input.scrollWidth, cw = input.clientWidth;
+  input.value = keep;
+  if (!(sw > cw)) return Math.round(input.getBoundingClientRect().width);  // the floor already holds it
+
+  const cs = getComputedStyle(input);
+  const border = parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
+  const want = Math.ceil(sw + border + SEARCH_WIDTH_HEADROOM_PX);
+  input.style.width = `${want}px`;
+  return want;
+}
+
 const STYLE = `
 ${WV_ROOT_CSS}
 .wv * { box-sizing:border-box; }
@@ -6518,13 +6654,7 @@ ${WV_ENTER_CSS}
    never in the way of a click — the route is a reading, not a target */
 .wv-walk-path { stroke-width:1.5; stroke-opacity:.75; stroke-dasharray:5 4;
   vector-effect:non-scaling-stroke; fill:none; pointer-events:none; }
-.ov-pip { fill:var(--pm-gold); opacity:.65; }
-.ov-pip.t-constitution { fill:var(--blue); }
-.ov-pip.t-home { fill:var(--green); }
-/* a portal-ground on the map: the tier dot it always was, with a doorway cut
-   into it in the page's own dark. The tier still says whose ground this is;
-   the opening says you can go through it. */
-.ov-pip-door { fill:var(--night); opacity:.8; }
+${PIP_CSS}
 /* the home card on a parcel: the pip stays as the anchor and hit target,
    transparent; the card is what the eye reads. The frame is the HOME light. */
 .ov-pip.ov-pip-home { opacity:0; }
@@ -6732,7 +6862,7 @@ ${WV_ENTER_CSS}
 /* THE SEARCH PILL. Collapsed it is one of the circles; open it is a pill that
    grows leftward, which is free because the row is right-anchored. The width is
    the only thing that animates, so nothing reflows around it. */
-.wv-search { position:relative; display:flex; align-items:center; }
+${WV_SEARCH_PILL_CSS}
 /* one flex item, so the controls never split across two lines between themselves */
 .wv-mapctl-tools { display:flex; gap:6px; align-items:center; }
 /* THE PILL SHRINKS BEFORE THE ROW WRAPS. The control row is a right-anchored
@@ -6761,30 +6891,7 @@ ${WV_ENTER_CSS}
    placeholder that renders 173. Two pixels of clipping is still clipping. One
    more character is 7 px of headroom and stays in the unit the sentence is
    written in. */
-.wv-search-input { width:calc(25ch + 2.55rem); min-width:calc(25ch + 2.55rem); margin:0;
-  height:2.15rem; box-sizing:border-box; font-family:var(--mono); font-size:.82rem;
-  color:var(--amber); background:rgba(13,15,19,.92);
-  /* room for the glyph sitting inside the left of the pill */
-  padding:0 .7rem 0 1.85rem;
-  border:1px solid rgba(232,197,106,.34); border-radius:999px; }
-/* an adornment, never a target: the field beneath it takes every click */
-.wv-search-glyph { position:absolute; left:.62rem; top:50%; transform:translateY(-50%);
-  pointer-events:none; font-family:var(--mono); font-size:.95rem; line-height:1;
-  color:rgba(232,197,106,.62); }
-.wv-search-input::placeholder { color:rgba(232,197,106,.5); }
-.wv-search-input:focus { outline:none; border-color:rgba(232,197,106,.7); }
-.wv-search-results { position:absolute; top:calc(2.15rem + 6px); right:0; z-index:7;
-  width:min(20rem, 66vw); max-height:min(22rem, 52vh); overflow-y:auto;
-  margin:0; padding:4px; list-style:none;
-  background:rgba(13,15,19,.975); border:1px solid rgba(232,197,106,.34);
-  border-radius:10px; box-shadow:0 8px 26px rgba(0,0,0,.5); }
-.wv-search-results[hidden] { display:none; }
-.wv-search-hit { display:block; width:100%; text-align:left; cursor:pointer;
-  padding:5px 8px; border:0; border-radius:7px; background:transparent;
-  color:var(--paper); font-family:inherit; font-size:.82rem; line-height:1.3; }
-.wv-search-hit:hover, .wv-search-hit:focus { background:rgba(232,197,106,.16); outline:none; }
-.wv-search-hit .sub { display:block; color:var(--dim); font-family:var(--mono); font-size:.7rem; }
-.wv-search-none { padding:6px 8px; color:var(--dim); font-size:.78rem; line-height:1.35; }
+${WV_SEARCH_CSS}
 
 /* hard against the right edge, so the help opens back across the painting */
 
@@ -7068,15 +7175,7 @@ ${CREATURE_CSS}
    units, because a sentence should not grow when you zoom — the SVG hover label
    makes the opposite choice, which is exactly why it stands down in this mode. */
 .wv-bubbles { position:absolute; inset:0; z-index:7; pointer-events:none; overflow:hidden; }
-.wv-bubble { position:absolute; top:0; left:0; width:max-content; max-width:min(31rem,72%);
-  --wv-mark-accent:var(--pm-gold);
-  border:1px solid var(--line); border-left:3px solid var(--wv-mark-accent); border-radius:6px;
-  background:rgba(13,15,19,.97); box-shadow:0 10px 30px rgba(0,0,0,.55);
-  will-change:transform; }
-.wv-bubble[hidden] { display:none; }
-.wv-bubble.t-constitution { --wv-mark-accent:var(--blue); }
-.wv-bubble.t-home { --wv-mark-accent:var(--green); }
-.wv-bubble.t-market { --wv-mark-accent:var(--pm-gold); }
+${WV_BUBBLE_CSS}
 /* a bubble that fits on neither side of its anchor is covering the thing it
    describes; say so with weight rather than pretending it still points at it */
 .wv-bubble.side-over { opacity:.93; }
@@ -7111,20 +7210,7 @@ ${CREATURE_CSS}
 .wv-bubble .wv-card { border:0; border-radius:0; margin:0; max-width:none; padding:10px 13px; cursor:pointer; }
 .wv-bubble .wv-card:hover { border-color:transparent; }
 .wv-bubble .wv-card.is-mark-selected { outline:none; }
-/* THE NAMEPLATE (Darko, 2026-10-15): the glance is a name and nothing to read,
-   so it is one line, small, and narrow enough to stand beside a mark */
-.wv-bubble.is-nameplate { max-width:min(19rem,60%); border-radius:5px; box-shadow:0 4px 14px rgba(0,0,0,.45);
-  pointer-events:auto; cursor:pointer; }
-.wv-np-icons { display:inline-flex; align-items:center; gap:5px; flex:none; }
-.wv-np-what { display:inline-flex; flex:none; }
-.wv-nameplate { display:flex; align-items:center; gap:7px; padding:3px 9px 3px 8px; min-width:0; }
-.wv-np-name { color:var(--paper); font-size:.82rem; font-weight:700; line-height:1.35;
-  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
-.wv-np-name.is-determined { color:var(--amber); }
-.wv-np-dot { flex:none; width:9px; height:9px; border-radius:50%; background:var(--amber); }
-.wv-np-dot.t-home { background:var(--green); }
-.wv-np-dot.t-constitution { background:var(--blue); }
-.wv-np-dot.is-draft { background:var(--draft); }
+${WV_NAMEPLATE_CSS}
 /* THE PIP, OPENED (play fix 37): the pip's own dot as the pill's left cap, the
    name and the badges after it, anchored where the pip stands. It folds open
    sideways and back. Selected: the same pill, held open and ringed. */
@@ -7218,7 +7304,7 @@ ${MARK_ICON_CSS}
 /* the map's icons (mark-icons.mjs): the pill a state rides in, and the glyph
    cut into a pip, in the page's own dark like the doorway it replaces */
 .ov-icons-bg { fill:rgba(13,20,38,.88); stroke:rgba(232,224,207,.28); stroke-width:.6; }
-.ov-badge-bg { fill:rgba(13,20,38,.92); stroke:rgba(232,224,207,.32); stroke-width:.6; }
+${PIP_BADGE_CSS}
 .ov-pip-badges .ov-ic { pointer-events:visiblePainted; }
 .ov-icons .ov-ic, .ov-ic-in .ov-ic { pointer-events:visiblePainted; }
 .ov-ic rect { pointer-events:all; }
@@ -15657,15 +15743,7 @@ export function mountViewer(appEl) {
   function markNameplateHTML(id) {
     const full = byId.get(id);
     if (!full) return "";
-    const identity = markName(full);
-    const icons = iconsOf(full);
-    const what = icons[0]?.kind === "what" ? icons[0] : null;
-    const states = what ? icons.slice(1) : icons;
-    return `<div class="wv-nameplate" data-nameplate="${esc(full.id)}">`
-      + (what ? `<span class="wv-np-what">${iconsHTML([what])}</span>` : `<span class="wv-np-dot ${markClasses(full)}" aria-hidden="true"></span>`)
-      + `<span class="wv-np-name${identity.determined ? " is-determined" : ""}">${esc(identity.name || full.id)}</span>`
-      + (states.length ? `<span class="wv-np-icons">${iconsHTML(states)}</span>` : "")
-      + `</div>`;
+    return markNameplateMarkup(full, { identity: markName(full), icons: iconsOf(full), classes: markClasses(full) });
   }
   // A SHOWN PLATE GETS A BEAT BEFORE IT GOES. Nearly every mark stands
   // inside some larger ground, so the pointer leaving a pip on its way to the
@@ -16199,48 +16277,7 @@ export function mountViewer(appEl) {
   // a fallback face) and on resize (a root font-size can move with the viewport).
   // The CSS keeps a ch-based floor so the field is never zero-wide in the frame
   // before this runs.
-  const SEARCH_WIDTH_HEADROOM_PX = 3;
-  function sizeSearchField() {
-    const input = $(root, ".wv-search-input");
-    if (!input || !input.placeholder) return 0;
-    // never reach into a field somebody is using: this borrows the value for one
-    // synchronous measurement, and a reader mid-query would see it flicker
-    if (input.value || document.activeElement === input) return 0;
-
-    // ⛑ MEASURE WITH THE INPUT, NOT BESIDE IT (2026-09-13, second pass). An
-    // offscreen span and a canvas measureText both say this placeholder is 173.1
-    // px wide in the input's exact computed font, and the input renders it 227 —
-    // measured here and independently in the founder's Chrome. Chrome lays text
-    // out inside an <input> with integer-snapped glyph advances, so any outside
-    // measurement under-measures by about half a pixel per glyph, and 24 glyphs
-    // of that is the clipped "t" he reported. The ::placeholder pseudo carries
-    // the identical font; it is the input's own text path that differs.
-    //
-    // ⛑ AND scrollWidth IS FLOORED AT clientWidth, which is why this resets to
-    // the CSS floor first. Reading scrollWidth at the current width and adding
-    // headroom CREEPS: measured, 232 → 235 → 238 → 241 over four passes, because
-    // once the box is wide enough scrollWidth just reports the box. Clearing the
-    // inline width first lets a narrower face shrink back to the floor, and the
-    // grow below then happens exactly once.
-    //
-    // ⛑ AND NOT BY COLLAPSING TO ZERO either. At width 0–40 the content box is
-    // clamped by the padding and scrollWidth reports 214 — the span's own
-    // under-measure, the very number this is here to avoid. The reading is only
-    // the true one while the text genuinely overflows a non-degenerate box, which
-    // it does at every width from 60 up to the floor.
-    input.style.width = "";
-    const keep = input.value;
-    input.value = input.placeholder;
-    const sw = input.scrollWidth, cw = input.clientWidth;
-    input.value = keep;
-    if (!(sw > cw)) return Math.round(input.getBoundingClientRect().width);  // the floor already holds it
-
-    const cs = getComputedStyle(input);
-    const border = parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
-    const want = Math.ceil(sw + border + SEARCH_WIDTH_HEADROOM_PX);
-    input.style.width = `${want}px`;
-    return want;
-  }
+  function sizeSearchField() { return sizeSearchInput($(root, ".wv-search-input")); }
 
   // a window resize is the same event as a toggle, only slower
   const onViewerResize = () => { mapCtx?.refit?.(); sizeSearchField(); seatRoomCard(); positionBubbles(); placeTour(); paintLensNote(); };
@@ -16742,12 +16779,7 @@ export function mountViewer(appEl) {
     if (!q) { box.hidden = true; box.innerHTML = ""; return; }
     const rows = searchRows();
     box.hidden = false;
-    box.innerHTML = rows.length
-      ? rows.map((r) => `<li><button type="button" class="wv-search-hit"`
-          + ` data-kind="${esc(r.kind)}" data-hit="${esc(r.kind === "person" ? r.handle : r.id)}">`
-          + `${esc(r.label)}<span class="sub">${esc(r.kind === "person" ? `resident · ${r.sub}` : r.sub)}</span>`
-          + `</button></li>`).join("")
-      : `<li class="wv-search-none">${esc(searchEmptyNote())}</li>`;
+    box.innerHTML = searchResultsHTML(rows, searchEmptyNote());
   }
   // ── THERE IS NO OPEN AND CLOSED ANY MORE, ONLY EMPTY AND NOT ────────────
   //
