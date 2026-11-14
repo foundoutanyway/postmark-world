@@ -97,10 +97,15 @@ export function sparkProblems(rec, { radiusM = null, isDate } = {}) {
       say(`experienced_until: ${rec.experienced_until} is before experienced_at: ${rec.experienced_at}`);
   }
   // the place is required (call 5) and is the mark's own at and extent
+  // The place is numbers as written, never coerced: the engine's rect() fills a missing or null value
+  // with a default (x ?? 0, w ?? 1) and does string arithmetic on text, so a place that is not four
+  // finite numbers would be published somewhere it never was (review 391 F1).
+  const num = (v) => typeof v === "number" && Number.isFinite(v);
   if (!rec.at || !rec.extent) say(`a spark needs at {x,y} and extent {w,h} — its place: its room's, frozen when made, or its maker's at with the locked circle`);
+  else if (!num(rec.at.x) || !num(rec.at.y)) say(`at: {x, y} are two finite numbers, as written (got ${JSON.stringify(rec.at)})`);
   // a one-speaker room's bounds may keep a zero side (a point or a line), and are kept as they are; never a negative one
-  else if (!(Number(rec.extent.w) >= 0 && Number(rec.extent.h) >= 0))
-    say(`extent: {w, h} are sizes, 0 or more (got ${JSON.stringify(rec.extent)})`);
+  else if (!num(rec.extent.w) || !num(rec.extent.h) || rec.extent.w < 0 || rec.extent.h < 0)
+    say(`extent: {w, h} are two finite numbers, 0 or more, as written (got ${JSON.stringify(rec.extent)})`);
   // the circle tie (call 23) and its spine
   const path = listOf(rec.circle_path);
   if (rec.circle !== undefined && !isActNumber(rec.circle)) say(`circle: is a say's act number (got ${JSON.stringify(rec.circle)})`);

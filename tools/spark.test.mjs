@@ -28,7 +28,7 @@ import { fold, loadMarks, placementParent } from "./marks-fold.mjs";
 import { classIndex, classChain, propertyAt, propertyNames, propertyOf } from "./class-properties.mjs";
 import { isSited, isGround, isSitedIn, isGroundIn, standingOf, kindIndexOf } from "./mark-kind.mjs";
 import { contains, rect } from "./geometry.mjs";
-import { SPARK_CLASS, SPARK_FIELDS, SPARK_REQUIRED, sparkRadiusM, sparksOn, sparksBelow, sparkChildren, ownLinkOf } from "./spark.mjs";
+import { SPARK_CLASS, SPARK_FIELDS, SPARK_REQUIRED, isSparkIn, sparkRadiusM, sparksOn, sparksBelow, sparkChildren, ownLinkOf } from "./spark.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_SRC = join(HERE, "..");
@@ -157,11 +157,20 @@ test("WLD-173 · the lint refuses a spark missing a required part, over the head
     ["until-before", { ...base, experienced_until: "2026-11-14T17:00:00Z" }, "x", /is before experienced_at/],
     ["bad-link", { ...base, parent_spark: "not an id" }, "x", /parent_spark: names one spark by id/],
     ["slot", { ...base, slot: "name", value: "x" }, "x", /carries no slot\/value/],
+    // review 391 F1: a place is four finite numbers as written; rect() would default or garble anything else
+    ["no-y", { ...base, room: "r1", at: "{x: 6000}" }, "x", /at: \{x, y\} are two finite numbers/],
+    ["null-sides", { ...base, room: "r1", extent: { w: null, h: null } }, "x", /extent: \{w, h\} are two finite numbers/],
+    ["quoted-at", { ...base, room: "r1", at: { x: "6000", y: "6000" } }, "x", /at: \{x, y\} are two finite numbers/],
+    // review 391 F2: the old form would stand sited, ground the spark is not
+    ["old-form", { ...Object.fromEntries(Object.entries(base).filter(([k]) => k !== "kind")), kind: "sited", class: "spark" }, "x", /class: spark is a spark, and a spark is written kind: spark/],
   ];
   for (const [slug, fields, body] of cases) file(repo, "sbx-ana", slug, fields, body);
   const ok = file(repo, "sbx-ana", "control", base, "It rained on the quay.");
+  // the zero control (review 391 F1): a one-speaker room's point, 0 × 0 in finite numbers, is a lawful place
+  file(repo, "sbx-ana", "point-room", { ...base, room: "r1", extent: "{w: 0, h: 0}" }, "We spoke at the post.");
   const out = lint(repo);
   assert.deepEqual(errorsFor(out, "sbx-ana", "control"), [], "control: the same spark, whole, is clean");
+  assert.deepEqual(errorsFor(out, "sbx-ana", "point-room"), [], "control: a point room (0 × 0) is clean");
   for (const [slug, , , words] of cases) {
     const errs = errorsFor(out, "sbx-ana", slug);
     assert.ok(errs.some((l) => words.test(l)), `${slug}: refused by name (${words}); got:\n${errs.join("\n") || "(no error)"}`);
@@ -200,6 +209,27 @@ test("WLD-173 · a spark contests no one: its own opposition never returns a sit
   const stakes = [stake("s", "a/vigil", 100)];
   assert.equal(stands(fold({ marks: [asSited, stall], terrain, tick: 1, stakes }), "b/stall"), false, "control: the same senior word from a sited mark returns the stall");
   assert.equal(stands(fold({ marks: [asSpark, stall], terrain, tick: 1, stakes }), "b/stall"), true, "and from a spark it reaches no one");
+});
+
+test("WLD-173 · one answer for one record: the old form `kind: sited` + `class: spark` is not a spark to the market while ground to everything else (review 391 F2)", () => {
+  const canonical = spark("moment", "b", 0, 0, 120, 120);
+  const oldForm = { ...canonical, kind: "sited", class: "spark" };
+  // the classifiers agree on each
+  assert.equal(isSparkIn(canonical), true);
+  assert.equal(isGroundIn(canonical, null), false);
+  assert.equal(isSparkIn(oldForm), false, "the old form stands sited, so it is no spark to the market either");
+  assert.equal(standingOf(oldForm), "sited");
+  assert.equal(isSited(oldForm), true);
+  // through the fold: a backed senior's opposition reaches the old form (it is ground), never the canonical spark
+  const word = { "b/moment": "opposed" };
+  const estate = sited("estate", "a", 0, 0, 1000, 1000, { consent: word, date: SENIOR });
+  const stakes = [stake("s", "a/estate", 100)];
+  assert.equal(stands(fold({ marks: [estate, canonical], terrain, tick: 1, stakes }), "b/moment"), true, "the canonical spark is out of the market");
+  assert.equal(stands(fold({ marks: [estate, oldForm], terrain, tick: 1, stakes }), "b/moment"), false, "the old form is not: no market exemption for a record that stands as ground");
+  // and only ground contains: another household's stool sits in the old form's ground, never in a spark's
+  const stool = sited("stool", "c", 0, 0, 5, 5);
+  assert.equal(placementParent(stool, [canonical, stool]), null, "a canonical spark contains nothing");
+  assert.equal(placementParent(stool, [oldForm, stool]), "b/moment", "the old form is ground, consistently (and the lint refuses the spelling)");
 });
 
 test(`WLD-173 · "Keep the parcel holder's word": opposed returns a spark on their ground, welcomed keeps it, silence lets it stand`, () => {

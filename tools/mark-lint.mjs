@@ -223,7 +223,14 @@ for (const rec of marks) {
   else if (standing == null) { err(rec, `kind must be one of ${[...KINDS].join(" | ")}, or name a class the works declare (got ${JSON.stringify(rec.kind)})${cite("the-town/the-kinds")}`); }
   // the old form still reads, and is told what it is now: class: folds into kind
   // (a post class's instances excepted, above)
-  if (rec.class !== undefined && rec.kind !== "class" && rec.kind !== "property" && !isPostClass(rec.class))
+  // THE SPARK'S KIND (WLD-173; review 391 F2): a spark is written in the new form only. The old form,
+  // `kind: sited` + `class: spark`, stands sited (mark-kind.mjs § standingOf), so it would be ground
+  // and a container while naming a class that is neither; the spark class has no old-form instances
+  // to keep, so the spelling is refused rather than read two ways.
+  const namesSpark = rec.class !== undefined && rec.kind !== "class" && rec.kind !== "property" && chainOf(rec.class).includes(SPARK_CLASS);
+  if (namesSpark && String(rec.kind) !== String(rec.class))
+    err(rec, `class: ${rec.class} is a spark, and a spark is written kind: ${rec.class} with no class: line — kind: ${JSON.stringify(rec.kind)} would make it stand as ${standing ?? "nothing"}, ground the spark is not (WLD-173: a spark is neither sited nor anchored)`);
+  else if (rec.class !== undefined && rec.kind !== "class" && rec.kind !== "property" && !isPostClass(rec.class))
     warn(rec, `class: ${rec.class} folds into kind: write kind: ${rec.class} and drop the class: line (ruled 2026-10-16: "The \`class:\` field folds into \`kind\`")`);
   if (rec.by == null) err(rec, `by: <author> is required — in the spatial tree (v2) authorship is frontmatter, not the path${cite("the-town/the-own-hand")}`);
   if (!SLUG_RE.test(rec.slug)) err(rec, `slug "${rec.slug}" must be lowercase-hyphenated (it is the directory name and the leaf of the id)`);

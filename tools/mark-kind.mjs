@@ -54,12 +54,11 @@ const NEVER_GROUND = new Set(["predicated", "predicate", "naming", "class", "pro
 // containment parent is geometric, marks-fold.mjs § containmentParentOf); it
 // never contains anything. tools/spark.mjs holds the class's own grammar.
 export const SPARK_CLASS = "spark";
-/** A spark, by its kind (no index needed), or by its class chain when an index is in hand. */
-export const isSparkIn = (m, idx = null) => {
-  const k = instanceClassOf(m);
-  if (k == null) return false;
-  return k === SPARK_CLASS || (!!idx && classChain(idx, k).some((c) => String(c.class) === SPARK_CLASS));
-};
+/** A spark: how the record STANDS (`standingOf` below), the one answer every ground and sited
+ *  question reads too, so no record is a spark to the market and sited ground to everything else.
+ *  The old form `kind: sited` + `class: spark` stands sited, so it is no spark here, and the lint
+ *  refuses that spelling (mark-lint.mjs § the spark's kind; review 391 F2). */
+export const isSparkIn = (m, idx = null) => standingOf(m, idx) === SPARK_CLASS;
 
 export function instanceClassOf(m) {
   if (!m || m.kind === "class" || m.kind === "property") return undefined;

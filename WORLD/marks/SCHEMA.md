@@ -396,7 +396,8 @@ footprints: [{"since":"2026-08-01T00:00:00Z","at":{"x":1000,"y":2000},"extent":{
 
 ### A spark: `kind: spark` (WLD-173; LOGOS/classes.md § The spark)
 
-A spark files at its id, writes `kind: spark`, and carries `at` and `extent` as its
+A spark files at its id, writes `kind: spark` (never the old form `kind: sited` +
+`class: spark`, which the lint refuses), and carries `at` and `extent` as its
 place, but **it is neither sited nor anchored**. It writes no `parent:` (that is the
 predicate's edge), no `slot`/`value`, and no `consent:`. The fold gives it the
 ground it stands in, never makes it anyone's container, and keeps it out of the
@@ -417,7 +418,9 @@ present: ["<household id>", "<household id>"]
 parent_spark: pica/the-lamp-song
 ```
 
-- **Required:** `recounting`, `experienced_at`, and the place (`at`, `extent`).
+- **Required:** `recounting`, `experienced_at`, and the place (`at`, `extent`): four
+  finite numbers as written, the sides 0 or more. A missing, null or quoted value is
+  refused, never defaulted or coerced.
 - **The place:** the room's, frozen when made: the centre and size of the room's
   bounds. A one-speaker room's bounds may keep a zero side (a point or a line) and
   are kept so, with no padding; such a spark is placed by where its points lie. With
