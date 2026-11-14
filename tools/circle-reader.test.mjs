@@ -422,6 +422,18 @@ test("the words and the dress: times print as UTC, every colour in the CSS inher
   assert.ok(READER_WORDS.unavailable.includes("not the same as nothing"));
   assert.doesNotMatch(READER_CSS, /#[0-9a-fA-F]{3,8}\b|rgb\(/, "no literal colour: the host decides the ground and the reader reads on it");
   assert.match(READER_CSS, /\[data-circle-reader\]/);
+  // every anchor the reader draws (the circle's permalink, a spark link) wears the host's foreground, never the browser's default link blue,
+  // and keeps its underline as the link affordance (the permalink was dark blue on the World column's dark ground)
+  assert.match(READER_CSS, /\[data-circle-reader\] a \{ color: inherit; text-decoration: underline; \}/, "any anchor inside the reader inherits the host's colour and stays underlined");
+  assert.match(READER_CSS, /\[data-circle-reader\] a:focus-visible \{/, "and shows keyboard focus");
+});
+
+test("the circle permalink is an anchor INSIDE the reader's root, so the reader's link rule is the one that dresses it", async () => {
+  const h = harness({ circles: { "50101|": circle50101() }, hrefForCircle: (c) => `/conversations/#circle-${c}` });
+  await h.reader.showCircle(50101); await tick();
+  const anchors = find(h.root, (n) => n.tagName === "A");
+  assert.ok(anchors.length >= 1, "the permalink is drawn");
+  for (const a of anchors) assert.equal(h.root.contains(a) && h.root.getAttribute("data-circle-reader") !== null, true, "inside [data-circle-reader]");
 });
 
 test("mountCircleReader adds its stylesheet once per document and reads the room", async () => {

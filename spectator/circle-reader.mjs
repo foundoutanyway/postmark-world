@@ -268,7 +268,8 @@ export const READER_CSS = `
 [data-circle-reader] .cr-notice[data-notice="unavailable"] { border-left-style: double; border-left-width: 5px; }
 [data-circle-reader] .cr-actions { display: flex; flex-wrap: wrap; gap: .4em; margin: .5em 0; }
 [data-circle-reader] .cr-new { margin: 0 0 .6em; }
-[data-circle-reader] .cr-sparks a { color: inherit; text-decoration: underline; }
+[data-circle-reader] a { color: inherit; text-decoration: underline; }
+[data-circle-reader] a:focus-visible { outline: 2px solid var(--cr-accent, currentColor); outline-offset: 2px; }
 `;
 
 /**
