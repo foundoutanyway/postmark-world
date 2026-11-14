@@ -933,9 +933,26 @@ export function createHomeColumn({ doc, host, readHome, imagePath = null, reside
     while (host.firstChild) host.removeChild(host.firstChild);
   }
 
+  // A column that hosts the circle reader keeps ONE key for the life of the conversation, so a repaint never rebuilds the reader under the
+  // reader's cursor. What the office says about the room meanwhile (live / gone quiet, the counts, who can act) still has to arrive: it is
+  // written into the words already on screen, and into the reader's own options, and nothing is rebuilt.
+  function liveUpdate(view) {
+    const r = host?.__circleReader;
+    if (!r || !view.reader) return;
+    const set = (node, text) => { if (node && text !== undefined && text !== null && node.textContent !== String(text)) node.textContent = String(text); };
+    const one = (sel) => host.querySelector?.(sel) ?? null;
+    set(one(".wv-homecol-kicker"), view.kicker);
+    if (!view.titleLink) set(one(".wv-homecol-title"), view.title);
+    set(one(".wv-homecol-meta"), view.region);
+    set(one(".wv-homecol-byline"), view.byline);
+    const dds = Array.from(host.querySelectorAll?.(".wv-homecol-facts dd") ?? []);
+    (view.facts ?? []).forEach((f, i) => { if (f && !f.detail && !f.swatch) set(dds[i], f.value); });
+    r.setCanReply?.(!!view.reader.canReply, view.reader.onReply ?? null);
+  }
+
   function open(view) {
     if (!host || !doc || !view?.handle || !view?.key) return false;
-    if (shown === view.key) return true;
+    if (shown === view.key) { liveUpdate(view); return true; }
     shown = view.key;
     host.hidden = false;
     host.parentElement?.classList.add("has-homecol");

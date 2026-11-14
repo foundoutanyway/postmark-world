@@ -46,6 +46,15 @@ function element(tag) {
     get parentElement() { return node.parent; },
     contains(other) { for (let n = other; n; n = n.parent) if (n === node) return true; return false; },
     focus() { doc.activeElement = node; },
+    // just enough of a selector for the column's live update: ".cls" and ".cls tag"
+    querySelectorAll(sel) {
+      const [a, b] = String(sel).trim().split(/\s+/);
+      const cls = (n, c) => String(n.className).split(/\s+/).includes(c.replace(/^\./, ""));
+      const out = [];
+      walk(node, (n) => { if (n !== node && (b ? n.tagName === b.toUpperCase() && n.parent && ancestorHas(n.parent, a, cls) : cls(n, a))) out.push(n); });
+      return out;
+    },
+    querySelector(sel) { return node.querySelectorAll(sel)[0] ?? null; },
     click() { for (const l of node.listeners.filter((x) => x.type === "click")) l.fn({ target: node }); },
   };
   Object.defineProperty(node, "textContent", {
@@ -58,6 +67,7 @@ function element(tag) {
   });
   return node;
 }
+const ancestorHas = (n, selClass, cls) => { for (let p = n; p; p = p.parent) if (p.nodeType === 1 && cls(p, selClass)) return true; return false; };
 const doc = { createElement: element, createTextNode: textNode, activeElement: null };
 function serialize(node) { return !node ? "" : node.nodeType === TEXT ? node.text : node.children.map(serialize).join(""); }
 const walk = (node, fn) => { if (node.nodeType === 1) { fn(node); node.children.forEach((c) => walk(c, fn)); } };
@@ -67,7 +77,7 @@ const text = (node) => serialize(node).replace(/\s+/g, " ").trim();
 const tick = () => new Promise((ok) => setImmediate(ok));
 
 /** a reader on a fresh host, with a stub office whose answers a test can change and whose every call is recorded */
-function harness({ room = roomFind(), circles = {}, canReply = false, onReply = null, onState = null } = {}) {
+function harness({ room = roomFind(), circles = {}, canReply = false, onReply = null, onState = null, hrefForCircle = null } = {}) {
   const host = element("div");
   const scroller = element("div");
   scroller.collapses = true;           // the stand-in's scroller forgets its position when its content is torn down, as a browser's does
@@ -84,7 +94,7 @@ function harness({ room = roomFind(), circles = {}, canReply = false, onReply = 
       return typeof a === "function" ? a() : a;
     },
   };
-  const reader = createCircleReader({ doc, host, source, roomId: "t20260514-pica", canReply, onReply, onState, scroller });
+  const reader = createCircleReader({ doc, host, source, roomId: "t20260514-pica", canReply, onReply, onState, hrefForCircle, scroller });
   return { host, scroller, reader, calls, answers, root: reader.root };
 }
 const idsOf = (blocks) => linesOfBlocks(blocks).map((l) => l.id);
@@ -484,4 +494,164 @@ test("the SAY sheet: the receipt's own words ride back as served (linked by name
   assert.match(SRC, /replying to \$\{sayReplyTo\.handle\}/);
   assert.match(SRC, /wv-say-reply-clear/);
   assert.equal(/linked by name|handle_time/.test(SRC.slice(SRC.indexOf("function setReplyTarget"), SRC.indexOf("function syncSayBox"))), false, "no link provenance is derived in the browser's say path");
+});
+
+// ── CORE-82 FIX (lead review of 71e36f70): late answers, honest unavailable history, permalink focus, live canReply ──────────────────
+
+const gate = () => { let release; const wait = new Promise((ok) => { release = ok; }); return { wait, release }; };
+
+test("a slow background refresh that answers AFTER the visitor opened a circle does not redraw the room over it", async () => {
+  const h = harness({ circles: { "50101|": circle50101() } });
+  await h.reader.showRoom(); await tick();
+  const g = gate();
+  h.answers.room = () => g.wait.then(() => roomFind());
+  const polling = h.reader.refresh();                               // the poll is in flight …
+  byAttr(h.root, "data-circle", 50101)[0].click(); await tick();   // … and the visitor opens a circle
+  assert.equal(h.reader.getState().view, "circle");
+  g.release(); await polling; await tick();
+  assert.equal(h.reader.getState().view, "circle", "the state still says circle");
+  assert.equal(byAttr(h.root, "data-crumbs").length, 1, "the circle's named back path is still drawn");
+  assert.equal(byAttr(h.root, "data-circle-stub").length, 0, "the room's stubs were not drawn over it");
+  assert.equal(h.root.getAttribute("data-state"), "circle");
+});
+
+test("a slow circle refresh that answers AFTER Back does not redraw the circle over the room", async () => {
+  const h = harness({ circles: { "50101|": circle50101() } });
+  await h.reader.showCircle(50101); await tick();
+  const g = gate();
+  h.answers.circles["50101|"] = () => g.wait.then(() => circle50101());
+  const polling = h.reader.refresh();
+  byAttr(h.root, "data-back")[0].click(); await tick();
+  assert.equal(h.reader.getState().view, "room");
+  g.release(); await polling; await tick();
+  assert.equal(h.reader.getState().view, "room");
+  assert.equal(byAttr(h.root, "data-crumbs").length, 0, "no circle crumbs over the room");
+  assert.equal(byAttr(h.root, "data-circle-stub").length, 3, "the room's stubs stand");
+});
+
+test("a 'show more' page that answers after the visitor went elsewhere, or after destroy, is dropped", async () => {
+  const p1 = circle50105Page1(), next = p1.find.circle_read.next;
+  const mk = () => {
+    const h = harness({ circles: { "50105|": circle50105Page1(), "50101|": circle50101() } });
+    const g = gate();
+    h.answers.circles[`${next.circle}|${next.after}`] = () => g.wait.then(() => circle50105Page2());
+    return { h, g };
+  };
+  {
+    const { h, g } = mk();
+    await h.reader.showCircle(50105); await tick();
+    byAttr(h.root, "data-next")[0].click(); await tick();            // more() in flight
+    await h.reader.showRoom(); await tick();                         // the visitor goes back to the room
+    g.release(); await tick(); await tick();
+    assert.equal(h.reader.getState().view, "room");
+    assert.equal(byAttr(h.root, "data-say").length, 0, "the second page was not drawn over the room");
+    assert.equal(byAttr(h.root, "data-crumbs").length, 0);
+  }
+  {
+    const { h, g } = mk();
+    await h.reader.showCircle(50105); await tick();
+    byAttr(h.root, "data-next")[0].click(); await tick();
+    h.reader.destroy();
+    g.release(); await tick(); await tick();
+    assert.equal(h.root.children.length, 0, "a destroyed reader draws nothing when a late answer lands");
+  }
+});
+
+test("an unavailable history with lines keeps the lines and says so: it is never 'the whole circle'; no lines at all is not a blank", async () => {
+  const partial = circle50101({ history: "unavailable" });            // complete:true and history:unavailable together, with ten lines
+  const h = harness({ circles: { "50101|": partial } });
+  await h.reader.showCircle(50101); await tick();
+  assert.equal(byAttr(h.root, "data-say").length, 10, "every served line is still on screen");
+  const kinds = byAttr(h.root, "data-notice").map((n) => n.attrs["data-notice"]);
+  assert.ok(kinds.includes("unavailable"), "the unavailable history is said aloud");
+  assert.equal(kinds.includes("complete"), false, "and the circle is not called complete");
+  assert.doesNotMatch(text(h.root), /whole circle\.$|That is the whole circle/);
+  const empty = circle50101(); empty.find.circle_read.lines = []; empty.find.circle_read.says = 0;
+  const e = harness({ circles: { "50101|": empty } });
+  await e.reader.showCircle(50101); await tick();
+  const ek = byAttr(e.root, "data-notice").map((n) => n.attrs["data-notice"]);
+  assert.ok(ek.includes("unavailable"), "a read with no statements is not an answer-shaped blank");
+  assert.equal(ek.includes("complete"), false, "and it is not called complete");
+});
+
+test("a circles-shaped room answer with no history flag and nothing to show is 'could not say', not a blank card", async () => {
+  const r = roomFind(); delete r.find.history;
+  r.find.circles = { room: { says: 0, people: 0, top_circles: 0 }, yours: null, lines: [], folded: [], elsewhere: [], counts: {} };
+  const h = harness({ room: r });
+  await h.reader.showRoom(); await tick();
+  assert.equal(h.root.getAttribute("data-state"), "unavailable");
+  assert.deepEqual(byAttr(h.root, "data-notice").map((n) => n.attrs["data-notice"]), ["unavailable"]);
+  assert.equal(byAttr(h.root, "data-retry").length, 1);
+  assert.doesNotMatch(text(h.root), /Nobody has spoken here yet/, "and it does not claim the room was silent");
+});
+
+test("the circle's permalink keeps keyboard focus through a quiet refresh", async () => {
+  const h = harness({ circles: { "50101|": circle50101() }, hrefForCircle: (c) => `/conversations/#circle-${c}` });
+  await h.reader.showCircle(50101); await tick();
+  const link = byAttr(h.root, "data-key", "permalink")[0];
+  assert.ok(link, "the permalink is a keyed control");
+  assert.equal(link.attrs.href, "/conversations/#circle-50101");
+  link.focus();
+  await h.reader.refresh(); await tick();
+  assert.equal(doc.activeElement?.attrs["data-key"], "permalink", "focus came back to the link after the redraw");
+});
+
+test("the host can switch Reply on or off while the reader is open: the view is redrawn in place, not re-read or reset to the room", async () => {
+  const targets = [];
+  const h = harness({ circles: { "50101|": circle50101() }, canReply: false });
+  await h.reader.showCircle(50101); await tick();
+  assert.equal(byAttr(h.root, "data-reply").length, 0);
+  const reads = h.calls.length;
+  h.scroller.scrollTop = 120;
+  h.reader.setCanReply(true, (t) => targets.push(t.id));
+  assert.equal(h.reader.getState().view, "circle", "still in the same circle");
+  assert.equal(h.calls.length, reads, "nothing was asked of the office");
+  assert.equal(byAttr(h.root, "data-reply").length, 10, "each served say now carries Reply");
+  assert.equal(h.scroller.scrollTop, 120, "scroll kept");
+  byAttr(h.root, "data-reply", 50104)[0].click();
+  assert.deepEqual(targets, [50104], "the new handler is the one called");
+  h.reader.setCanReply(false);
+  assert.equal(byAttr(h.root, "data-reply").length, 0, "signed out: the buttons go");
+  assert.equal(h.reader.getState().view, "circle");
+});
+
+test("the column keeps ONE reader for a conversation, yet live metadata and canReply reach it: words are rewritten in place, the reader is not rebuilt or re-read", async () => {
+  const { createHomeColumn } = await import("../spectator/home-column.mjs");
+  const calls = [];
+  const source = { async room() { calls.push("room"); return roomFind(); }, async circle() { calls.push("circle"); return circle50101(); } };
+  const host = element("div");
+  const col = createHomeColumn({ doc, host });
+  const view = (over = {}, readerOver = {}) => ({ handle: "the-town", residentLink: false, key: "convo:t1|circles", kicker: "a conversation · live", title: "Cave Interior", region: "14 statements · 7 speakers",
+    door: { blocks: [] }, byline: "in this settlement", facts: [{ label: "now", value: "live: a conversation lasts the settlement" }, { label: "latest", value: "2026-11-14 20:14Z" }],
+    reader: { roomId: "t1", source, canReply: false, ...readerOver }, ...over });
+  col.open(view()); await tick(); await tick();
+  const reader = host.__circleReader;
+  assert.ok(reader);
+  byAttr(host, "data-circle", 50101)[0].click(); await tick(); await tick();
+  assert.equal(reader.getState().view, "circle");
+  assert.equal(byAttr(host, "data-reply").length, 0);
+  const reads = calls.length;
+  const targets = [];
+  // the same key again, with what the office says now: gone quiet, new counts, and the visitor is now signed in
+  col.open(view({ kicker: "a conversation · gone quiet", region: "20 statements · 8 speakers", byline: "in an earlier settlement",
+    facts: [{ label: "now", value: "gone quiet: an earlier settlement's" }, { label: "latest", value: "2026-11-14 20:40Z" }] }, { canReply: true, onReply: (t) => targets.push(t.id) }));
+  assert.equal(host.__circleReader, reader, "the same reader: nothing was rebuilt");
+  assert.equal(reader.getState().view, "circle", "still in the circle the visitor opened");
+  assert.equal(calls.length, reads, "nothing was re-read for it");
+  assert.equal(text(find(host, (n) => n.className === "wv-homecol-kicker")[0]), "a conversation · gone quiet");
+  assert.equal(text(find(host, (n) => n.className === "wv-homecol-meta")[0]), "20 statements · 8 speakers");
+  assert.equal(text(find(host, (n) => n.className === "wv-homecol-byline")[0]), "in an earlier settlement");
+  const dds = find(host, (n) => n.tagName === "DD").map(text);
+  assert.deepEqual(dds, ["gone quiet: an earlier settlement's", "2026-11-14 20:40Z"], "the facts follow the office");
+  assert.equal(byAttr(host, "data-reply").length, 10, "canReply reached the open reader");
+  byAttr(host, "data-reply", 50104)[0].click();
+  assert.deepEqual(targets, [50104], "and so did the new reply handler");
+});
+
+test("the SAY sheet: a sheet that is opened plainly starts with no reply target; only an explicit Reply sets one (SOURCE PIN, the weakest instrument: the sheet lives inside mountViewer)", async () => {
+  const SRC = (await import("node:fs")).readFileSync(new URL("../spectator/viewer.mjs", import.meta.url), "utf8");
+  const open = SRC.slice(SRC.indexOf("function openSayBox()"), SRC.indexOf("function syncSayBox"));
+  assert.match(open, /sayReplyTo = null;[^\n]*\n\s*const sheet = document\.createElement\("div"\)/, "a fresh sheet clears the previous target before it is built");
+  const set = SRC.slice(SRC.indexOf("function setReplyTarget"), SRC.indexOf("function openSayBox()"));
+  assert.ok(set.indexOf("openSayBox()") < set.indexOf("sayReplyTo = {"), "an explicit Reply opens the sheet FIRST and sets its target after, so the chosen target survives the open");
 });

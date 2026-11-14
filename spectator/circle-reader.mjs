@@ -38,6 +38,9 @@ export const READER_WORDS = Object.freeze({
   folded: "Some of this room's older talk is folded and is not shown here.",
   foldedMore: "Circles not shown here:",
   complete: "That is the whole circle.",
+  partial: "The office could not read all of this circle's history, so what is shown may not be the whole circle.",
+  unknown: "The office did not say whether this room's history is complete, so nothing here can be called the whole of it.",
+  noLines: "This read carried no statements, so we cannot say what was said here.",
   paged: "This circle is long, so it is shown in pages.",
   context: "Earlier in this circle, for context",
   broken: "A reply whose parent is not in this read",
@@ -123,6 +126,8 @@ export function modelOfRoom(envelope) {
     counts: circles.counts ?? null,
     unavailable: history === "unavailable",
     empty: history === "complete" && nothingToShow,
+    // no flag at all and nothing to draw: the office did not say, so the card must not be an answer-shaped blank
+    unknown: history === null && nothingToShow,
   };
 }
 
@@ -160,6 +165,8 @@ export function modelOfCircle(envelope) {
     sparks, sparksNote: s(find.sparks_note),
     room: { id: room.id, place: s(room.place), live: room.live === true },
     unavailable: history === "unavailable" && !lines.length,
+    // lines served alongside an unavailable history are kept and drawn, but never called the whole circle
+    partial: history === "unavailable" && lines.length > 0,
   };
 }
 
@@ -307,6 +314,8 @@ function metaLine(parts) { return parts.filter(Boolean).join(" · "); }
 export function createCircleReader({ doc, host, source, roomId = null, canReply = false, onReply = null, onState = null, onNavigate = null, hrefForCircle = null, labels = null, scroller = null } = {}) {
   if (!doc || !host || !source) throw new Error("createCircleReader needs a document, a host and a source");
   const W = { ...READER_WORDS, ...(labels ?? {}) };
+  // the host may learn that the visitor can (or can no longer) act while the reader is open: both are read at draw time, never frozen at mount
+  let replyOn = !!canReply, replyFn = onReply;
   const root = build(doc, "div", "cr-root");
   attr(root, "data-circle-reader", "");
   attr(root, "data-state", "loading");
@@ -385,10 +394,10 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     head.appendChild(who); head.appendChild(when);
     li.appendChild(head);
     li.appendChild(build(doc, "span", "cr-said", l.said));       // content: textContent, never markup
-    if (canReply && isId(l.id) && !context) {
+    if (replyOn && isId(l.id) && !context) {
       const r = button(W.reply, `reply-${l.id}`, { "data-reply": l.id, "aria-label": `${W.reply} to ${s(l.handle)}` });
       r.className = "cr-reply";
-      r.addEventListener("click", () => { if (onReply) onReply({ id: l.id, handle: s(l.handle), said: s(l.said), at_ms: l.at_ms ?? null, circle: l.circle ?? null }); });
+      r.addEventListener("click", () => { if (replyFn) replyFn({ id: l.id, handle: s(l.handle), said: s(l.said), at_ms: l.at_ms ?? null, circle: l.circle ?? null }); });
       li.appendChild(r);
     }
     return li;
@@ -452,6 +461,12 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
       root.appendChild(n);
       root.appendChild(retryButton());
       setState("unavailable", { reason: "history" });
+      return;
+    }
+    if (m.unknown) {
+      root.appendChild(notice("unavailable", m.note ? `${W.unknown} ${m.note}` : W.unknown));
+      root.appendChild(retryButton());
+      setState("unavailable", { reason: "unknown" });
       return;
     }
     if (m.empty) { root.appendChild(notice("none", W.none)); setState("room", { empty: true }); return; }
@@ -556,6 +571,7 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     if (hrefForCircle && hrefForCircle(first.circle)) {
       const a = build(doc, "a", "cr-meta", "link to this circle");
       attr(a, "href", hrefForCircle(first.circle));
+      attr(a, "data-key", "permalink");           // a refresh redraws the view: the key is how focus on the link comes back
       head.appendChild(a);
     }
     root.appendChild(head);
@@ -581,9 +597,13 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
       const nb = button(state.loadingMore ? "…" : W.more, "next", { "data-next": "" });
       nb.addEventListener("click", () => more());
       root.appendChild(nb);
-    } else if (lastModel.complete && lastModel.history !== "folded") {
+    } else if (!all.length) {
+      root.appendChild(notice("unavailable", W.noLines));
+    } else if (lastModel.complete && lastModel.history !== "folded" && !models.some((m) => m.partial)) {
       root.appendChild(notice("complete", W.complete));
     }
+    // the lines the office did serve stay on screen; an unavailable history is said aloud and never called the whole circle
+    if (models.some((m) => m.partial)) root.appendChild(notice("unavailable", lastModel.note ? `${W.partial} ${lastModel.note}` : W.partial));
     if (lastModel.history === "folded") root.appendChild(notice("folded", lastModel.note || W.folded));
     if (first.memoryNote) root.appendChild(notice("folded", first.memoryNote));
     if (first.sparks) {
@@ -661,10 +681,12 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     const last = state.pages[state.pages.length - 1];
     if (!last?.next || state.loadingMore) return;
     state.loadingMore = true;
+    const mine = state.token;            // a later navigation (another circle, Back, destroy) supersedes this answer
     const k = keep();
     let answer;
     try { answer = await source.circle(last.next.circle, last.next.after); } catch (e) { answer = { error: String(e?.message ?? e) }; }
     state.loadingMore = false;
+    if (mine !== state.token) return;
     if (refused(answer, "circle")) { drawCircle(state.pages); root.appendChild(notice("unavailable", `${W.unavailable} ${whyOf(answer)}`.trim())); restore(k); return; }
     state.pages.push(modelOfCircle(answer));
     drawCircle(state.pages);
@@ -692,9 +714,13 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
 
   // ── refresh: patch in place, keep the reader where they were, offer what is new ──
   async function refresh({ quiet = true } = {}) {
+    // every answer below is bound to the navigation it was asked in: a poll that is slow while the visitor opens a circle, presses Back
+    // or the host destroys the reader is dropped, never drawn over what they chose since
+    const mine = state.token;
     if (state.view === "room") {
       let answer;
       try { answer = await source.room(state.roomId); } catch { return; }          // a failed background refresh leaves the last good view standing
+      if (mine !== state.token) return;
       if (refused(answer, "room")) return;
       const next = modelOfRoom(answer);
       const oldIds = new Set((state.roomModel?.stubs ?? []).map((x) => String(x.circle)));
@@ -709,14 +735,15 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
       return;
     }
     // circle view: re-read the pages the reader holds, by the served continuations
-    const k0 = keep();
     const pages = [];
     let answer;
     try { answer = await source.circle(state.circleId); } catch { return; }
+    if (mine !== state.token) return;
     if (refused(answer, "circle")) return;
     pages.push(modelOfCircle(answer));
     for (let i = 1; i < state.pages.length && pages[i - 1].next; i++) {
       try { answer = await source.circle(pages[i - 1].next.circle, pages[i - 1].next.after); } catch { return; }
+      if (mine !== state.token) return;
       if (refused(answer, "circle")) return;
       pages.push(modelOfCircle(answer));
     }
@@ -724,11 +751,11 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     const fresh = ids.filter((id) => !state.shown.has(id));
     if (quiet && fresh.length) {
       state.pending = { pages, count: fresh.length };
-      drawCircle(state.pages); restore(k0);
+      const k = keep(); drawCircle(state.pages); restore(k);       // scroll and focus are read when the view is redrawn, not before the wait
       return;
     }
     state.pages = pages;
-    drawCircle(pages); restore(k0);
+    const k = keep(); drawCircle(pages); restore(k);
   }
   function applyPending() {
     const p = state.pending; state.pending = null;
@@ -740,11 +767,25 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
   }
 
   function setReplyTarget(t) { state.replyTarget = t ?? null; }
+  // The host learned something about the visitor (signed in, signed out) while the reader was open: the Reply buttons follow, and the view
+  // is redrawn in place, keeping scroll and focus, never re-asked and never reset to the room.
+  function setCanReply(on, handler) {
+    if (handler !== undefined) replyFn = handler;
+    const next = !!on;
+    if (next === replyOn) return;
+    replyOn = next;
+    const shown = root.getAttribute("data-state");
+    const k = keep();
+    if (shown === "circle" && state.pages.length) drawCircle(state.pages);
+    else if (shown === "room" && state.roomModel) drawRoom(state.roomModel);
+    else return;
+    restore(k);
+  }
   function destroy() { state.token++; clear(root); if (root.parentElement) root.parentElement.removeChild(root); }
 
   return {
     root,
-    showRoom, showCircle, refresh, setReplyTarget, destroy,
+    showRoom, showCircle, refresh, setReplyTarget, setCanReply, destroy,
     getState: () => ({ view: state.view, roomId: state.roomId, circleId: state.circleId, pages: state.pages.length, pending: state.pending ? state.pending.count : 0, replyTarget: state.replyTarget }),
   };
 }

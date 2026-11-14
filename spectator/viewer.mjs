@@ -17695,15 +17695,16 @@ export function mountViewer(appEl) {
   /** a Reply pressed in a circle: open the SAY sheet (or reuse the open one) with that say as the target */
   function setReplyTarget(target) {
     if (!target || target.id === undefined || target.id === null) return;
-    sayReplyTo = { id: target.id, handle: String(target.handle ?? ""), said: String(target.said ?? "") };
     let sheet = root.querySelector(".wv-say-sheet");
-    if (!sheet) { openSayBox(); sheet = root.querySelector(".wv-say-sheet"); }
+    if (!sheet) { openSayBox(); sheet = root.querySelector(".wv-say-sheet"); }     // a fresh sheet starts with no target; the one chosen is set below
+    sayReplyTo = { id: target.id, handle: String(target.handle ?? ""), said: String(target.said ?? "") };
     if (sheet) { renderReplyTarget(sheet); sheet.scrollIntoView?.({ behavior: "smooth", block: "nearest" }); $(sheet, ".wv-say-text")?.focus(); }
   }
   function openSayBox() {
     const host = $(root, ".wv-actions-host");
     if (!host) return;
     root.querySelectorAll(".wv-act-sheet").forEach((sheet) => sheet.remove());
+    sayReplyTo = null;                 // a sheet that is opened is empty, and so is its target: a reply is carried only by an explicit Reply (setReplyTarget)
     const sheet = document.createElement("div");
     sheet.className = "wv-act-sheet wv-say-sheet";
     sheet.dataset.mode = "say";
@@ -17727,7 +17728,7 @@ export function mountViewer(appEl) {
       + `<p class="wv-act-answer" hidden></p>`
       + `<div class="wv-say-heard" hidden></div>`;
     host.appendChild(sheet);
-    renderReplyTarget(sheet);          // a target chosen before the sheet existed (setReplyTarget opens it) is shown at once
+    renderReplyTarget(sheet);          // hidden: the new sheet has no target
     // the numbers not yet in hand are asked of the office now, and the note says them when they land
     if (!convoMeta) loadConversations().then(() => {
       const note = sheet.isConnected ? $(sheet, ".wv-say-note") : null;
