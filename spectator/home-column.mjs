@@ -59,6 +59,11 @@
 // in, so nothing here imports the viewer and every decision above can be
 // falsified without a browser.
 
+// THE CIRCLE READER (CORE-82). A conversation's column hosts the one shared reader (spectator/circle-reader.mjs), which draws a room's top
+// circles and lets a visitor open one; the column keeps its host, its badge's link and its scroll. The reader is I/O-injected like this
+// module: the view hands in `reader: { roomId, source }`, and nothing here fetches.
+import { createCircleReader, READER_CSS, SAY_REPLY_CSS } from "./circle-reader.mjs";
+
 // ── the safe seams ──────────────────────────────────────────────────────────
 
 /** An href this column will hang on an anchor, or null. http(s) and nothing
@@ -238,7 +243,7 @@ export function isParcelMark(mark) {
  * renders blank: every state below ends in either prose or one line saying why
  * there is none.
  */
-export function homeColumnModel({ handle, kicker, title, region, leadImage, door = null, error = null, loading = false, residentHref = null, titleLink = false, parcelId = null, canEnter = false, byline = null, residents = [], ownWords = null, enterId = null, facts = [], relations = [], back = null, icons = [], stamps = null, footprint = null, bars = [], tokens = [], copyId = null, pronouns = null, footerLink = null } = {}) {
+export function homeColumnModel({ handle, kicker, title, region, leadImage, door = null, error = null, loading = false, residentHref = null, titleLink = false, parcelId = null, canEnter = false, byline = null, residents = [], ownWords = null, enterId = null, facts = [], relations = [], back = null, icons = [], stamps = null, footprint = null, bars = [], tokens = [], copyId = null, pronouns = null, footerLink = null, reader = null } = {}) {
   const who = String(handle ?? "").trim();
   // THE DOOR SPEAKS ONLY FOR ITS OWN PARCEL (POS-584, Darko 2026-10-11: "Sol's
   // parcel got yeeted"). There is one home page per handle, so a household's
@@ -330,6 +335,10 @@ export function homeColumnModel({ handle, kicker, title, region, leadImage, door
     // A LINK OUT AT THE FOOT, for a view whose whole is elsewhere (POS-779: "all conversations" → /conversations/#<thread>). Only a
     // same-origin path is hung (`safeSitePath`); anything else is no link at all rather than a cleaned one.
     footerLink: footerLink && safeSitePath(footerLink.href) ? { href: safeSitePath(footerLink.href), text: String(footerLink.text ?? "").trim() || "more" } : null,
+    // THE CIRCLE READER'S SLOT (CORE-82): a conversation's view hands in `{ roomId, source, canReply?, onReply? }`; the column mounts the
+    // shared reader where the flat statements stood. The flat `door.blocks` stay, drawn only when the reader says it could not read the
+    // room (an unavailable read is said, and the words the map already holds stand in; it is never drawn as an empty room).
+    reader: reader && reader.source && reader.roomId !== undefined && reader.roomId !== null ? reader : null,
     // the way back to the mark this column was reached from, named
     back: back && String(back.id ?? "").trim()
       ? { id: String(back.id).trim(), name: String(back.name ?? back.id).trim() } : null,
@@ -621,8 +630,28 @@ export function renderHomeColumn(doc, host, model, { imagePath = null } = {}) {
   }
 
   const body = el(doc, "div", "wv-homecol-body");
-  appendBlocks(doc, body, model.blocks, imagePath);
-  scroll.appendChild(body);
+  if (model.reader) {
+    // the reader takes the body's place; the flat words wait behind it and show only if the reader could not read the room
+    const mount = el(doc, "div", "wv-homecol-reader");
+    scroll.appendChild(mount);
+    const note = el(doc, "p", "wv-homecol-flatnote");
+    note.textContent = "The circles could not be read, so these are the words the map already holds:";
+    body.hidden = true; note.hidden = true;
+    const reader = createCircleReader({
+      doc, host: mount, source: model.reader.source, roomId: model.reader.roomId,
+      canReply: !!model.reader.canReply, onReply: model.reader.onReply ?? null, hrefForCircle: model.reader.hrefForCircle ?? null,
+      onState: (st) => { const flat = st === "unavailable" && model.blocks.length > 0; body.hidden = !flat; note.hidden = !flat; },
+    });
+    host.__circleReader = reader;
+    appendBlocks(doc, body, model.blocks, imagePath);
+    scroll.appendChild(note);
+    scroll.appendChild(body);
+    reader.showRoom();
+  } else {
+    host.__circleReader = null;
+    appendBlocks(doc, body, model.blocks, imagePath);
+    scroll.appendChild(body);
+  }
 
   // ✦ AND THE FOOTPRINT, side by side: what backs it and how big it is, as shapes
   const fp = model.footprint && typeof doc.createElementNS === "function" ? model.footprint : null;
@@ -892,6 +921,7 @@ export function createHomeColumn({ doc, host, readHome, imagePath = null, reside
       copyId: view.copyId ?? null,
       pronouns: view.pronouns ?? null,
       footerLink: view.footerLink ?? null,
+      reader: view.reader ?? null,
     }), { imagePath });
   };
 
@@ -932,7 +962,9 @@ export function createHomeColumn({ doc, host, readHome, imagePath = null, reside
     return true;
   }
 
-  return { open, close, isOpen: () => shown !== null, shownKey: () => shown };
+  // the circle reader refreshes itself in place (it keeps the reader's scroll and focus and offers new says); the column never repaints for it
+  const refreshReader = () => host?.__circleReader?.refresh({ quiet: true });
+  return { open, close, isOpen: () => shown !== null, shownKey: () => shown, refreshReader, reader: () => host?.__circleReader ?? null };
 }
 
 // ── the dress ───────────────────────────────────────────────────────────────
@@ -976,6 +1008,9 @@ export const HOME_COLUMN_CSS = `
 .wv-homecol-home-who { font-weight:600; }
 .wv-homecol-home-via { color:var(--muted, #9aa); font-size:.74rem; }
 .wv-homecol-body { color:var(--paper); font-size:.87rem; line-height:1.62; }
+.wv-homecol-body[hidden], .wv-homecol-flatnote[hidden] { display:none; }
+.wv-homecol-reader { color:var(--paper); font-size:.87rem; line-height:1.55; --cr-rule:var(--line); --cr-accent:var(--amber); }
+.wv-homecol-flatnote { color:var(--dim); font-size:.8rem; margin:.8rem 0 0; }
 .wv-homecol-body h1, .wv-homecol-body h2, .wv-homecol-body h3,
 .wv-homecol-body h4, .wv-homecol-body h5, .wv-homecol-body h6 {
   margin:1rem 0 .3rem; font-size:.95rem; color:var(--amber); letter-spacing:.01em; }
@@ -1070,4 +1105,4 @@ export const HOME_COLUMN_CSS = `
   .wv-minimap.has-homecol .wv-mapctl { right:calc(var(--wv-homecol-w, min(26rem, 92%)) + 10px); }
   .wv-minimap.has-homecol .wv-walkdesk { right:calc(var(--wv-homecol-w, min(26rem, 92%)) + 10px); }
 }
-`;
+${READER_CSS}${SAY_REPLY_CSS}`;
