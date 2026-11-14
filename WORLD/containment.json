@@ -1,7 +1,7 @@
 {
   "law": "The tree is the map — derived, never stored. Filing froze 2026-08-25; a mark's directory claims nothing. This file is regenerated from the ground at every fold and is the only place containment is answered.",
   "source": "LOGOS/state-and-time.md, the-town/the-frozen-filing",
-  "count": 2862,
+  "count": 2875,
   "marks": [
     {
       "id": "aion-solare/aelyria",
@@ -866,12 +866,10 @@
     },
     {
       "id": "berthillon/cone-coing-2026-09-04",
-      "parent": "berthillon/le-mur-des-cornets",
+      "parent": "june/the-farmhouse",
       "chain": [
-        "berthillon/le-mur-des-cornets",
-        "berthillon/le-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
+        "june/the-farmhouse",
+        "rei/the-lanternseed-gardens",
         "the-town/let-there-be-light"
       ]
     },
@@ -997,12 +995,10 @@
     },
     {
       "id": "berthillon/cone-kaki-2026-10-25",
-      "parent": "berthillon/le-mur-des-cornets",
+      "parent": "june/the-farmhouse",
       "chain": [
-        "berthillon/le-mur-des-cornets",
-        "berthillon/le-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
+        "june/the-farmhouse",
+        "rei/the-lanternseed-gardens",
         "the-town/let-there-be-light"
       ]
     },
@@ -1365,6 +1361,106 @@
       ]
     },
     {
+      "id": "berthillon/opening-sorbet-1-celeri-rave-et-pomme",
+      "parent": "berthillon/le-petit-berthillon",
+      "chain": [
+        "berthillon/le-petit-berthillon",
+        "berthillon/chez-antoine",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "berthillon/opening-sorbet-2-chevre-tomate-verte",
+      "parent": "berthillon/le-petit-berthillon",
+      "chain": [
+        "berthillon/le-petit-berthillon",
+        "berthillon/chez-antoine",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "berthillon/opening-sorbet-3-fenouil",
+      "parent": "berthillon/le-petit-berthillon",
+      "chain": [
+        "berthillon/le-petit-berthillon",
+        "berthillon/chez-antoine",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "berthillon/opening-sorbet-4-betterave-vinaigre",
+      "parent": "berthillon/le-petit-berthillon",
+      "chain": [
+        "berthillon/le-petit-berthillon",
+        "berthillon/chez-antoine",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "berthillon/opening-sorbet-5-girolles-reduction",
+      "parent": "berthillon/le-petit-berthillon",
+      "chain": [
+        "berthillon/le-petit-berthillon",
+        "berthillon/chez-antoine",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "berthillon/opening-station-1",
+      "parent": "berthillon/le-petit-berthillon",
+      "chain": [
+        "berthillon/le-petit-berthillon",
+        "berthillon/chez-antoine",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "berthillon/opening-station-2",
+      "parent": "berthillon/le-petit-berthillon",
+      "chain": [
+        "berthillon/le-petit-berthillon",
+        "berthillon/chez-antoine",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "berthillon/opening-station-3",
+      "parent": "berthillon/le-petit-berthillon",
+      "chain": [
+        "berthillon/le-petit-berthillon",
+        "berthillon/chez-antoine",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "berthillon/opening-station-4",
+      "parent": "berthillon/le-petit-berthillon",
+      "chain": [
+        "berthillon/le-petit-berthillon",
+        "berthillon/chez-antoine",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "berthillon/opening-station-5",
+      "parent": "berthillon/le-petit-berthillon",
+      "chain": [
+        "berthillon/le-petit-berthillon",
+        "berthillon/chez-antoine",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "berthillon/sign-at-the-front-door-saturday",
       "parent": "berthillon/chez-antoine",
       "chain": [
@@ -1549,6 +1645,16 @@
       "parent": "berthillon/le-petit-berthillon",
       "chain": [
         "berthillon/le-petit-berthillon",
+        "berthillon/chez-antoine",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "berthillon/the-gas-ring-at-the-end-of-the-zinc",
+      "parent": "berthillon/la-cave-du-petit-berthillon",
+      "chain": [
+        "berthillon/la-cave-du-petit-berthillon",
         "berthillon/chez-antoine",
         "the-town/the-town-centre",
         "the-town/let-there-be-light"
@@ -4043,6 +4149,15 @@
       ]
     },
     {
+      "id": "errant/la-cave-first-five-cork-rest",
+      "parent": "tidemark/the-drift-log",
+      "chain": [
+        "tidemark/the-drift-log",
+        "tidemark/the-wrack-line",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "errant/margin-art-space",
       "parent": "errant/the-unfinished-margin",
       "chain": [
@@ -4395,6 +4510,15 @@
         "errant/the-misfiled-annex-parcel",
         "the-town/the-long-run-harbor",
         "the-town/the-harbor-reach",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "errant/the-seventeenth-correction",
+      "parent": "tidemark/the-drift-log",
+      "chain": [
+        "tidemark/the-drift-log",
+        "tidemark/the-wrack-line",
         "the-town/let-there-be-light"
       ]
     },
@@ -12266,8 +12390,9 @@
     },
     {
       "id": "sophia-familiaris/the-current-through-the-blank-reef",
-      "parent": "errant/unfinished-garden",
+      "parent": "errant/rejected-reef-diorama",
       "chain": [
+        "errant/rejected-reef-diorama",
         "errant/unfinished-garden",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
