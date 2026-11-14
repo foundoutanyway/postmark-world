@@ -172,6 +172,8 @@ test("WLD-173 · the lint refuses a spark missing a required part, over the head
     ["rooms-twice", { ...base, rooms: ["r1", "r1"] }, "x", /rooms: names a room twice/],
     ["circle-two-rooms", { ...base, rooms: ["r1", "r2"], circle: 7, circle_path: [7] }, "x", /circle: 7 needs rooms: \[<its one source room>\]/],
     ["empty-rooms-small", { ...base, rooms: [], extent: "{w: 60, h: 60}" }, "x", /stands in the locked circle: extent \{w: 120, h: 120\}/],
+    // the unpublished singular field has no alias: refused by name, not read as no room in the locked circle
+    ["old-room", { ...base, room: "r1" }, "x", /room: is not a spark field — a spark's room set is rooms:/],
     ["until-before", { ...base, experienced_until: "2026-11-14T17:00:00Z" }, "x", /is before experienced_at/],
     ["bad-link", { ...base, parent_spark: "not an id" }, "x", /parent_spark: names one spark by id/],
     ["slot", { ...base, slot: "name", value: "x" }, "x", /carries no slot\/value/],
@@ -187,7 +189,7 @@ test("WLD-173 · the lint refuses a spark missing a required part, over the head
   // the zero control (review 391 F1): a one-speaker room's point, 0 × 0 in finite numbers, is a lawful place
   file(repo, "sbx-ana", "point-room", { ...base, rooms: ["r1"], extent: "{w: 0, h: 0}" }, "We spoke at the post.");
   // the room-set controls: an empty list is no room (the locked circle holds), and an event's every room is kept,
-  // with the place it was written with (how rooms combine is open on POS-1035, so the lint judges no combined place)
+  // with the place it was written with (the lint holds no room's bounds, so it judges no envelope; that is roomsPlace's, below)
   file(repo, "sbx-ana", "empty-rooms", { ...base, rooms: [] }, "It rained on the quay, alone.");
   file(repo, "sbx-ana", "event-rooms", { ...base, rooms: ["r1", "r2", "r3"], event: "ev-1", extent: "{w: 200, h: 80}" }, "The whole opening.");
   const out = lint(repo);

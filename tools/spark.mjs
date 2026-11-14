@@ -124,6 +124,8 @@ export function sparkProblems(rec, { radiusM = null, isDate } = {}) {
   if (path?.length && isActNumber(rec.circle) && path.at(-1) !== rec.circle) say(`circle_path: ends at ${JSON.stringify(path.at(-1))}, not at circle: ${rec.circle}`);
   if (path?.length && new Set(path).size !== path.length) say(`circle_path: names a circle twice — a spine has no loop`);
   // the rooms (18:46Z, "All of them, combined"): a JSON array of room ids, each once
+  // The unpublished singular `room:` has no alias: refused, never read as no room (which the locked circle would take).
+  if (rec.room !== undefined) say(`room: is not a spark field — a spark's room set is rooms: [<room id>, …], every room id, one line of JSON (got room: ${JSON.stringify(rec.room)})`);
   const rooms = listOf(rec.rooms);
   if (rec.rooms !== undefined && (!rooms || !rooms.every((r) => typeof r === "string" && r.trim() !== "")))
     say(`rooms: is a JSON array of room ids (got ${JSON.stringify(rec.rooms)})`);

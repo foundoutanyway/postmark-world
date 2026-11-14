@@ -423,7 +423,8 @@ parent_spark: pica/the-lamp-song
   refused, never defaulted or coerced.
 - **The rooms:** `rooms` is one line of strict JSON, a list of room ids, each once. An
   event's spark lists every qualifying room ("All of them, combined", 18:46Z); a
-  circle's spark lists its one source room.
+  circle's spark lists its one source room. A singular `room:` is refused: it has no
+  alias, and is never read as no room.
 - **The place:** its rooms', frozen when made. For one room, the centre and size of
   the room's bounds. A one-speaker room's bounds may keep a zero side (a point or a
   line) and are kept so, with no padding; such a spark is placed by where its points
