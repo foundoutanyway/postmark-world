@@ -411,7 +411,7 @@ extent: {w: 120, h: 120}
 recounting: We sang the ferry song until the lamps came on.
 experienced_at: 2026-11-14T20:03:00Z
 experienced_until: 2026-11-14T20:41:00Z
-room: <the office's room key>
+rooms: ["<the circle's source room id>"]
 circle: 50102
 circle_path: [50101, 50102]
 present: ["<household id>", "<household id>"]
@@ -421,16 +421,21 @@ parent_spark: pica/the-lamp-song
 - **Required:** `recounting`, `experienced_at`, and the place (`at`, `extent`): four
   finite numbers as written, the sides 0 or more. A missing, null or quoted value is
   refused, never defaulted or coerced.
-- **The place:** the room's, frozen when made: the centre and size of the room's
-  bounds. A one-speaker room's bounds may keep a zero side (a point or a line) and
-  are kept so, with no padding; such a spark is placed by where its points lie. With
-  no `room`, its `extent` is the locked circle, twice `the-town/spark-radius` (60 m),
-  about the maker's `at`.
+- **The rooms:** `rooms` is one line of strict JSON, a list of room ids, each once. An
+  event's spark lists every qualifying room ("All of them, combined", 18:46Z); a
+  circle's spark lists its one source room.
+- **The place:** its rooms', frozen when made. For one room, the centre and size of
+  the room's bounds. A one-speaker room's bounds may keep a zero side (a point or a
+  line) and are kept so, with no padding; such a spark is placed by where its points
+  lie. How several rooms combine into one place is still open (POS-1035), so the
+  record carries the place it is written with. With no `rooms`, or an empty list, its
+  `extent` is the locked circle, twice `the-town/spark-radius` (60 m), about the
+  maker's `at`.
 - **`present`:** the households with a public act at the place in its window (CORE-70
   call 4), as the Office spells a household.
 - **The circle:** `circle` (a say's act number) needs `circle_path` (its ancestry,
-  top circle first, ending at `circle`) and `room`.
-- **Lists** (`circle_path`, `acts`, `present`) are one line of strict JSON, the lane
+  top circle first, ending at `circle`) and `rooms` naming its one source room.
+- **Lists** (`rooms`, `circle_path`, `acts`, `present`) are one line of strict JSON, the lane
   `points` and `timetable` use. **Text** fields are one line: no newline, nothing
   after a `#` (the reader takes it as a comment), and none opening with `{` or `[`.
 - **`parent_spark`** names one spark, `<by>/<slug>`: the maker's own link, never its

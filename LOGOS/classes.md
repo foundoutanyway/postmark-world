@@ -2070,12 +2070,15 @@ all marks have".
 
 - **A spark is a subclass of mark.** Its body is its headline, its name, held to the mark's 150 characters. Its
   parts are its own properties, on top of every core part a mark has: `recounting` and `experienced_at` are required;
-  `experienced_until`, `room`, `circle`, `circle_path`, `event`, `picture`, `image_prompt`, `acts`, `present` and
+  `experienced_until`, `rooms`, `circle`, `circle_path`, `event`, `picture`, `image_prompt`, `acts`, `present` and
   `parent_spark` are optional. Its time is its own property, not its filing date: an event's doors-open to its end,
   or its circle's first say to its last (call 22). No length, age or span cap is ruled beyond the headline's.
-- **Its place: neither sited nor anchored** (call 22, replacing 12 and 17). Its `at` and `extent` are its root
-  conversation's room, frozen when it is made; a later change to the room never moves it. With no conversation the
-  maker chooses its `at`, "with an extent locked at 60 radius (base earshot)" (09:37), so 120 × 120 m
+- **Its place: neither sited nor anchored** (call 22, replacing 12 and 17). Its `at` and `extent` are its rooms',
+  frozen when it is made; a later change to a room never moves it. Which rooms (18:46Z): "All of them, combined."
+  An event's spark keeps every qualifying room at its place in its window, every room id (`rooms`) and all their
+  circles, with no ranking; a circle's spark names its one source room. How several rooms' places combine into one
+  place is not yet settled; the spark carries the place it is made with. With no room the maker chooses its `at`,
+  "with an extent locked at 60 radius (base earshot)" (09:37), so 120 × 120 m
   (`the-town/spark-radius`). It stands in the ground it is in, as any mark does, so its standing and its money rules
   are a mark's; it never contains anything, and it is no land claim.
 - **Who contests it.** "It isn't sited, so sited marks in its extent don't contest it" (09:37), and it does not
@@ -2083,7 +2086,7 @@ all marks have".
   holder's word" (11:1x): a spark on a household's parcel answers that household's welcomed, neutral or opposed, as
   any mark laid on their ground does, and the town keeps its word over a spark as over every mark.
 - **Its circle, and the tree** (call 23; 10:46). A spark may tie to a circle (a say and its replies), a sub-spark to
-  a reply subtree, and the event's spark to the whole room. Anyone may spark a circle, and many sparks per circle
+  a reply subtree, and the event's spark to all its rooms. Anyone may spark a circle, and many sparks per circle
   stand. "I think we can just use the circles as the spine for parents for now? maybe let sparks declare their
   parent if they want to as a field": the tree is the circles (`circle_path`, top circle first), so every spark on
   a circle shows every spark on the circles below it, and none is orphaned. The maker may name one spark as its own

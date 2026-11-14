@@ -19,6 +19,13 @@
 //            sited marks and the market goes away (consent.mjs § IN THE MARKET).
 //   call 23  a spark ties to a circle, a sub-spark to a reply subtree, the event's
 //            spark to the whole room; anyone may spark a circle, many per circle.
+//   18:46Z   on which rooms (Wright, recording Darko): "All of them, combined." An
+//            event's spark keeps every qualifying room at its place in its window,
+//            every room id and all their circles, with no ranking. So the record
+//            names its rooms (`rooms`, a list); a circle's spark names its one
+//            source room. How several rooms' places combine into one place is a
+//            question still open on POS-1035, so nothing here derives or judges it:
+//            the spark's at/extent are what its maker wrote.
 //   10:46    "I think we can just use the circles as the spine for parents for
 //            now? maybe let sparks declare their parent if they want to as a
 //            field". The tree is the circles; a spark's own link is its own.
@@ -53,7 +60,7 @@ export { SPARK_CLASS, isSparkIn };
 
 /** Every spark property, in the record's order. The fold carries each (marks-fold.mjs § the published record). */
 export const SPARK_FIELDS = Object.freeze([
-  "recounting", "experienced_at", "experienced_until", "room", "circle", "circle_path",
+  "recounting", "experienced_at", "experienced_until", "rooms", "circle", "circle_path",
   "event", "picture", "image_prompt", "acts", "present", "parent_spark",
 ]);
 
@@ -101,7 +108,7 @@ export function sparkProblems(rec, { radiusM = null, isDate } = {}) {
   // with a default (x ?? 0, w ?? 1) and does string arithmetic on text, so a place that is not four
   // finite numbers would be published somewhere it never was (review 391 F1).
   const num = (v) => typeof v === "number" && Number.isFinite(v);
-  if (!rec.at || !rec.extent) say(`a spark needs at {x,y} and extent {w,h} — its place: its room's, frozen when made, or its maker's at with the locked circle`);
+  if (!rec.at || !rec.extent) say(`a spark needs at {x,y} and extent {w,h} — its place: its rooms', frozen when made, or its maker's at with the locked circle`);
   else if (!num(rec.at.x) || !num(rec.at.y)) say(`at: {x, y} are two finite numbers, as written (got ${JSON.stringify(rec.at)})`);
   // a one-speaker room's bounds may keep a zero side (a point or a line), and are kept as they are; never a negative one
   else if (!num(rec.extent.w) || !num(rec.extent.h) || rec.extent.w < 0 || rec.extent.h < 0)
@@ -115,9 +122,16 @@ export function sparkProblems(rec, { radiusM = null, isDate } = {}) {
   if (rec.circle === undefined && rec.circle_path !== undefined) say(`circle_path: names a spine but no circle: — the path ends at the spark's own circle`);
   if (path?.length && isActNumber(rec.circle) && path.at(-1) !== rec.circle) say(`circle_path: ends at ${JSON.stringify(path.at(-1))}, not at circle: ${rec.circle}`);
   if (path?.length && new Set(path).size !== path.length) say(`circle_path: names a circle twice — a spine has no loop`);
-  if (rec.circle !== undefined && rec.room === undefined) say(`circle: ${rec.circle} needs room: — a circle is spoken in a room, and the room is the spark's place`);
+  // the rooms (18:46Z, "All of them, combined"): a JSON array of room ids, each once
+  const rooms = listOf(rec.rooms);
+  if (rec.rooms !== undefined && (!rooms || !rooms.every((r) => typeof r === "string" && r.trim() !== "")))
+    say(`rooms: is a JSON array of room ids (got ${JSON.stringify(rec.rooms)})`);
+  else if (rooms && new Set(rooms).size !== rooms.length) say(`rooms: names a room twice`);
+  // a circle is spoken in one room, its source (POS-1035's room-set wire)
+  if (rec.circle !== undefined && rooms?.length !== 1)
+    say(`circle: ${rec.circle} needs rooms: [<its one source room>] — a circle is spoken in one room (got ${JSON.stringify(rec.rooms)})`);
   // the optional parts, each in its own shape
-  for (const k of ["room", "event", "picture", "image_prompt"])
+  for (const k of ["event", "picture", "image_prompt"])
     if (rec[k] !== undefined && !isText(rec[k])) say(`${k}: is text (got ${JSON.stringify(rec[k])})`);
   if (rec.acts !== undefined && !(listOf(rec.acts)?.every(isActNumber))) say(`acts: is a JSON array of act numbers (got ${JSON.stringify(rec.acts)})`);
   // who was there: the households with a public act at the place in its window (call 4), as the Office spells a household
@@ -129,7 +143,8 @@ export function sparkProblems(rec, { radiusM = null, isDate } = {}) {
     else if (link === rec.id) say(`${SPARK_LINK}: names this spark itself`);
   }
   // a standalone spark's place is its maker's at and the locked circle (09:37)
-  if (rec.room === undefined && rec.extent && radiusM != null && (rec.extent.w !== 2 * radiusM || rec.extent.h !== 2 * radiusM))
+  // none, or an empty list, is no room: an empty set is not a way out of the locked circle
+  if (!(rooms?.length) && rec.extent && radiusM != null && (rec.extent.w !== 2 * radiusM || rec.extent.h !== 2 * radiusM))
     say(`a spark with no room stands in the locked circle: extent {w: ${2 * radiusM}, h: ${2 * radiusM}} about its at (a ${radiusM} m radius, the earshot; got ${JSON.stringify(rec.extent)})`);
   return out;
 }
@@ -157,12 +172,16 @@ export const sparksBelow = (sparks, circle) => (sparks ?? []).filter((s) => {
   return !!p && p.indexOf(circle) >= 0 && p.indexOf(circle) < p.length - 1;
 });
 
-/** The sparks below one spark: those on circles under its own circle, or for a spark with no circle (the event's), every circle spark in its room. */
+/** A spark's rooms, as written, or []. */
+export const roomsOf = (s) => listOf(s?.rooms) ?? [];
+
+/** The sparks below one spark: those on circles under its own circle, or for a spark with no circle (the event's), every circle spark in any of its rooms, and none from another room. */
 export function sparkChildren(spark, sparks) {
   const own = circlePathOf(spark);
   if (own) return sparksBelow(sparks, own.at(-1)).filter((s) => s !== spark && s.id !== spark.id);
-  if (spark?.room === undefined) return [];
-  return (sparks ?? []).filter((s) => s !== spark && s.id !== spark.id && circlePathOf(s) && String(s.room) === String(spark.room));
+  const mine = new Set(roomsOf(spark));
+  if (!mine.size) return [];
+  return (sparks ?? []).filter((s) => s !== spark && s.id !== spark.id && circlePathOf(s) && roomsOf(s).some((r) => mine.has(r)));
 }
 
 /** A spark's own link, the maker's choice, or null. It names; it does not place. */

@@ -1799,14 +1799,14 @@ export function fold({ marks, terrain, stakes, prev = null, tick = 0, dials = DI
       // them, the way `loot` is: undefined on every mark that wrote none, so a world with no such
       // thing serializes exactly as before.
       holder: mk.holder, capacity: mk.capacity, open: mk.open, portable: mk.portable,
-      // A SPARK'S OWN PARTS (WLD-173; CORE-70 calls 5, 9, 22, 23): the recounting, its time, its room,
+      // A SPARK'S OWN PARTS (WLD-173; CORE-70 calls 5, 9, 22, 23): the recounting, its time, its rooms,
       // its circle and the circle's path (the spine its tree is read from), its event, picture, image
       // prompt, acts, who was there, and the maker's own optional link. Carried as the record says them,
       // the way `holder` is: undefined on every mark that wrote none, so a world with no sparks
       // serializes exactly as before. tools/spark.mjs § SPARK_FIELDS is the list; spark.test.mjs holds
       // this line to it.
       recounting: mk.recounting, experienced_at: mk.experienced_at, experienced_until: mk.experienced_until,
-      room: mk.room, circle: mk.circle, circle_path: mk.circle_path, event: mk.event, picture: mk.picture,
+      rooms: mk.rooms, circle: mk.circle, circle_path: mk.circle_path, event: mk.event, picture: mk.picture,
       image_prompt: mk.image_prompt, acts: mk.acts, present: mk.present, parent_spark: mk.parent_spark,
       // WHO HOLDS IT, for a thing printed as held (POS-688): published but unplaced, so it carries
       // no `at` and the record names its holder instead. Undefined on every placed mark.

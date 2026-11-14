@@ -17745,7 +17745,7 @@
       ]
     },
     {
-      "id": "the-town/spark-room",
+      "id": "the-town/spark-rooms",
       "parent": "the-town/spark",
       "chain": [
         "the-town/spark",

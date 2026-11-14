@@ -72,7 +72,7 @@ const WHOLE = {
   kind: "spark", date: "2026-11-14T21:00:00Z", at: "{x: 4000, y: 4100}", extent: "{w: 36, h: 22}",
   recounting: "We sang the ferry song until the lamps came on, and Liv kept the time on a pan.",
   experienced_at: "2026-11-14T20:03:00Z", experienced_until: "2026-11-14T20:41:00Z",
-  room: "room-cave-interior-s170", circle: 50102, circle_path: [50101, 50102], event: "event-little-picas-opening",
+  rooms: ["room-cave-interior-s170"], circle: 50102, circle_path: [50101, 50102], event: "event-little-picas-opening",
   picture: "https://media.postmark.town/sbx-pica/lamps.png", image_prompt: "a cave hall lit by lanterns, singers in a ring",
   acts: [50102, 50103, 50107], present: ["hh:sbx-pica", "hh:sbx-liv"], parent_spark: "sbx-liv/the-opening",
 };
@@ -151,26 +151,37 @@ test("WLD-173 · the lint refuses a spark missing a required part, over the head
     ["long-headline", base, "x".repeat(151), /body is 151 chars; the cap is 150/],
     ["anchored", { ...base, parent: "terrain:the-inlet" }, "x", /a spark is never anchored/],
     ["wrong-circle", { ...base, extent: "{w: 60, h: 60}" }, "x", /stands in the locked circle: extent \{w: 120, h: 120\}/],
-    ["circle-no-path", { ...base, room: "r1", circle: 7 }, "x", /circle: 7 needs circle_path/],
-    ["path-wrong-end", { ...base, room: "r1", circle: 7, circle_path: [3, 5] }, "x", /circle_path: ends at 5, not at circle: 7/],
-    ["circle-no-room", { ...base, circle: 7, circle_path: [7] }, "x", /circle: 7 needs room/],
+    ["circle-no-path", { ...base, rooms: ["r1"], circle: 7 }, "x", /circle: 7 needs circle_path/],
+    ["path-wrong-end", { ...base, rooms: ["r1"], circle: 7, circle_path: [3, 5] }, "x", /circle_path: ends at 5, not at circle: 7/],
+    ["circle-no-room", { ...base, circle: 7, circle_path: [7] }, "x", /circle: 7 needs rooms: \[<its one source room>\]/],
+    // the room set (18:46Z, "All of them, combined"; POS-1035's wire): a JSON list of room ids, a circle's one source room
+    ["rooms-text", { ...base, rooms: "r1" }, "x", /rooms: is a JSON array of room ids/],
+    ["rooms-twice", { ...base, rooms: ["r1", "r1"] }, "x", /rooms: names a room twice/],
+    ["circle-two-rooms", { ...base, rooms: ["r1", "r2"], circle: 7, circle_path: [7] }, "x", /circle: 7 needs rooms: \[<its one source room>\]/],
+    ["empty-rooms-small", { ...base, rooms: [], extent: "{w: 60, h: 60}" }, "x", /stands in the locked circle: extent \{w: 120, h: 120\}/],
     ["until-before", { ...base, experienced_until: "2026-11-14T17:00:00Z" }, "x", /is before experienced_at/],
     ["bad-link", { ...base, parent_spark: "not an id" }, "x", /parent_spark: names one spark by id/],
     ["slot", { ...base, slot: "name", value: "x" }, "x", /carries no slot\/value/],
     // review 391 F1: a place is four finite numbers as written; rect() would default or garble anything else
-    ["no-y", { ...base, room: "r1", at: "{x: 6000}" }, "x", /at: \{x, y\} are two finite numbers/],
-    ["null-sides", { ...base, room: "r1", extent: { w: null, h: null } }, "x", /extent: \{w, h\} are two finite numbers/],
-    ["quoted-at", { ...base, room: "r1", at: { x: "6000", y: "6000" } }, "x", /at: \{x, y\} are two finite numbers/],
+    ["no-y", { ...base, rooms: ["r1"], at: "{x: 6000}" }, "x", /at: \{x, y\} are two finite numbers/],
+    ["null-sides", { ...base, rooms: ["r1"], extent: { w: null, h: null } }, "x", /extent: \{w, h\} are two finite numbers/],
+    ["quoted-at", { ...base, rooms: ["r1"], at: { x: "6000", y: "6000" } }, "x", /at: \{x, y\} are two finite numbers/],
     // review 391 F2: the old form would stand sited, ground the spark is not
     ["old-form", { ...Object.fromEntries(Object.entries(base).filter(([k]) => k !== "kind")), kind: "sited", class: "spark" }, "x", /class: spark is a spark, and a spark is written kind: spark/],
   ];
   for (const [slug, fields, body] of cases) file(repo, "sbx-ana", slug, fields, body);
   const ok = file(repo, "sbx-ana", "control", base, "It rained on the quay.");
   // the zero control (review 391 F1): a one-speaker room's point, 0 × 0 in finite numbers, is a lawful place
-  file(repo, "sbx-ana", "point-room", { ...base, room: "r1", extent: "{w: 0, h: 0}" }, "We spoke at the post.");
+  file(repo, "sbx-ana", "point-room", { ...base, rooms: ["r1"], extent: "{w: 0, h: 0}" }, "We spoke at the post.");
+  // the room-set controls: an empty list is no room (the locked circle holds), and an event's every room is kept,
+  // with the place it was written with (how rooms combine is open on POS-1035, so the lint judges no combined place)
+  file(repo, "sbx-ana", "empty-rooms", { ...base, rooms: [] }, "It rained on the quay, alone.");
+  file(repo, "sbx-ana", "event-rooms", { ...base, rooms: ["r1", "r2", "r3"], event: "ev-1", extent: "{w: 200, h: 80}" }, "The whole opening.");
   const out = lint(repo);
   assert.deepEqual(errorsFor(out, "sbx-ana", "control"), [], "control: the same spark, whole, is clean");
   assert.deepEqual(errorsFor(out, "sbx-ana", "point-room"), [], "control: a point room (0 × 0) is clean");
+  assert.deepEqual(errorsFor(out, "sbx-ana", "empty-rooms"), [], "control: an empty room list in the locked circle is clean");
+  assert.deepEqual(errorsFor(out, "sbx-ana", "event-rooms"), [], "control: an event's spark keeps all its rooms");
   for (const [slug, , , words] of cases) {
     const errs = errorsFor(out, "sbx-ana", slug);
     assert.ok(errs.some((l) => words.test(l)), `${slug}: refused by name (${words}); got:\n${errs.join("\n") || "(no error)"}`);
@@ -296,24 +307,29 @@ test("WLD-173 · its place is frozen: the ground around it moving never moves or
 
 test("WLD-173 · the circle tree: X and Y on A both show Z on reply circle B, nothing is orphaned, and parent_spark changes only its own link", () => {
   const A = 101, B = 102, C = 103;
-  const X = { id: "a/x", room: "r", circle: A, circle_path: [A] };
-  const Y = { id: "b/y", room: "r", circle: A, circle_path: [A] };
-  const Z = { id: "c/z", room: "r", circle: B, circle_path: [A, B] };
-  const W = { id: "d/w", room: "r", circle: C, circle_path: [A, B, C] };
-  const E = { id: "e/event", room: "r", event: "ev-1" };
-  const all = [X, Y, Z, W, E];
+  const D = 201, U = 301;
+  const X = { id: "a/x", rooms: ["r1"], circle: A, circle_path: [A] };
+  const Y = { id: "b/y", rooms: ["r1"], circle: A, circle_path: [A] };
+  const Z = { id: "c/z", rooms: ["r1"], circle: B, circle_path: [A, B] };
+  const W = { id: "d/w", rooms: ["r1"], circle: C, circle_path: [A, B, C] };
+  const V = { id: "f/v", rooms: ["r2"], circle: D, circle_path: [D] };
+  const O = { id: "g/other", rooms: ["r3"], circle: U, circle_path: [U] };
+  // the event's spark binds every qualifying room (18:46Z: "All of them, combined"): here r1 and r2, never r3
+  const E = { id: "e/event", rooms: ["r1", "r2"], event: "ev-1" };
+  const all = [X, Y, Z, W, V, O, E];
   const ids = (xs) => xs.map((s) => s.id).sort();
   assert.deepEqual(ids(sparksOn(all, A)), ["a/x", "b/y"], "many sparks per circle");
   assert.deepEqual(ids(sparkChildren(X, all)), ["c/z", "d/w"], "X shows Z");
   assert.deepEqual(ids(sparkChildren(Y, all)), ["c/z", "d/w"], "and Y shows Z too: nobody chose one of them");
   assert.deepEqual(ids(sparkChildren(Z, all)), ["d/w"]);
-  assert.deepEqual(ids(sparkChildren(E, all)), ["a/x", "b/y", "c/z", "d/w"], "the event's spark stands over the whole room");
+  assert.deepEqual(ids(sparkChildren(E, all)), ["a/x", "b/y", "c/z", "d/w", "f/v"], "the event's spark stands over every circle spark of all its rooms");
+  assert.ok(!sparkChildren(E, all).includes(O), "and over none from a room it does not keep");
   // no lost child: every circle spark is under every circle on its path
   for (const s of [X, Y, Z, W]) for (const c of s.circle_path.slice(0, -1)) assert.ok(sparksBelow(all, c).includes(s), `${s.id} is under ${c}`);
 
   // the maker's own link: Z names X. The tree does not move; only Z's own link says X.
   const Zl = { ...Z, parent_spark: "a/x" };
-  const linked = [X, Y, Zl, W, E];
+  const linked = [X, Y, Zl, W, V, O, E];
   assert.equal(ownLinkOf(Zl), "a/x");
   assert.equal(ownLinkOf(Z), null);
   assert.deepEqual(ids(sparkChildren(Y, linked)), ids(sparkChildren(Y, all)), "Y still shows Z: the own link is not the tree");
