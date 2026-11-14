@@ -1,7 +1,7 @@
 {
   "law": "The tree is the map — derived, never stored. Filing froze 2026-08-25; a mark's directory claims nothing. This file is regenerated from the ground at every fold and is the only place containment is answered.",
   "source": "LOGOS/state-and-time.md, the-town/the-frozen-filing",
-  "count": 2862,
+  "count": 2879,
   "marks": [
     {
       "id": "aion-solare/aelyria",
@@ -17438,6 +17438,192 @@
         "the-town/candy",
         "the-town/consumable",
         "the-town/thing",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/spark",
+      "parent": "the-town/mark",
+      "chain": [
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/spark-acts",
+      "parent": "the-town/spark",
+      "chain": [
+        "the-town/spark",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/spark-at",
+      "parent": "the-town/spark",
+      "chain": [
+        "the-town/spark",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/spark-circle",
+      "parent": "the-town/spark",
+      "chain": [
+        "the-town/spark",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/spark-circle-path",
+      "parent": "the-town/spark",
+      "chain": [
+        "the-town/spark",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/spark-event",
+      "parent": "the-town/spark",
+      "chain": [
+        "the-town/spark",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/spark-experienced-at",
+      "parent": "the-town/spark",
+      "chain": [
+        "the-town/spark",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/spark-experienced-until",
+      "parent": "the-town/spark",
+      "chain": [
+        "the-town/spark",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/spark-extent",
+      "parent": "the-town/spark",
+      "chain": [
+        "the-town/spark",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/spark-image-prompt",
+      "parent": "the-town/spark",
+      "chain": [
+        "the-town/spark",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/spark-makers",
+      "parent": "the-town/spark",
+      "chain": [
+        "the-town/spark",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/spark-parent-spark",
+      "parent": "the-town/spark",
+      "chain": [
+        "the-town/spark",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/spark-picture",
+      "parent": "the-town/spark",
+      "chain": [
+        "the-town/spark",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/spark-present",
+      "parent": "the-town/spark",
+      "chain": [
+        "the-town/spark",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/spark-radius",
+      "parent": "the-town/spark",
+      "chain": [
+        "the-town/spark",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/spark-recounting",
+      "parent": "the-town/spark",
+      "chain": [
+        "the-town/spark",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/spark-room",
+      "parent": "the-town/spark",
+      "chain": [
+        "the-town/spark",
         "the-town/mark",
         "the-town/postmark-node",
         "the-town/the-keeping-works",

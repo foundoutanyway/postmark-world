@@ -2056,6 +2056,43 @@ answers **"Moving to higher/lower floors has not been implemented yet. Coming So
   inside a dungeon do not overlap, as a room is. It is not a room unless the dungeon lists it in `rooms`, so it
   overlaps freely now (Darko, 2026-11-01 07:59: "Everything should be allowed to overlap like normal").
 
+## The spark — a moment remembered (CORE-70, ruled 2026-11-13 and 11-14; WLD-173)
+
+*A spark is a mark that remembers a moment: a time, a place and a recounting, with a 150-character headline for its name.*
+
+Rendered in the world as `the-town/spark`.
+
+Ruled by Darko in the CORE-70 sitting. Call 5: "a Spark should minimally just require like a time and a place and a
+recounting. And then could optionally have a conversation, an event, you know, actions, picture, prompt for the
+generated image, like the residents that attended". Call 9: "we can keep the 150 as being like a fundamental part of
+marks … the headline … a specific property of the Spark subclass of Mark … in addition to all of the core parts that
+all marks have".
+
+- **A spark is a subclass of mark.** Its body is its headline, its name, held to the mark's 150 characters. Its
+  parts are its own properties, on top of every core part a mark has: `recounting` and `experienced_at` are required;
+  `experienced_until`, `room`, `circle`, `circle_path`, `event`, `picture`, `image_prompt`, `acts`, `present` and
+  `parent_spark` are optional. Its time is its own property, not its filing date: an event's doors-open to its end,
+  or its circle's first say to its last (call 22). No length, age or span cap is ruled beyond the headline's.
+- **Its place: neither sited nor anchored** (call 22, replacing 12 and 17). Its `at` and `extent` are its root
+  conversation's room, frozen when it is made; a later change to the room never moves it. With no conversation the
+  maker chooses its `at`, "with an extent locked at 60 radius (base earshot)" (09:37), so 120 × 120 m
+  (`the-town/spark-radius`). It stands in the ground it is in, as any mark does, so its standing and its money rules
+  are a mark's; it never contains anything, and it is no land claim.
+- **Who contests it.** "It isn't sited, so sited marks in its extent don't contest it" (09:37), and it does not
+  contest them: the market's word never reaches a spark, and a spark's never reaches another mark. "Keep the parcel
+  holder's word" (11:1x): a spark on a household's parcel answers that household's welcomed, neutral or opposed, as
+  any mark laid on their ground does, and the town keeps its word over a spark as over every mark.
+- **Its circle, and the tree** (call 23; 10:46). A spark may tie to a circle (a say and its replies), a sub-spark to
+  a reply subtree, and the event's spark to the whole room. Anyone may spark a circle, and many sparks per circle
+  stand. "I think we can just use the circles as the spine for parents for now? maybe let sparks declare their
+  parent if they want to as a field": the tree is the circles (`circle_path`, top circle first), so every spark on
+  a circle shows every spark on the circles below it, and none is orphaned. The maker may name one spark as its own
+  parent (`parent_spark`); that is its own link, shown as such, and never moves it in the tree. It is not `parent:`,
+  which is the predicate's edge: a spark is never anchored.
+- **Private until put forward** (calls 8, 16 and 18). A draft spark is a private memory, on the household's own
+  claim road, and never reaches this tree. It is public once its household puts it forward, then goes through
+  ordinary acceptance; a gallery is accepted sparks only.
+
 ## The witnessed roll
 
 *A roll the record cannot reproduce is not a roll, it is a rumour.*

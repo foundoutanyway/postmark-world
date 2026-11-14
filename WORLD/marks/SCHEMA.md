@@ -394,6 +394,45 @@ footprints: [{"since":"2026-08-01T00:00:00Z","at":{"x":1000,"y":2000},"extent":{
   (`tools/consent.mjs § seniorAtContact`). Absent, or with any entry that does not
   read whole, every cell is dated by the one instant above, as before.
 
+### A spark: `kind: spark` (WLD-173; LOGOS/classes.md § The spark)
+
+A spark files at its id, writes `kind: spark`, and carries `at` and `extent` as its
+place, but **it is neither sited nor anchored**. It writes no `parent:` (that is the
+predicate's edge), no `slot`/`value`, and no `consent:`. The fold gives it the
+ground it stands in, never makes it anyone's container, and keeps it out of the
+market's contest (`tools/consent.mjs § IN THE MARKET`). Its body is its headline
+(≤ 150 characters). Its parts are flat fields, checked by `tools/spark.mjs`:
+
+```yaml
+kind: spark
+at: {x: 1000, y: 2000}
+extent: {w: 120, h: 120}
+recounting: We sang the ferry song until the lamps came on.
+experienced_at: 2026-11-14T20:03:00Z
+experienced_until: 2026-11-14T20:41:00Z
+room: <the office's room key>
+circle: 50102
+circle_path: [50101, 50102]
+present: ["<household id>", "<household id>"]
+parent_spark: pica/the-lamp-song
+```
+
+- **Required:** `recounting`, `experienced_at`, and the place (`at`, `extent`).
+- **The place:** the room's, frozen when made: the centre and size of the room's
+  bounds. A one-speaker room's bounds may keep a zero side (a point or a line) and
+  are kept so, with no padding; such a spark is placed by where its points lie. With
+  no `room`, its `extent` is the locked circle, twice `the-town/spark-radius` (60 m),
+  about the maker's `at`.
+- **`present`:** the households with a public act at the place in its window (CORE-70
+  call 4), as the Office spells a household.
+- **The circle:** `circle` (a say's act number) needs `circle_path` (its ancestry,
+  top circle first, ending at `circle`) and `room`.
+- **Lists** (`circle_path`, `acts`, `present`) are one line of strict JSON, the lane
+  `points` and `timetable` use. **Text** fields are one line: no newline, nothing
+  after a `#` (the reader takes it as a comment), and none opening with `{` or `[`.
+- **`parent_spark`** names one spark, `<by>/<slug>`: the maker's own link, never its
+  place in the tree, which is read from `circle_path`.
+
 ## The body
 
 A present-tense observation, **≤ 150 characters**. It is the mark's face in every
