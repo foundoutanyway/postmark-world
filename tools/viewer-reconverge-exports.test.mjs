@@ -13,7 +13,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { SEARCH_PILL_HTML, markTierOf, markIconsOf, markSearchIndex, peopleSearchIndex, createSearchPill, searchSlashWanted, searchTheTown, deslugMarkId, effectiveWeight } from "../spectator/viewer.mjs";
+import { styleRules, SEARCH_PILL_HTML, markTierOf, markIconsOf, markSearchIndex, peopleSearchIndex, createSearchPill, searchSlashWanted, searchTheTown, deslugMarkId, effectiveWeight } from "../spectator/viewer.mjs";
 import { markStanding } from "./mark-standing.mjs";
 import { instanceClassOf } from "./mark-kind.mjs";
 import { markIcons } from "../spectator/mark-icons.mjs";
@@ -206,6 +206,24 @@ test("the search lists, the pill's behaviour and the slash rule are what the clo
   for (const e of [{ key: "/" }, { key: "/", ctrlKey: true }, { key: "/", metaKey: true }, { key: "/", altKey: true }, { key: "a" }]) {
     for (const el of [null, { tagName: "DIV" }, { tagName: "INPUT" }, { tagName: "TEXTAREA" }, { tagName: "SELECT" }, { tagName: "DIV", isContentEditable: true }]) assert.equal(searchSlashWanted(e, el), oldSlash(e, el), JSON.stringify([e, el]));
   }
+});
+
+test("styleRules: the page's own top-level rules whose selector the test accepts, verbatim, with @media left out", () => {
+  const frame = styleRules((s) => s === ".ov-home-frame");
+  assert.equal(frame, ".ov-home-frame { fill:none; stroke:#3a3428; stroke-width:1.6; stroke-linejoin:round; }");
+  const homes = styleRules((s) => /\.ov-home/.test(s));
+  for (const want of [".ov-home { pointer-events:none; }", ".ov-home-blank { fill:#0d1426; }", ".ov-home.lit .ov-home-frame {", ".ov-home-envelope {"]) assert.ok(homes.includes(want), want);
+  // every rule it returns is in STYLE, and its selector passed the test
+  const STYLE_NOC = STYLE.replace(/\/\*[\s\S]*?\*\//g, "");
+  for (const rule of homes.split("\n")) assert.ok(STYLE_NOC.includes(rule.slice(0, rule.indexOf("{") + 1)), rule.slice(0, 40));
+  // a rule that exists only inside an @media block is not a top-level rule: the tour title's 1rem one is, the 1.12rem one is not
+  const title = styleRules((s) => s === ".wv-tour-title");
+  assert.match(title, /font-size:1\.12rem/);
+  assert.doesNotMatch(title, /font-size:1rem/, "nothing from inside @media");
+  assert.equal(styleRules(() => false), "");
+  assert.ok(!styleRules(() => true).split("\n").some((l) => l.startsWith("@")), "no at-rule comes back");
+  // control: a selector no rule has answers nothing, so an empty answer is possible
+  assert.equal(styleRules((s) => s === ".no-such-rule-anywhere"), "");
 });
 
 test("walker-roster.mjs is a single file with no imports (a node server that reads the engine over HTTP can take it whole), and where-is re-exports the same function", async () => {

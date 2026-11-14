@@ -6025,6 +6025,26 @@ export function searchResultsHTML(rows, emptyNote) {
     : `<li class="wv-search-none">${esc(emptyNote)}</li>`;
 }
 
+/** The rules of the page's own stylesheet whose selector `test` accepts, as CSS text: the top-level rules of `STYLE` (comments
+ *  dropped, `@media` and the like left out). It is how a reader that draws 2D's SVG builders somewhere the page's CSS does not
+ *  reach (the 3D view rasterises them) gets 2D's own rules for them, whatever they are today, and not a copy that drifts
+ *  (WLD-105 A16). `test(selector)` gets one rule's selector text. */
+export function styleRules(test) {
+  const css = STYLE.replace(/\/\*[\s\S]*?\*\//g, "");
+  const out = [];
+  let i = 0;
+  while (i < css.length) {
+    const open = css.indexOf("{", i);
+    if (open < 0) break;
+    const prelude = css.slice(i, open).trim();
+    let depth = 1, j = open + 1;
+    while (j < css.length && depth) { const c = css[j++]; if (c === "{") depth++; else if (c === "}") depth--; }
+    if (prelude && !prelude.startsWith("@") && test(prelude)) out.push(`${prelude} {${css.slice(open + 1, j - 1)}}`);
+    i = j;
+  }
+  return out.join("\n");
+}
+
 /** A mark's tier accent, the page's: green when the fold's `homes` set holds it, else the ONE standing rule over the full mark
  *  (`byId`; FOV marks lack a tier field). Hoisted out of `mountViewer`'s tierOf so the 3D view's pips and nameplates read the
  *  same (WLD-105 A20). */
