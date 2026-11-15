@@ -2075,7 +2075,7 @@ all marks have".
   or its circle's first say to its last (call 22), and for a spark tied to neither, its maker's stated start and
   optional end; `date` stays when it was made. No length, age or span cap is ruled beyond the headline's.
 - **Its place: neither sited nor anchored** (call 22, replacing 12 and 17). Its `at` and `extent` are its room's,
-  frozen when it is made; a later change to the room never moves it. Which room (04:11Z, recording Darko): "each
+  frozen when it is made; a later change to the room never moves it. Which room (Darko, 23:10 EST, recorded 04:11Z): "each
   room gets its own spark by default". A spark binds one room at most, named by its id in `rooms`, a list of one: a
   circle's spark its source room, and an event's sparks one per room that formed at its place in its window, each
   tied to the event (at most 20, in the code's natural order, with no ranking). A list of several rooms is refused,
