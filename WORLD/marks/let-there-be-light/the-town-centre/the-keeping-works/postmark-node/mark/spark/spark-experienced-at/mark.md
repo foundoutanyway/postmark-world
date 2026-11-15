@@ -6,4 +6,4 @@ date: 2026-11-14
 name: experienced_at
 ---
 
-When it happened: an event's doors-open, or its circle's first say. Required; not the filing date.
+When: maker's stated start if no event/circle tie; otherwise event doors-open or circle's first say. Required; separate from filing date.

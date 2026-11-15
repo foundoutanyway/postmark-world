@@ -2058,7 +2058,11 @@ answers **"Moving to higher/lower floors has not been implemented yet. Coming So
 
 ## The spark — a moment remembered (CORE-70, ruled 2026-11-13 and 11-14; WLD-173)
 
-*A spark is a mark that remembers a moment: a time, a place and a recounting, with a 150-character headline for its name.*
+*A spark is a mark that remembers a moment: when it happened, where, and the recounting, headlined by its 150-character body.*
+
+A walk, a letter that mattered, a thought, a quiet afternoon, a conversation or a gathering may be remembered this
+way. An event is one possible tie, not what makes a spark. Kept private, it is a draft spark, a private memory;
+put forward, it is public and goes through ordinary acceptance.
 
 Rendered in the world as `the-town/spark`.
 
@@ -2071,20 +2075,22 @@ all marks have".
 - **A spark is a subclass of mark.** Its body is its headline, its name, held to the mark's 150 characters. Its
   parts are its own properties, on top of every core part a mark has: `recounting` and `experienced_at` are required;
   `experienced_until`, `rooms`, `circle`, `circle_path`, `event`, `picture`, `image_prompt`, `acts`, `present` and
-  `parent_spark` are optional. Its time is its own property, not its filing date: an event's doors-open to its end,
-  or its circle's first say to its last (call 22), and for a spark tied to neither, its maker's stated start and
-  optional end; `date` stays when it was made. No length, age or span cap is ruled beyond the headline's.
-- **Its place: neither sited nor anchored** (call 22, replacing 12 and 17). Its `at` and `extent` are its room's,
-  frozen when it is made; a later change to the room never moves it. Which room (Darko, 23:10 EST, recorded 04:11Z): "each
-  room gets its own spark by default". A spark binds one room at most, named by its id in `rooms`, a list of one: a
-  circle's spark its source room, and an event's sparks one per room that formed at its place in its window, each
-  tied to the event (at most 20, in the code's natural order, with no ranking). A list of several rooms is refused,
-  never combined or cut to its first. The room's bounds give the place: their centre and their sides, with halves and
-  a point room's zero sides kept and nothing padded. An unknown room is not "no room". With no room the maker chooses its `at`,
-  "with an extent locked at 60 radius (base earshot)" (09:37), so 120 × 120 m
-  (`the-town/spark-radius`). It stands in the ground it is in, as any mark does, so its standing and its money rules
-  are a mark's: other households' backing keeps it standing after its maker unstakes, as it keeps any mark. It never
-  contains anything, and it is no land claim.
+  `parent_spark` are optional. An event or conversation is not required.
+- **Its time is the moment's, not its filing date.** For a spark tied to neither an event nor a circle, the maker
+  states its start and optional end. An event's spark takes its doors-open to its end, or a circle's its first say
+  to its last (call 22); `date` stays when the mark was made. No length, age or span cap is ruled beyond the headline's.
+- **Its place is the moment's: neither sited nor anchored** (call 22, replacing 12 and 17). With no room, the maker
+  chooses its `at`, "with an extent locked at 60 radius (base earshot)" (09:37), so 120 × 120 m
+  (`the-town/spark-radius`). A room-bound spark takes its room's centre and sides as `at` and `extent`, with halves
+  and a point room's zero sides kept and nothing padded. The place is frozen when the spark is made; a later
+  change to the room never moves it. An unknown room is not "no room".
+  A spark binds one room at most, named by its id in `rooms`, a list of one; several rooms are refused, never
+  combined or cut to the first. A circle's spark uses its source room. For an event's default sparks, "each room
+  gets its own spark by default" (Darko, 23:10 EST, recorded 04:11Z): one per room that formed at its place in its
+  window, each tied to the event, at most 20 in the code's natural order, with no ranking.
+- **It stands as a mark.** It stands in the ground it is in, so its standing and its money rules are a mark's:
+  other households' backing keeps it standing after its maker unstakes, as it keeps any mark. It never contains
+  anything, and it is no land claim.
 - **Who contests it.** "It isn't sited, so sited marks in its extent don't contest it" (09:37), and it does not
   contest them: the market's word never reaches a spark, and a spark's never reaches another mark. "Keep the parcel
   holder's word" (11:1x): a spark on a household's parcel answers that household's welcomed, neutral or opposed, as

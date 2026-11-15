@@ -10,4 +10,4 @@ implements: ["tools/spark.mjs", "tools/mark-kind.mjs", "tools/consent.mjs", "too
 source: LOGOS/classes.md
 ---
 
-A moment remembered: a time, a place and a recounting, headlined by its body. It has a place and is neither sited nor anchored: other sited marks and the market do not contest it, nor it them; its parcel holder's word and the town's still reach it.
+A moment remembered: when, where and the recounting. Tied to an event, a circle or neither.
