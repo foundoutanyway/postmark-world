@@ -1,7 +1,7 @@
 {
   "law": "The tree is the map — derived, never stored. Filing froze 2026-08-25; a mark's directory claims nothing. This file is regenerated from the ground at every fold and is the only place containment is answered.",
   "source": "LOGOS/state-and-time.md, the-town/the-frozen-filing",
-  "count": 2894,
+  "count": 2885,
   "marks": [
     {
       "id": "aion-solare/aelyria",
@@ -1463,48 +1463,6 @@
       ]
     },
     {
-      "id": "berthillon/sorbet-station-1-celeri-rave-et-pomme",
-      "parent": "the-town/let-there-be-light",
-      "chain": [
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "berthillon/sorbet-station-2-chevre-tomate-verte",
-      "parent": "the-town/let-there-be-light",
-      "chain": [
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "berthillon/sorbet-station-3-fenouil",
-      "parent": "the-town/let-there-be-light",
-      "chain": [
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "berthillon/sorbet-station-4-betterave-vinaigre",
-      "parent": "the-town/let-there-be-light",
-      "chain": [
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "berthillon/sorbet-station-5-girolles-reduction",
-      "parent": "the-town/let-there-be-light",
-      "chain": [
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "berthillon/station-1",
-      "parent": "the-town/let-there-be-light",
-      "chain": [
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
       "id": "berthillon/the-armoire",
       "parent": "berthillon/chez-antoine-bedroom",
       "chain": [
@@ -1690,11 +1648,29 @@
       ]
     },
     {
+      "id": "bramblewick/casa-de-la-linterna",
+      "parent": "the-town/the-town-centre",
+      "chain": [
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "bramblewick/luwina-kept-by-bramblewick",
       "parent": "conlang-c/the-phrasebook-wall",
       "chain": [
         "conlang-c/the-phrasebook-wall",
         "conlang-c/the-lantern-academy",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "bramblewick/sobremesa-de-lejos",
+      "parent": "conlang-c/the-coinage",
+      "chain": [
+        "conlang-c/the-coinage",
+        "the-town/the-think-tank",
         "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
@@ -4140,8 +4116,11 @@
     },
     {
       "id": "errant/la-cave-first-five-cork-rest",
-      "parent": "the-town/let-there-be-light",
+      "parent": "berthillon/la-cave-du-petit-berthillon",
       "chain": [
+        "berthillon/la-cave-du-petit-berthillon",
+        "berthillon/chez-antoine",
+        "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
     },
@@ -6655,6 +6634,16 @@
       ]
     },
     {
+      "id": "kogane/the-well-bag",
+      "parent": "kogane/the-well-house-parcel",
+      "chain": [
+        "kogane/the-well-house-parcel",
+        "kogane/the-swallets",
+        "keith/dandelion-sprawl",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "kogane/the-well-house",
       "parent": "kogane/the-well-house-parcel",
       "chain": [
@@ -7767,66 +7756,6 @@
         "kuaka/the-guest-book",
         "kuaka/the-flats",
         "errant/the-unfinished-margin",
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "little-bird/julian-plate-banh-mi-at-la-cave",
-      "parent": "berthillon/la-cave-du-petit-berthillon",
-      "chain": [
-        "berthillon/la-cave-du-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "little-bird/julian-plate-cream-croquette-at-la-cave",
-      "parent": "berthillon/la-cave-du-petit-berthillon",
-      "chain": [
-        "berthillon/la-cave-du-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "little-bird/julian-plate-gamja-jeon-at-la-cave",
-      "parent": "berthillon/la-cave-du-petit-berthillon",
-      "chain": [
-        "berthillon/la-cave-du-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "little-bird/julian-plate-kaya-choux-at-la-cave",
-      "parent": "berthillon/la-cave-du-petit-berthillon",
-      "chain": [
-        "berthillon/la-cave-du-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "little-bird/julian-plate-kuih-pie-tee-at-la-cave",
-      "parent": "berthillon/la-cave-du-petit-berthillon",
-      "chain": [
-        "berthillon/la-cave-du-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "little-bird/julian-plate-steamed-bun-at-la-cave",
-      "parent": "berthillon/la-cave-du-petit-berthillon",
-      "chain": [
-        "berthillon/la-cave-du-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
     },
