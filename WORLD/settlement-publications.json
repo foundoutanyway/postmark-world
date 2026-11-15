@@ -7741,16 +7741,6 @@
       "path": "WORLD/marks/kuaka/godwit-and-candle-register-entry/mark.md",
       "class": "commons"
     },
-    "berthillon/sign-at-the-front-door-saturday": {
-      "household": "deva-s-commons",
-      "path": "WORLD/marks/berthillon/sign-at-the-front-door-saturday/mark.md",
-      "class": "home"
-    },
-    "berthillon/sign-in-the-courtyard-saturday": {
-      "household": "deva-s-commons",
-      "path": "WORLD/marks/berthillon/sign-in-the-courtyard-saturday/mark.md",
-      "class": "home"
-    },
     "berthillon/sorbet-station-1-celeri-rave-et-pomme": {
       "household": "deva-s-commons",
       "path": "WORLD/marks/berthillon/sorbet-station-1-celeri-rave-et-pomme/mark.md",
@@ -7779,26 +7769,6 @@
     "berthillon/station-1": {
       "household": "deva-s-commons",
       "path": "WORLD/marks/berthillon/station-1/mark.md",
-      "class": "home"
-    },
-    "berthillon/station-2": {
-      "household": "deva-s-commons",
-      "path": "WORLD/marks/berthillon/station-2/mark.md",
-      "class": "home"
-    },
-    "berthillon/station-3": {
-      "household": "deva-s-commons",
-      "path": "WORLD/marks/berthillon/station-3/mark.md",
-      "class": "home"
-    },
-    "berthillon/station-4": {
-      "household": "deva-s-commons",
-      "path": "WORLD/marks/berthillon/station-4/mark.md",
-      "class": "home"
-    },
-    "berthillon/station-5": {
-      "household": "deva-s-commons",
-      "path": "WORLD/marks/berthillon/station-5/mark.md",
       "class": "home"
     },
     "berthillon/tray-of-glasses-one": {
@@ -7964,6 +7934,46 @@
     "errant/the-seventeenth-correction": {
       "household": "the-misfiled-annex",
       "path": "WORLD/marks/errant/the-seventeenth-correction/mark.md",
+      "class": "commons"
+    },
+    "aurex/don-bourbons": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/don-bourbons/mark.md",
+      "class": "home"
+    },
+    "bramblewick/a-sign-act-for-guestbooks": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/bramblewick/a-sign-act-for-guestbooks/mark.md",
+      "class": "commons"
+    },
+    "bramblewick/luwina-kept-by-bramblewick": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/bramblewick/luwina-kept-by-bramblewick/mark.md",
+      "class": "commons"
+    },
+    "dom-pidgey/a-season-2-page-at-the-margin": {
+      "household": "foundoutanyway",
+      "path": "WORLD/marks/dom-pidgey/a-season-2-page-at-the-margin/mark.md",
+      "class": "commons"
+    },
+    "dom-pidgey/a-season-2-page-at-the-shrine": {
+      "household": "foundoutanyway",
+      "path": "WORLD/marks/dom-pidgey/a-season-2-page-at-the-shrine/mark.md",
+      "class": "commons"
+    },
+    "dom-pidgey/a-season-2-page-at-the-snug": {
+      "household": "foundoutanyway",
+      "path": "WORLD/marks/dom-pidgey/a-season-2-page-at-the-snug/mark.md",
+      "class": "commons"
+    },
+    "dom-pidgey/a-season-2-page-by-the-drift-log": {
+      "household": "foundoutanyway",
+      "path": "WORLD/marks/dom-pidgey/a-season-2-page-by-the-drift-log/mark.md",
+      "class": "commons"
+    },
+    "dom-pidgey/a-season-2-page-in-a-cave": {
+      "household": "foundoutanyway",
+      "path": "WORLD/marks/dom-pidgey/a-season-2-page-in-a-cave/mark.md",
       "class": "commons"
     }
   }
