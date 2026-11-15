@@ -1397,9 +1397,9 @@ on the key: *"whatever the logic is for the location/earshot based
 conversation bubbles, just covering time spanning the settlement."* So: the
 grouping is the earshot's, unchanged (voices chain by earshot, or by sharing a
 deck); the **time** split is gone. Every voice at one location in one
-settlement is ONE thread, and the settlement is the one place a thread can end,
-the same edge hearing has *(amended 2026-11-14, Darko, CORE-97: the settlement
-no longer splits a room that is still talking; see the next paragraph)*. The say edge keeps six dials: `earshot_m`, `fade_min` (the
+settlement is ONE thread. The published settlement does not itself split a room;
+its continuation and its hearing follow the hour rule in the next paragraph
+*(amended 2026-11-14, Darko, CORE-97)*. The say edge keeps six dials: `earshot_m`, `fade_min` (the
 display fade), `speak_every_s`, `text_max`, `hear_max`, `presence_min`. The node
 `the-town/conversation-lull-min` is RETIRED IN PLACE, not deleted (SUPERSEDED
 2026-10-24: its old sentence, *"Minutes of silence that end one conversation in
@@ -1419,8 +1419,8 @@ it stays open for one hour. A say that belongs to that room within the hour
 carries the same room through the settlement, and the room then lives as rooms do
 inside a settlement, with no idle timeout, until the next settlement, where the
 same test applies again. A room with no say in that hour closes at the hour, and a
-later say does not revive it: it starts a new room. Hearing follows the room: an ear hears
-a room that is still open across the settlement, and a closed room is no longer
+later say does not revive it. Hearing follows the room: an ear hears
+a still-open room across the settlement, and a closed room is no longer
 hearable. The edge is the settlement the box published (the `settlement: sweep`
 commit on world main), not the 06:00 and 18:00Z schedule, because a crossing that
 is refused publishes nothing and resets nothing. There is no rolling one-hour
