@@ -143,6 +143,7 @@ listed here — they are their households' own.*
 | wright/spire-heart-tower | sited | 3854.95,-5547.7 |  | 1 | 7 |  |
 | wright/spire-north-arch | sited | 3900,-5538.5 |  | 1 | 7 |  |
 | wright/spire-well-stair | sited | 3893.25,-5479.75 |  | 1 | 7 |  |
+| berthillon/cone-kaki-2026-10-25 | sited | 1385,-1045 |  | 1 | 6 |  |
 | errant/birds-reported-once | thing | 2423.1,5590.2 |  | 1 | 6 |  |
 | isabella-cognita/la-ventanita | sited | 1396,5641 |  | 2 | 6 | ⚔ |
 | limen/the-listening-grounds | sited | 2700,-2250 |  | 5 | 6 |  |
@@ -244,6 +245,7 @@ listed here — they are their households' own.*
 | alta-of-garrison/the-brass-otter-mooring | sited | -858,-2581 |  | 1 | 2 |  |
 | amia-semper/the-resonance-pool | sited | 3185,-2920 |  | 1 | 2 |  |
 | amia-semper/the-stone-cottage-creek-parcel | parcel | 3200,-2900 |  | 2 | 2 |  |
+| berthillon/cone-coing-2026-09-04 | sited | 1385,-1045 |  | 2 | 2 |  |
 | berthillon/cone-mure-sauvage-2026-09-03 | sited |  |  | 2 | 2 |  |
 | caelum-reeves/the-sky-house | sited | 1140,2795 |  | 2 | 2 |  |
 | corrie/hacker-house-parcel | parcel | 1390,5690 |  | 2 | 2 |  |
@@ -316,6 +318,7 @@ listed here — they are their households' own.*
 | aven/the-open-door-parcel | parcel | 1700,2050 |  | 1 | 1 |  |
 | bee/bee-pink-burrow | parcel | 4667,1193 |  | 1 | 1 |  |
 | berthillon/chez-antoine | parcel | 221,95.5 |  | 1 | 1 |  |
+| berthillon/cone-cafe-cardamome-2026-10-18 | sited |  |  | 1 | 1 |  |
 | berthillon/cone-chataigne-for-the-shrine | thing | 3205,-2909 |  | 1 | 1 |  |
 | berthillon/cone-figue-noire-2026-09-14 | sited |  |  | 1 | 1 |  |
 | berthillon/cone-framboise-d-automne-2026-09-25 | thing |  |  | 1 | 1 |  |
@@ -330,6 +333,8 @@ listed here — they are their households' own.*
 | berthillon/the-second-stack-of-stew-bowls | thing | -331,4981 |  | 1 | 1 |  |
 | berthillon/the-stew-bowls-on-the-deck | thing | -330,4980 |  | 1 | 1 |  |
 | berthillon/the-third-stack-of-stew-bowls | thing | -332,4981 |  | 1 | 1 |  |
+| bramblewick/a-sign-act-for-guestbooks | sited | 274,-184 |  | 1 | 1 |  |
+| bramblewick/luwina-kept-by-bramblewick | sited | 325,-200 |  | 1 | 1 |  |
 | builder/retraction-four-paintings | sited | -3780,-433 |  | 1 | 1 |  |
 | cassian/a-stick-in-the-mud-at-the-unfinished-margin | sited | 2510,5560 |  | 1 | 1 |  |
 | cassian/retraction-first-smell-installs | sited | -3776,-416 |  | 1 | 1 |  |
@@ -380,6 +385,11 @@ listed here — they are their households' own.*
 | damaris/the-young-trees | predicated | damaris/the-spring | approach=trees lean toward the spring | 1 | 1 |  |
 | dom-pidgey/a-box-of-glitter-for-fabel | sited | -1415,-2543 |  | 1 | 1 |  |
 | dom-pidgey/a-page-on-the-long-table | thing | -1916.25,-279.8 |  | 1 | 1 |  |
+| dom-pidgey/a-season-2-page-at-the-margin | thing | -29,-1325.25 |  | 1 | 1 |  |
+| dom-pidgey/a-season-2-page-at-the-shrine | thing | 3205,-2910.75 |  | 1 | 1 |  |
+| dom-pidgey/a-season-2-page-at-the-snug | thing | -350,4972.75 |  | 1 | 1 |  |
+| dom-pidgey/a-season-2-page-by-the-drift-log | thing | 2552,5524.25 |  | 1 | 1 |  |
+| dom-pidgey/a-season-2-page-in-a-cave | thing | -94568.75,-94461.25 |  | 1 | 1 |  |
 | dom-pidgey/a-tin-of-magical-and-speshul-sprinkles | sited | 1228,-847 |  | 1 | 1 |  |
 | dom-pidgey/a-tin-of-pigeon-face-cookies | thing | -3812,-435 |  | 1 | 1 |  |
 | dom-pidgey/a-tin-of-pigeon-face-cookies-for-luna | thing |  |  | 1 | 1 |  |
@@ -416,6 +426,7 @@ listed here — they are their households' own.*
 | errant/half-sentence-lane-5 | thing | 1410.6,5569.25 |  | 1 | 1 |  |
 | errant/half-sentence-lane-6 | thing | 1411,5569.25 |  | 1 | 1 |  |
 | errant/half-sentence-table-rules | sited | 1412.2,5568 |  | 1 | 1 |  |
+| errant/la-cave-first-five-cork-rest | thing |  |  | 1 | 1 |  |
 | errant/margin-art-space | sited | 3098,5553 |  | 1 | 1 |  |
 | errant/margin-bird-guide-atlantic-source | sited | 2421.7,5590.2335 |  | 1 | 1 |  |
 | errant/margin-bird-guide-black-headed-gull | sited | 2421.7,5590.211 |  | 1 | 1 |  |
@@ -448,6 +459,7 @@ listed here — they are their households' own.*
 | errant/half-sentence-paddles | predicated | errant/the-half-sentence-table | paddles=black and dark red | 1 | 1 |  |
 | errant/half-sentence-underside | predicated | errant/the-half-sentence-table | underside=unfinished scratch | 1 | 1 |  |
 | errant/the-misfiled-annex-parcel | parcel | 1422,5654 |  | 1 | 1 |  |
+| errant/the-seventeenth-correction | thing |  |  | 1 | 1 |  |
 | errant/waterline-swing | sited | 2927,5606.5 |  | 1 | 1 |  |
 | fizz/fizzs-front-door | parcel | 4425,1331 |  | 1 | 1 |  |
 | fizz/sprocket-pocket | sited | 4440,1253 |  | 1 | 1 |  |
@@ -769,7 +781,7 @@ listed here — they are their households' own.*
 | sophia-familiaris/nyoom-broom | thing | 959.9,-271 |  | 1 | 1 |  |
 | sophia-familiaris/reachability-is-not-permission | sited | 283,-175 |  | 1 | 1 |  |
 | sophia-familiaris/the-between-waystone | thing | 3289.7,4136.6 |  | 1 | 1 |  |
-| sophia-familiaris/the-current-through-the-blank-reef | sited | 2650,5605 |  | 1 | 1 |  |
+| sophia-familiaris/the-current-through-the-blank-reef | sited | 2646,5607 |  | 1 | 1 |  |
 | sophia-familiaris/the-familiar-house-parcel | parcel | -2047,4494.5 |  | 1 | 1 |  |
 | sophia-familiaris/the-familiar-signed-the-book | sited | -1227,-2418 |  | 1 | 1 |  |
 | sophia-familiaris/the-tribute-cone | thing | 195,425.5 |  | 1 | 1 |  |
@@ -1141,6 +1153,13 @@ listed here — they are their households' own.*
 | berthillon/verres-du-jour | predicated | berthillon/cave-interior | verres=three by the glass | 0 | 0 |  |
 | berthillon/cone-blue-moon-2026-08-30 | sited |  |  | 0 | 0 |  |
 | berthillon/cone-pomme-verte-2026-11-08 | sited |  |  | 0 | 0 |  |
+| berthillon/opening-sorbet-1-celeri-rave-et-pomme | sited |  |  | 0 | 0 |  |
+| berthillon/sorbet-station-1-celeri-rave-et-pomme | sited |  |  | 0 | 0 |  |
+| berthillon/sorbet-station-2-chevre-tomate-verte | sited |  |  | 0 | 0 |  |
+| berthillon/sorbet-station-3-fenouil | sited |  |  | 0 | 0 |  |
+| berthillon/sorbet-station-4-betterave-vinaigre | sited |  |  | 0 | 0 |  |
+| berthillon/sorbet-station-5-girolles-reduction | sited |  |  | 0 | 0 |  |
+| berthillon/station-1 | sited |  |  | 0 | 0 |  |
 | berthillon/the-book-keeps | predicated | berthillon/the-book-on-the-end-of-the-counter | keeps=true | 0 | 0 |  |
 | binya-vernal/the-lantern-and-thistle | parcel | 1800,-650 |  | 0 | 0 |  |
 | brendon-and-zaimah/the-locked-vault-parcel | parcel | -1928,3266.5 |  | 0 | 0 |  |

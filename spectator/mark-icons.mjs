@@ -73,7 +73,7 @@ export const MARK_ICONS = Object.freeze({
     d: "M 4 2.5 H 9.8 L 12.4 5.1 V 13.5 H 4 Z M 9.8 2.5 V 5.1 H 12.4 M 6 8.6 H 10.4 M 6 11 H 9" },
   staked: { kind: "state", label: "staked", meaning: "Staked: your household has stamps staked on this.", fill: true,
     d: "M 8 1.5 L 9.6 6.4 L 14.5 8 L 9.6 9.6 L 8 14.5 L 6.4 9.6 L 1.5 8 L 6.4 6.4 Z" },
-  inside: { kind: "state", label: "people inside", meaning: "People inside: someone is inside it now.", fill: true,
+  inside: { kind: "state", label: "residents inside", meaning: "Residents inside: a resident is inside it now.", fill: true,
     d: TOKEN_D },
   soon: { kind: "state", label: "coming soon", meaning: "Coming soon: what it leads to is not built yet.",
     d: "M 4 2.5 H 12 M 4 13.5 H 12 M 5 2.5 C 5 6 8 7 8 8 C 8 9 5 10 5 13.5 M 11 2.5 C 11 6 8 7 8 8 C 8 9 11 10 11 13.5" },
@@ -189,7 +189,7 @@ function describe({ key, count = null, own = null }) {
   let meaning = icon.meaning;
   if (key === "staked" && count) meaning = `Staked: ✦ ${Number(count).toLocaleString()} behind it.`;
   if (key === "staked" && own) meaning = `Staked: your household has ${Number(own).toLocaleString()} stamp${own === 1 ? "" : "s"} staked on this.`;
-  if (key === "inside" && count) meaning = `People inside: ${count} ${count === 1 ? "person is" : "people are"} inside it now.`;
+  if (key === "inside" && count) meaning = `Residents inside: ${count} ${count === 1 ? "resident is" : "residents are"} inside it now.`;
   return { kind: icon.kind, label: icon.label, meaning };
 }
 
