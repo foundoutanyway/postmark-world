@@ -34,11 +34,12 @@ import {
   containmentParents, lossyValues, lossyMessage,
 } from "./marks-fold.mjs";
 import { markStanding } from "./mark-standing.mjs";
-import { consentMap, CONSENT_WORDS, CONSENT_FIELD, townOwnedMark, cameAfter, inContact, seniorAtContact, parcelInteriorOf } from "./consent.mjs";
+import { consentMap, CONSENT_WORDS, CONSENT_FIELD, townOwnedMark, cameAfter, inContact, seniorAtContact, parcelInteriorOf, parcelReaches } from "./consent.mjs";
 import { crossHouseholdRiders, householdResolver } from "./household-frames.mjs";
 import { portalFindings } from "./portals.mjs";
 import { classIndex, classChain, ownProperties, propertyAt, propertyNames, propertyValue } from "./class-properties.mjs";
 import { instanceClassOf, isSited, isPredicate, HELD_BY, heldBy, OWNED_BY, ownedBy } from "./mark-kind.mjs";
+import { SPARK_CLASS, SPARK_LINK, sparkProblems, sparkRadiusM } from "./spark.mjs"; // WLD-173: the spark's own grammar
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -159,12 +160,16 @@ const CLASS_ROSTER = new Set(marks.filter(isClassDeclaration).map((m) => String(
 // and a later lane moves them there (settled 2026-10-17, WLD-73 G7), so a
 // `kind:` naming a post class is refused.
 const CLASS_IDX = classIndex(marks.filter((m) => !m._error));
+// a standalone spark's locked radius, read off the class (null where the works are not in hand)
+const SPARK_RADIUS_M = sparkRadiusM(CLASS_IDX);
 const chainOf = (name) => classChain(CLASS_IDX, String(name)).map((c) => String(c.class));
 const isPostClass = (name) => name !== undefined && chainOf(name).includes("post");
 const standingOfRecord = (rec) => {
   if (KINDS.has(rec.kind)) return rec.kind === "predicate" ? "predicated" : rec.kind; // one standing, two spellings
   if (rec.kind == null || !CLASS_ROSTER.has(String(rec.kind)) || isPostClass(rec.kind)) return null;
   const chain = chainOf(rec.kind);
+  // a spark has a place and is not ground (WLD-173): its own standing, before its place is read as sited
+  if (chain.includes(SPARK_CLASS)) return SPARK_CLASS;
   if (chain.includes("naming")) return "naming";
   if (chain.includes("predicate")) return "predicated";
   if (chain.includes("parcel")) return "parcel";
@@ -218,7 +223,14 @@ for (const rec of marks) {
   else if (standing == null) { err(rec, `kind must be one of ${[...KINDS].join(" | ")}, or name a class the works declare (got ${JSON.stringify(rec.kind)})${cite("the-town/the-kinds")}`); }
   // the old form still reads, and is told what it is now: class: folds into kind
   // (a post class's instances excepted, above)
-  if (rec.class !== undefined && rec.kind !== "class" && rec.kind !== "property" && !isPostClass(rec.class))
+  // THE SPARK'S KIND (WLD-173; review 391 F2): a spark is written in the new form only. The old form,
+  // `kind: sited` + `class: spark`, stands sited (mark-kind.mjs § standingOf), so it would be ground
+  // and a container while naming a class that is neither; the spark class has no old-form instances
+  // to keep, so the spelling is refused rather than read two ways.
+  const namesSpark = rec.class !== undefined && rec.kind !== "class" && rec.kind !== "property" && chainOf(rec.class).includes(SPARK_CLASS);
+  if (namesSpark && String(rec.kind) !== String(rec.class))
+    err(rec, `class: ${rec.class} is a spark, and a spark is written kind: ${rec.class} with no class: line — kind: ${JSON.stringify(rec.kind)} would make it stand as ${standing ?? "nothing"}, ground the spark is not (WLD-173: a spark is neither sited nor anchored)`);
+  else if (rec.class !== undefined && rec.kind !== "class" && rec.kind !== "property" && !isPostClass(rec.class))
     warn(rec, `class: ${rec.class} folds into kind: write kind: ${rec.class} and drop the class: line (ruled 2026-10-16: "The \`class:\` field folds into \`kind\`")`);
   if (rec.by == null) err(rec, `by: <author> is required — in the spatial tree (v2) authorship is frontmatter, not the path${cite("the-town/the-own-hand")}`);
   if (!SLUG_RE.test(rec.slug)) err(rec, `slug "${rec.slug}" must be lowercase-hyphenated (it is the directory name and the leaf of the id)`);
@@ -431,6 +443,18 @@ for (const rec of marks) {
       if (!polygonOf(rec)) err(rec, `points: must be a ring of ≥3 vertices ([[x,y],…] or "x1,y1 x2,y2 …")`);
       else if (!ringMatchesClaim(rec)) err(rec, `the points: ring's bounding box must equal the mark's at/extent claim — the claim IS the ring's bbox (SCHEMA v2)`);
     }
+  } else if (standing === SPARK_CLASS) {
+    // 4c. A SPARK (WLD-173; CORE-70 calls 5, 9, 22, 23; Darko 2026-11-14 09:37,
+    // 10:46 and 11:1x). It has a place and is not sited or anchored: its parts are
+    // checked by its own grammar (tools/spark.mjs), and nothing may anchor it.
+    for (const problem of sparkProblems(rec, { radiusM: SPARK_RADIUS_M, isDate: isValidMarkDate })) err(rec, problem);
+    if (rec.slot !== undefined || rec.value !== undefined) err(rec, `a spark carries no slot/value — it is a mark with a place, not a predicate`);
+    if (rec._explicitParent !== undefined || rec._parentMarkId != null)
+      err(rec, `a spark is never anchored: it writes no parent: and files at its id (parent: is the predicate edge; the maker's own link is ${SPARK_LINK}:)`);
+    if (rec.points !== undefined) {
+      if (!polygonOf(rec)) err(rec, `points: must be a ring of ≥3 vertices ([[x,y],…] or "x1,y1 x2,y2 …")`);
+      else if (!ringMatchesClaim(rec)) err(rec, `the points: ring's bounding box must equal the mark's at/extent claim — the claim IS the ring's bbox (SCHEMA v2)`);
+    }
   } else if (standing === "predicated" || standing === "naming") {
     if (rec.at !== undefined || rec.extent !== undefined) err(rec, `${rec.kind} marks carry no at/extent — they take their locus from their parent${cite("the-town/the-continuation")}`);
     if (standing === "predicated" && (rec.slot === undefined || rec.value === undefined)) err(rec, `predicated marks need slot and value${cite("the-town/the-kinds")}`);
@@ -620,8 +644,9 @@ for (const rec of marks) {
     const klass = String(instanceClassOf(rec) ?? rec.kind);
     const chain = classChain(CLASS_IDX, klass).map((c) => String(c.class));
     if (!chain.includes("postmark-node")) continue;
-    if (!chain.includes("sited") && !chain.includes("post"))
-      err(rec, `a ${klass} stands at a place, but ${klass} is not under sited (its chain: ${chain.join(" → ")}) — at and extent are sited's properties; a place is lawful only on an instance of a class under sited or under post (G13, settled 2026-10-17)`);
+    // a spark's place is its own class's property (WLD-173, CORE-70 call 22): it has a place and is not sited
+    if (!chain.includes("sited") && !chain.includes("post") && !chain.includes(SPARK_CLASS))
+      err(rec, `a ${klass} stands at a place, but ${klass} is not under sited (its chain: ${chain.join(" → ")}) — at and extent are sited's properties; a place is lawful only on an instance of a class under sited, under post, or a spark's (G13, settled 2026-10-17; WLD-173)`);
   }
 }
 
@@ -1048,6 +1073,13 @@ const TOP_LEVEL_MD = new Set(["SCHEMA.md", "README.md"]);
       const container = containedBy.get(t.id) ?? null;
       const opposes = word === "opposed";
       const parcelIgnored = `${CONSENT_FIELD}: "${target}" is a parcel — ignored. A parcel answers its holder and the town, never the market`;
+      // A SPARK IS OUT OF THE MARKET, BOTH WAYS (WLD-173; consent.mjs § IN THE
+      // MARKET): only the parcel holder's word and the town's reach a spark, and a
+      // spark's own word reaches no one. A parcel's word on a spark goes on below.
+      if (!isParcel && (standingOfRecord(rec) === SPARK_CLASS || standingOfRecord(t) === SPARK_CLASS)) {
+        warn(rec, `${CONSENT_FIELD}: "${target}" — ignored. ${standingOfRecord(rec) === SPARK_CLASS ? "This is a spark, and a spark speaks no word on another mark" : `"${target}" is a spark, and only its parcel holder's word and the town's reach a spark`}: sited marks do not contest a spark, and it does not contest them (CORE-70, 2026-11-14)`);
+        continue;
+      }
       // An opposition on a parcel is told that first: whether it touches yours
       // or not, the market's word does not reach a parcel.
       if (!isParcel && opposes && t.kind === "parcel") {
@@ -1100,7 +1132,8 @@ const TOP_LEVEL_MD = new Set(["SCHEMA.md", "README.md"]);
       }
       if (isParcel) {
         const pr = rect(rec); pr.w = pr.w || 25; pr.h = pr.h || 25;
-        if (!t.at || overlapArea(pr, rect(t)) <= 0)
+        // the fold's own test (consent.mjs § parcelReaches): a spark with no area is reached where it touches
+        if (!t.at || !parcelReaches(pr, rect(t), standingOfRecord(t) === SPARK_CLASS))
           warn(rec, `${CONSENT_FIELD}: "${target}" does not touch this parcel — a word without ground under it. It does nothing`);
       }
     }

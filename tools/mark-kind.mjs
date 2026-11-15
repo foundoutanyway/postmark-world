@@ -43,13 +43,30 @@ export const STANDING_WORDS = Object.freeze(new Set(["sited", "predicated", "pre
 
 const NEVER_GROUND = new Set(["predicated", "predicate", "naming", "class", "property", "parcel"]);
 
+// ── A SPARK HAS A PLACE AND IS NOT GROUND (WLD-173; CORE-70, Darko 2026-11-14) ──
+//
+// "a spark is neither sited nor anchored. Its at and extent come from its root
+// conversation's room, frozen when it's made, or … a maker-chosen at with a
+// fixed 60 m circle. It isn't sited, so sited marks in its extent don't contest
+// it." So a spark carries `at`/`extent`, and that place must never make it
+// sited or ground: not here, by the place proxy, and not by its class chain
+// (`standingOf` answers "spark"). It stands in ground like any mark (its
+// containment parent is geometric, marks-fold.mjs § containmentParentOf); it
+// never contains anything. tools/spark.mjs holds the class's own grammar.
+export const SPARK_CLASS = "spark";
+/** A spark: how the record STANDS (`standingOf` below), the one answer every ground and sited
+ *  question reads too, so no record is a spark to the market and sited ground to everything else.
+ *  The old form `kind: sited` + `class: spark` stands sited, so it is no spark here, and the lint
+ *  refuses that spelling (mark-lint.mjs § the spark's kind; review 391 F2). */
+export const isSparkIn = (m, idx = null) => standingOf(m, idx) === SPARK_CLASS;
+
 export function instanceClassOf(m) {
   if (!m || m.kind === "class" || m.kind === "property") return undefined;
   if (m.class !== undefined) return String(m.class);
   return m.kind != null && !STANDING_WORDS.has(String(m.kind)) ? String(m.kind) : undefined;
 }
 
-export const isSited = (m) => !!m && !!m.at && !NEVER_GROUND.has(String(m.kind));
+export const isSited = (m) => !!m && !!m.at && !NEVER_GROUND.has(String(m.kind)) && String(m.kind) !== SPARK_CLASS;
 
 export const isGround = (m) => !!m && !!m.at && (m.kind === "parcel" || isSited(m));
 
@@ -177,9 +194,11 @@ export function standingOf(m, idx) {
   if (kind === "predicated" || kind === "predicate") return "predicate";
   if (kind == null) return null;
   if (STANDING_WORDS.has(kind)) return kind;
+  // a spark answers for itself before its place can (WLD-173): never "sited" from an `at`
+  if (kind === SPARK_CLASS) return SPARK_CLASS;
   const chain = idx ? classChain(idx, kind).map((c) => String(c.class)) : [];
   if (!chain.includes("postmark-node")) return m.at ? "sited" : null;
-  for (const s of ["post", "naming", "predicate", "parcel", "sited"]) if (chain.includes(s)) return s;
+  for (const s of ["post", SPARK_CLASS, "naming", "predicate", "parcel", "sited"]) if (chain.includes(s)) return s;
   return null;
 }
 
