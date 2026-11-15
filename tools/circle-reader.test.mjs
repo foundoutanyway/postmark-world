@@ -660,6 +660,19 @@ test("the column keeps ONE reader for a conversation, yet live metadata and canR
   assert.deepEqual(targets, [50104], "and so did the new reply handler");
 });
 
+test("the World's reader is reading-only on a phone: the column hands the reader canReply only for an acting visitor who is NOT on the phone layout (SOURCE PIN; the behaviour is the reader's own canReply, tested above)", async () => {
+  const SRC = (await import("node:fs")).readFileSync(new URL("../spectator/viewer.mjs", import.meta.url), "utf8");
+  const view = SRC.slice(SRC.indexOf("function convoColumnView"), SRC.indexOf("// What a plain click or hover on the map means for a thread"));
+  assert.match(view, /canReply: canAct\(\) && !onPhone\(\)/, "no Reply on the phone World page; the host option, not a stylesheet hide");
+  assert.equal(/display\s*:\s*none[^}]*cr-reply|cr-reply[^}]*display\s*:\s*none/.test(READER_CSS), false, "and the shared reader's CSS does not hide Reply (the conversations page keeps it)");
+  assert.match(view, /\/conversations\/#circle-/, "the circle's link to the conversations page stays");
+  // the reader itself: with canReply false there is no Reply button, the permalink still is drawn
+  const h = harness({ circles: { "50101|": circle50101() }, canReply: false, hrefForCircle: (c) => `/conversations/#circle-${c}` });
+  await h.reader.showCircle(50101); await tick();
+  assert.equal(byAttr(h.root, "data-reply").length, 0, "zero Reply controls");
+  assert.equal(byAttr(h.root, "data-key", "permalink").length, 1, "the link to the conversations page remains");
+});
+
 test("the SAY sheet: a sheet that is opened plainly starts with no reply target; only an explicit Reply sets one (SOURCE PIN, the weakest instrument: the sheet lives inside mountViewer)", async () => {
   const SRC = (await import("node:fs")).readFileSync(new URL("../spectator/viewer.mjs", import.meta.url), "utf8");
   const open = SRC.slice(SRC.indexOf("function openSayBox()"), SRC.indexOf("function syncSayBox"));

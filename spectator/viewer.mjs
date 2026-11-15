@@ -12865,7 +12865,10 @@ export function mountViewer(appEl) {
       key: [id, "circles"].join("|"),
       // the shared circle reader (spectator/circle-reader.mjs) draws the room's circles where the flat statements stood; `door.blocks`
       // below are the words the map already holds, shown only if the reader could not read the room
-      reader: { roomId: tid, source: convoReaderSource, canReply: canAct(), onReply: (target) => setReplyTarget(target), hrefForCircle: (c) => `/conversations/#circle-${encodeURIComponent(c)}` },
+      // READING-ONLY ON A PHONE (Wright 2026-11-14 23:59Z): the phone World page keeps its reading-only mode, so the reader there carries no Reply
+      // buttons (the SAY sheet lives in the rail that page does not show); the circle's link to the conversations page, where the speaking box is, stays.
+      // The host option, not a stylesheet hide: it is re-read on every render, so a resize or rotation reaches the open reader in place.
+      reader: { roomId: tid, source: convoReaderSource, canReply: canAct() && !onPhone(), onReply: (target) => setReplyTarget(target), hrefForCircle: (c) => `/conversations/#circle-${encodeURIComponent(c)}` },
       handle: "the-town", residentLink: false,
       kicker: live ? "a conversation · live" : "a conversation · gone quiet",
       title: String(t.place ?? "somewhere"),
