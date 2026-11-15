@@ -421,20 +421,21 @@ parent_spark: pica/the-lamp-song
 - **Required:** `recounting`, `experienced_at`, and the place (`at`, `extent`): four
   finite numbers as written, the sides 0 or more. A missing, null or quoted value is
   refused, never defaulted or coerced.
-- **The rooms:** `rooms` is one line of strict JSON, a list of room ids, each once. An
-  event's spark lists every qualifying room ("All of them, combined", 18:46Z); a
-  circle's spark lists its one source room. A singular `room:` is refused: it has no
-  alias, and is never read as no room.
-- **The place:** its rooms', frozen when made. For one room, the centre and size of
-  the room's bounds. A one-speaker room's bounds may keep a zero side (a point or a
-  line) and are kept so, with no padding; such a spark is placed by where its points
-  lie. Several rooms combine into the existing rectangular frame, the **envelope**
-  of every member room's absolute bounds: least `x0` and `y0`, greatest `x1` and
-  `y1`, then the centre and the sides (`tools/spark.mjs § roomsPlace`). The gaps
-  between rooms are inside it, so a parcel holder's word in a gap reaches the spark.
-  With no `rooms`, or an empty list, its `extent` is the locked circle, twice
-  `the-town/spark-radius` (60 m), about the maker's `at`. An unknown room history
-  is not "no room".
+- **Its time:** `experienced_at` and the optional `experienced_until` are the moment
+  itself: an event's window, a circle's first to last say, or for a spark tied to
+  neither, its maker's stated start and end. `date` stays when it was made.
+- **The room:** `rooms` is one line of strict JSON, a list of **at most one** room id:
+  a circle's spark its source room, an event's spark the one room it is for ("each
+  room gets its own spark", 04:11Z). A list of several rooms is refused, never
+  combined or cut to its first. A singular `room:` is refused: it has no alias, and
+  is never read as no room.
+- **The place:** its room's, frozen when made: the centre and the sides of the room's
+  absolute bounds `{x0, y0, x1, y1}` (`tools/spark.mjs § roomsPlace`, given the one
+  room's bounds as a list of one), never the room's display point. A one-speaker
+  room's bounds may keep a zero side (a point or a line) and are kept so, with no
+  padding; such a spark is placed by where its points lie. With no `rooms`, or an
+  empty list, its `extent` is the locked circle, twice `the-town/spark-radius` (60 m),
+  about the maker's `at`. An unknown room is not "no room".
 - **`present`:** the households with a public act at the place in its window (CORE-70
   call 4), as the Office spells a household.
 - **The circle:** `circle` (a say's act number) needs `circle_path` (its ancestry,

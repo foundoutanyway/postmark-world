@@ -6,4 +6,4 @@ date: 2026-11-14
 name: rooms
 ---
 
-The rooms it remembers, by id: an event's every qualifying room, or a circle's one source room.
+The room it remembers, by id, as a list of at most one: a circle's source room, or the one room of an event that is its own.

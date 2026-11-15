@@ -28,7 +28,7 @@ import { fold, loadMarks, placementParent } from "./marks-fold.mjs";
 import { classIndex, classChain, propertyAt, propertyNames, propertyOf } from "./class-properties.mjs";
 import { isSited, isGround, isSitedIn, isGroundIn, standingOf, kindIndexOf } from "./mark-kind.mjs";
 import { contains, rect } from "./geometry.mjs";
-import { SPARK_CLASS, SPARK_FIELDS, SPARK_REQUIRED, isSparkIn, sparkRadiusM, sparksOn, sparksBelow, sparkChildren, ownLinkOf, roomsPlace } from "./spark.mjs";
+import { SPARK_CLASS, SPARK_FIELDS, SPARK_REQUIRED, isSparkIn, sparkRadiusM, sparksOn, sparksBelow, sparkChildren, ownLinkOf, roomsPlace, roomsOf } from "./spark.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_SRC = join(HERE, "..");
@@ -134,18 +134,20 @@ test("WLD-173 · a whole spark lints clean and round-trips through the fold, eve
   assert.deepEqual(moved, [], "nothing else in the world moved");
   assert.deepEqual(after.marks.filter((m) => !was.has(m.id)).map((m) => m.id).sort(), [standalone, id].sort());
 
-  // an event's spark over two rooms round-trips with every room id and the envelope place, halves kept
+  // an event's spark for one of its rooms (04:11Z: "each room gets its own spark") round-trips with its one room id
+  // and the room's place, halves kept
   const event = foldCli(repo).marks.find((m) => m.id === "sbx-pica/the-opening");
   assert.equal(event, undefined, "control: not filed yet");
-  const place = roomsPlace([{ x0: 4000, y0: 4100, x1: 4041, y1: 4121 }, { x0: 4100, y0: 4090, x1: 4130, y1: 4110 }]);
-  assert.deepEqual(place, { at: { x: 4065, y: 4105.5 }, extent: { w: 130, h: 31 } }, "the envelope: least x0/y0, greatest x1/y1, centre and sides");
+  const place = roomsPlace([{ x0: 4000, y0: 4100, x1: 4041, y1: 4121 }]);
+  assert.deepEqual(place, { at: { x: 4020.5, y: 4110.5 }, extent: { w: 41, h: 21 } }, "the room's bounds: centre and sides");
   file(repo, "sbx-pica", "the-opening", { kind: "spark", date: "2026-11-14T22:00:00Z", at: place.at, extent: place.extent,
-    recounting: "The cave opened and both halls filled.", experienced_at: "2026-11-14T19:00:00Z", experienced_until: "2026-11-14T22:00:00Z",
-    rooms: ["room-cave-hall", "room-cave-annex"], event: "event-little-picas-opening" }, "Little Pica's opening.");
-  assert.deepEqual(errorsFor(lint(repo), "sbx-pica", "the-opening"), [], "an event's spark over two rooms lints clean");
+    recounting: "The cave opened and the hall filled.", experienced_at: "2026-11-14T19:00:00Z", experienced_until: "2026-11-14T22:00:00Z",
+    rooms: ["room-cave-hall"], event: "event-little-picas-opening" }, "Little Pica's opening.");
+  assert.deepEqual(errorsFor(lint(repo), "sbx-pica", "the-opening"), [], "an event's spark of one room lints clean");
   const opening = foldCli(repo).marks.find((m) => m.id === "sbx-pica/the-opening");
-  assert.deepStrictEqual(opening.rooms, ["room-cave-hall", "room-cave-annex"], "every room id is kept, in order");
-  assert.deepStrictEqual({ at: opening.at, extent: opening.extent }, place, "and the envelope place, exactly");
+  assert.deepStrictEqual(opening.rooms, ["room-cave-hall"], "its one room id is kept, in its list");
+  assert.equal(opening.room, undefined, "and no second spelling beside it");
+  assert.deepStrictEqual({ at: opening.at, extent: opening.extent }, place, "and the room's place, exactly");
 
   // the spine reads off the published records: the sub-spark under the lamp song's circle
   const sub = { ...got, id: "sbx-liv/the-pan", circle: 50107, circle_path: [50101, 50102, 50107], parent_spark: undefined };
@@ -167,13 +169,15 @@ test("WLD-173 · the lint refuses a spark missing a required part, over the head
     ["circle-no-path", { ...base, rooms: ["r1"], circle: 7 }, "x", /circle: 7 needs circle_path/],
     ["path-wrong-end", { ...base, rooms: ["r1"], circle: 7, circle_path: [3, 5] }, "x", /circle_path: ends at 5, not at circle: 7/],
     ["circle-no-room", { ...base, circle: 7, circle_path: [7] }, "x", /circle: 7 needs rooms: \[<its one source room>\]/],
-    // the room set (18:46Z, "All of them, combined"; POS-1035's wire): a JSON list of room ids, a circle's one source room
-    ["rooms-text", { ...base, rooms: "r1" }, "x", /rooms: is a JSON array of room ids/],
-    ["rooms-twice", { ...base, rooms: ["r1", "r1"] }, "x", /rooms: names a room twice/],
+    // one room per spark (04:11Z: "each room gets its own spark"): a list of several, here in the locked circle where it
+    // would otherwise lint as a standalone spark, is refused by name, never combined or cut to its first
+    ["two-rooms", { ...base, rooms: ["r1", "r2"] }, "x", /rooms: names 2 rooms; a spark binds one room at most — each room gets its own spark/],
     ["circle-two-rooms", { ...base, rooms: ["r1", "r2"], circle: 7, circle_path: [7] }, "x", /circle: 7 needs rooms: \[<its one source room>\]/],
+    ["rooms-text", { ...base, rooms: "r1" }, "x", /rooms: is a JSON array of room ids/],
+    ["rooms-number", { ...base, rooms: [1033] }, "x", /rooms: is a JSON array of room ids/],
     ["empty-rooms-small", { ...base, rooms: [], extent: "{w: 60, h: 60}" }, "x", /stands in the locked circle: extent \{w: 120, h: 120\}/],
     // the unpublished singular field has no alias: refused by name, not read as no room in the locked circle
-    ["old-room", { ...base, room: "r1" }, "x", /room: is not a spark field — a spark's room set is rooms:/],
+    ["old-room", { ...base, room: "r1" }, "x", /room: is not a spark field — a spark's room is rooms: \[<room id>\]/],
     ["until-before", { ...base, experienced_until: "2026-11-14T17:00:00Z" }, "x", /is before experienced_at/],
     ["bad-link", { ...base, parent_spark: "not an id" }, "x", /parent_spark: names one spark by id/],
     ["slot", { ...base, slot: "name", value: "x" }, "x", /carries no slot\/value/],
@@ -188,15 +192,18 @@ test("WLD-173 · the lint refuses a spark missing a required part, over the head
   const ok = file(repo, "sbx-ana", "control", base, "It rained on the quay.");
   // the zero control (review 391 F1): a one-speaker room's point, 0 × 0 in finite numbers, is a lawful place
   file(repo, "sbx-ana", "point-room", { ...base, rooms: ["r1"], extent: "{w: 0, h: 0}" }, "We spoke at the post.");
-  // the room-set controls: an empty list is no room (the locked circle holds), and an event's every room is kept,
-  // with the place it was written with (the lint holds no room's bounds, so it judges no envelope; that is roomsPlace's, below)
+  // the one-room controls: an event's spark keeps its one room with the place it was written with (the lint holds
+  // no room's bounds, so it judges none; that is roomsPlace's, below), a line room keeps its half and zero side,
+  // and an empty list is no room, in the locked circle
+  file(repo, "sbx-ana", "event-room", { ...base, rooms: ["r1"], event: "ev-1", extent: "{w: 41, h: 21}" }, "The whole opening.");
+  file(repo, "sbx-ana", "line-room", { ...base, rooms: ["r1"], extent: "{w: 12.5, h: 0}" }, "We spoke along the wall.");
   file(repo, "sbx-ana", "empty-rooms", { ...base, rooms: [] }, "It rained on the quay, alone.");
-  file(repo, "sbx-ana", "event-rooms", { ...base, rooms: ["r1", "r2", "r3"], event: "ev-1", extent: "{w: 200, h: 80}" }, "The whole opening.");
   const out = lint(repo);
   assert.deepEqual(errorsFor(out, "sbx-ana", "control"), [], "control: the same spark, whole, is clean");
   assert.deepEqual(errorsFor(out, "sbx-ana", "point-room"), [], "control: a point room (0 × 0) is clean");
   assert.deepEqual(errorsFor(out, "sbx-ana", "empty-rooms"), [], "control: an empty room list in the locked circle is clean");
-  assert.deepEqual(errorsFor(out, "sbx-ana", "event-rooms"), [], "control: an event's spark keeps all its rooms");
+  assert.deepEqual(errorsFor(out, "sbx-ana", "event-room"), [], "control: an event's spark keeps its one room");
+  assert.deepEqual(errorsFor(out, "sbx-ana", "line-room"), [], "control: a line room keeps its half and its zero side");
   for (const [slug, , , words] of cases) {
     const errs = errorsFor(out, "sbx-ana", slug);
     assert.ok(errs.some((l) => words.test(l)), `${slug}: refused by name (${words}); got:\n${errs.join("\n") || "(no error)"}`);
@@ -318,29 +325,35 @@ test("WLD-173 · its place is frozen: the ground around it moving never moves or
   assert.deepEqual(after.at, { x: 0, y: 0 }, "it keeps the place it was made with");
 });
 
-// ── the room set's place: the existing rectangular envelope (POS-1035; Bevel 19:36Z) ──
+// ── one room's place (04:11Z: "each room gets its own spark") ─────────────────────
 
-test("WLD-173 · roomsPlace: the envelope of every room's bounds, halves and zero sides kept, and no place from no room or a guessed bound", () => {
-  assert.deepEqual(roomsPlace([{ x0: 0, y0: 0, x1: 3, y1: 1 }]), { at: { x: 1.5, y: 0.5 }, extent: { w: 3, h: 1 } }, "one room: its own midpoint and differences, halves kept");
+test("WLD-173 · roomsPlace: one room's bounds give the centre and sides, halves and zero sides kept, and no place from a missing, guessed or second room", () => {
+  assert.deepEqual(roomsPlace([{ x0: 0, y0: 0, x1: 3, y1: 1 }]), { at: { x: 1.5, y: 0.5 }, extent: { w: 3, h: 1 } }, "its midpoint and differences, halves kept");
   assert.deepEqual(roomsPlace([{ x0: 5, y0: 7, x1: 5, y1: 7 }]), { at: { x: 5, y: 7 }, extent: { w: 0, h: 0 } }, "a one-speaker room is a point: zero sides, no padding");
-  assert.deepEqual(roomsPlace([{ x0: -100, y0: 0, x1: -60, y1: 20 }, { x0: 60, y0: 0, x1: 100, y1: 20 }]),
-    { at: { x: 0, y: 10 }, extent: { w: 200, h: 20 } }, "two rooms: the envelope, the gap between them inside it");
+  assert.deepEqual(roomsPlace([{ x0: -2, y0: 4, x1: 3, y1: 4 }]), { at: { x: 0.5, y: 4 }, extent: { w: 5, h: 0 } }, "a line keeps its zero side");
   assert.equal(roomsPlace([]), null, "no room is the locked circle's case, not a place");
+  for (const none of [undefined, null, [null], [{}]]) assert.equal(roomsPlace(none), null, `an unavailable room (${JSON.stringify(none)}) is no place`);
   assert.equal(roomsPlace([{ x0: 0, y0: 0, x1: 1 }]), null, "a missing bound is no place");
   assert.equal(roomsPlace([{ x0: "0", y0: 0, x1: 1, y1: 1 }]), null, "a quoted bound is no place");
   assert.equal(roomsPlace([{ x0: 5, y0: 0, x1: 1, y1: 1 }]), null, "inverted bounds are no place");
+  assert.equal(roomsPlace([{ x0: 0, y0: 0, x1: 1, y1: 1 }, { x0: 5, y0: 0, x1: 6, y1: 1 }]), null, "two rooms are two sparks: never combined, never the first alone");
+  assert.equal(roomsPlace({ x0: 0, y0: 0, x1: 1, y1: 1 }), null, "the bounds come as the record keeps rooms, a list of one");
+  assert.deepEqual(roomsOf({ rooms: ["r1"] }), ["r1"]);
+  assert.deepEqual(roomsOf({ room: "r1" }), [], "the singular spelling is no room");
 });
 
-test("WLD-173 · the gaps are inside: a parcel in the gap between an event's rooms reaches its spark, and not a one-room spark beside it", () => {
-  const r1 = { x0: -100, y0: 0, x1: -60, y1: 20 }, r2 = { x0: 60, y0: 0, x1: 100, y1: 20 };
-  const both = roomsPlace([r1, r2]), one = roomsPlace([r1]);
-  const gapParcel = parcel("home", "holder", 0, 10, { consent: { "b/opening": "opposed", "b/hall": "opposed" } });
-  assert.ok(Math.abs(gapParcel.at.x) + 12.5 < 60, "control: the parcel stands in the gap, touching neither room's own bounds");
-  const opening = spark("opening", "b", both.at.x, both.at.y, both.extent.w, both.extent.h, { rooms: ["r1", "r2"], event: "ev-1" });
-  const hall = spark("hall", "b", one.at.x, one.at.y, one.extent.w, one.extent.h, { rooms: ["r1"] });
-  const state = fold({ marks: [gapParcel, opening, hall], terrain, tick: 1, stakes: [] });
-  assert.equal(stands(state, "b/opening"), false, "the holder's word in the gap reaches the event's spark (the envelope includes the gap)");
-  assert.equal(stands(state, "b/hall"), true, "a spark of r1 alone does not touch the parcel, so the same word does nothing");
+// ── ordinary backing (04:2xZ: other backing keeps a spark after its host unstakes) ──
+
+test("WLD-173 · a spark is backed as any mark: after its maker withdraws, another household's stake is what it holds, the same as an ordinary mark", () => {
+  const moment = spark("moment", "b", 0, 0, 120, 120);
+  const shed = sited("shed", "b", 500, 500, 100, 100);
+  const backed = (id) => [stake("b", id, 1), stake("b", id, -1), stake("c", id, 1)];
+  const state = fold({ marks: [moment, shed], terrain, tick: 1, stakes: [...backed("b/moment"), ...backed("b/shed")] });
+  const of = (id) => state.marks.find((m) => m.id === id);
+  assert.equal(stands(state, "b/moment"), true, "the spark stands");
+  assert.equal(of("b/moment").stamps, 1, "the maker's withdrawal leaves the other household's stamp");
+  assert.equal(of("b/moment").stamps, of("b/shed").stamps, "control: exactly what an ordinary mark holds");
+  assert.ok(!(state.errors ?? []).some((e) => e.mark === "b/moment" || e.stake?.mark === "b/moment"), "and no fold error for the spark");
 });
 
 // ── the circle spine (10:46) ──────────────────────────────────────────────────
@@ -354,16 +367,22 @@ test("WLD-173 · the circle tree: X and Y on A both show Z on reply circle B, no
   const W = { id: "d/w", rooms: ["r1"], circle: C, circle_path: [A, B, C] };
   const V = { id: "f/v", rooms: ["r2"], circle: D, circle_path: [D] };
   const O = { id: "g/other", rooms: ["r3"], circle: U, circle_path: [U] };
-  // the event's spark binds every qualifying room (18:46Z: "All of them, combined"): here r1 and r2, never r3
-  const E = { id: "e/event", rooms: ["r1", "r2"], event: "ev-1" };
-  const all = [X, Y, Z, W, V, O, E];
+  // each room gets its own spark (04:11Z), each tied to the event: r1's spark over r1's circles, never r2's or r3's
+  const E = { id: "e/event", rooms: ["r1"], event: "ev-1" };
+  // the same event's spark for r2: its own room's circles only, and nothing of r1's
+  const E2 = { id: "h/event2", rooms: ["r2"], event: "ev-1" };
+  // a refused record naming two rooms gathers nothing: never an aggregate root
+  const EE = { id: "i/both", rooms: ["r1", "r2"], event: "ev-1" };
+  const all = [X, Y, Z, W, V, O, E, E2];
   const ids = (xs) => xs.map((s) => s.id).sort();
   assert.deepEqual(ids(sparksOn(all, A)), ["a/x", "b/y"], "many sparks per circle");
   assert.deepEqual(ids(sparkChildren(X, all)), ["c/z", "d/w"], "X shows Z");
   assert.deepEqual(ids(sparkChildren(Y, all)), ["c/z", "d/w"], "and Y shows Z too: nobody chose one of them");
   assert.deepEqual(ids(sparkChildren(Z, all)), ["d/w"]);
-  assert.deepEqual(ids(sparkChildren(E, all)), ["a/x", "b/y", "c/z", "d/w", "f/v"], "the event's spark stands over every circle spark of all its rooms");
-  assert.ok(!sparkChildren(E, all).includes(O), "and over none from a room it does not keep");
+  assert.deepEqual(ids(sparkChildren(E, all)), ["a/x", "b/y", "c/z", "d/w"], "the event's spark stands over every circle spark of its room");
+  assert.ok(!sparkChildren(E, all).includes(V) && !sparkChildren(E, all).includes(O), "and over none from another room");
+  assert.deepEqual(ids(sparkChildren(E2, all)), ["f/v"], "room r2's root collects r2's circles only, though it names the same event");
+  assert.deepEqual(sparkChildren(EE, all), [], "a two-room record is no root of either room");
   // no lost child: every circle spark is under every circle on its path
   for (const s of [X, Y, Z, W]) for (const c of s.circle_path.slice(0, -1)) assert.ok(sparksBelow(all, c).includes(s), `${s.id} is under ${c}`);
 

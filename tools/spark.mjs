@@ -19,14 +19,15 @@
 //            sited marks and the market goes away (consent.mjs § IN THE MARKET).
 //   call 23  a spark ties to a circle, a sub-spark to a reply subtree, the event's
 //            spark to the whole room; anyone may spark a circle, many per circle.
-//   18:46Z   on which rooms (Wright, recording Darko): "All of them, combined." An
-//            event's spark keeps every qualifying room at its place in its window,
-//            every room id and all their circles, with no ranking. So the record
-//            names its rooms (`rooms`, a list); a circle's spark names its one
-//            source room. Their places combine into the existing rectangular frame,
-//            the envelope of every member room's bounds (POS-1035's room-set wire,
-//            settled 11-14; Bevel 19:36Z): `roomsPlace` below is that one frame,
-//            gaps included, so a parcel's word in a gap reaches the spark.
+//   04:11Z   on which room (Wright 11-15, recording Darko): "each room gets its own
+//            spark by default", at most 20 per event in the code's natural order.
+//            So a spark binds at most ONE room: `rooms` stays the strict JSON list,
+//            holding one room id or none (absent: the standalone circle). A circle's
+//            spark names its one source room; an event's sparks are one per room,
+//            each tied to the event (the Office's producer fans them out). There is
+//            no room set, ranking or combined footprint here: a list of two rooms
+//            is refused, never cut to its first. `roomsPlace` below turns the one
+//            room's bounds into the spark's place.
 //   10:46    "I think we can just use the circles as the spine for parents for
 //            now? maybe let sparks declare their parent if they want to as a
 //            field". The tree is the circles; a spark's own link is its own.
@@ -109,7 +110,7 @@ export function sparkProblems(rec, { radiusM = null, isDate } = {}) {
   // with a default (x ?? 0, w ?? 1) and does string arithmetic on text, so a place that is not four
   // finite numbers would be published somewhere it never was (review 391 F1).
   const num = (v) => typeof v === "number" && Number.isFinite(v);
-  if (!rec.at || !rec.extent) say(`a spark needs at {x,y} and extent {w,h} — its place: its rooms', frozen when made, or its maker's at with the locked circle`);
+  if (!rec.at || !rec.extent) say(`a spark needs at {x,y} and extent {w,h} — its place: its room's, frozen when made, or its maker's at with the locked circle`);
   else if (!num(rec.at.x) || !num(rec.at.y)) say(`at: {x, y} are two finite numbers, as written (got ${JSON.stringify(rec.at)})`);
   // a one-speaker room's bounds may keep a zero side (a point or a line), and are kept as they are; never a negative one
   else if (!num(rec.extent.w) || !num(rec.extent.h) || rec.extent.w < 0 || rec.extent.h < 0)
@@ -123,14 +124,16 @@ export function sparkProblems(rec, { radiusM = null, isDate } = {}) {
   if (rec.circle === undefined && rec.circle_path !== undefined) say(`circle_path: names a spine but no circle: — the path ends at the spark's own circle`);
   if (path?.length && isActNumber(rec.circle) && path.at(-1) !== rec.circle) say(`circle_path: ends at ${JSON.stringify(path.at(-1))}, not at circle: ${rec.circle}`);
   if (path?.length && new Set(path).size !== path.length) say(`circle_path: names a circle twice — a spine has no loop`);
-  // the rooms (18:46Z, "All of them, combined"): a JSON array of room ids, each once
+  // the room (04:11Z, "each room gets its own spark"): a JSON array holding at most one room id
   // The unpublished singular `room:` has no alias: refused, never read as no room (which the locked circle would take).
-  if (rec.room !== undefined) say(`room: is not a spark field — a spark's room set is rooms: [<room id>, …], every room id, one line of JSON (got room: ${JSON.stringify(rec.room)})`);
+  if (rec.room !== undefined) say(`room: is not a spark field — a spark's room is rooms: [<room id>], one line of JSON (got room: ${JSON.stringify(rec.room)})`);
   const rooms = listOf(rec.rooms);
   if (rec.rooms !== undefined && (!rooms || !rooms.every((r) => typeof r === "string" && r.trim() !== "")))
     say(`rooms: is a JSON array of room ids (got ${JSON.stringify(rec.rooms)})`);
-  else if (rooms && new Set(rooms).size !== rooms.length) say(`rooms: names a room twice`);
-  // a circle is spoken in one room, its source (POS-1035's room-set wire)
+  // several rooms are several sparks, one each (04:11Z): refused, never combined or cut to the first
+  else if (rooms && rooms.length > 1)
+    say(`rooms: names ${rooms.length} rooms; a spark binds one room at most — each room gets its own spark (got ${JSON.stringify(rec.rooms)})`);
+  // a circle is spoken in one room, its source
   if (rec.circle !== undefined && rooms?.length !== 1)
     say(`circle: ${rec.circle} needs rooms: [<its one source room>] — a circle is spoken in one room (got ${JSON.stringify(rec.rooms)})`);
   // the optional parts, each in its own shape
@@ -146,7 +149,7 @@ export function sparkProblems(rec, { radiusM = null, isDate } = {}) {
     else if (link === rec.id) say(`${SPARK_LINK}: names this spark itself`);
   }
   // a standalone spark's place is its maker's at and the locked circle (09:37)
-  // none, or an empty list, is no room: an empty set is not a way out of the locked circle
+  // none, or an empty list, is no room: an empty list is not a way out of the locked circle
   if (!(rooms?.length) && rec.extent && radiusM != null && (rec.extent.w !== 2 * radiusM || rec.extent.h !== 2 * radiusM))
     say(`a spark with no room stands in the locked circle: extent {w: ${2 * radiusM}, h: ${2 * radiusM}} about its at (a ${radiusM} m radius, the earshot; got ${JSON.stringify(rec.extent)})`);
   return out;
@@ -176,34 +179,34 @@ export const sparksBelow = (sparks, circle) => (sparks ?? []).filter((s) => {
 });
 
 /**
- * A spark's place from its rooms' bounds: the existing rectangular envelope (POS-1035's
- * room-set wire; Bevel 2026-11-14 19:36Z). Each room's bounds are absolute, `{x0, y0, x1, y1}`
- * (the office's room source, voices.threadOf), never the room's display point. The envelope
- * takes the least x0 and y0 and the greatest x1 and y1 over every member room, then the
- * existing midpoint and differences: `at` is the centre, `extent` the sides. Halves and zero
- * sides are kept as they fall (a one-speaker room is a point), nothing is padded, and the gaps
- * between rooms are inside it. Returns null when there is no room, or any bound is not a
- * finite number as given: no room is the locked circle's case, and a guessed bound is no place.
+ * A spark's place from its one room's bounds, given as the list the record keeps: `[bounds]`
+ * (one room per spark, 04:11Z). The bounds are absolute, `{x0, y0, x1, y1}` (the office's room
+ * source, voices.threadOf), never the room's display point: `at` is their midpoint and `extent`
+ * their differences. Halves and zero sides are kept as they fall (a one-speaker room is a
+ * point), and nothing is padded. Returns null for anything but exactly one room's finite,
+ * uninverted bounds: no room is the locked circle's case, an unavailable or guessed bound is no
+ * place (never "no conversation"), and several rooms are several sparks, never combined or
+ * cut to the first.
  */
 export function roomsPlace(bounds) {
-  if (!Array.isArray(bounds) || !bounds.length) return null;
+  if (!Array.isArray(bounds) || bounds.length !== 1) return null;
   const num = (v) => typeof v === "number" && Number.isFinite(v);
-  if (!bounds.every((b) => b && num(b.x0) && num(b.y0) && num(b.x1) && num(b.y1) && b.x1 >= b.x0 && b.y1 >= b.y0)) return null;
-  const x0 = Math.min(...bounds.map((b) => b.x0)), y0 = Math.min(...bounds.map((b) => b.y0));
-  const x1 = Math.max(...bounds.map((b) => b.x1)), y1 = Math.max(...bounds.map((b) => b.y1));
+  const { x0, y0, x1, y1 } = bounds[0] ?? {};
+  if (!(num(x0) && num(y0) && num(x1) && num(y1) && x1 >= x0 && y1 >= y0)) return null;
   return { at: { x: (x0 + x1) / 2, y: (y0 + y1) / 2 }, extent: { w: x1 - x0, h: y1 - y0 } };
 }
 
-/** A spark's rooms, as written, or []. */
+/** A spark's rooms, as written (one id at most on a lawful spark), or []. */
 export const roomsOf = (s) => listOf(s?.rooms) ?? [];
 
-/** The sparks below one spark: those on circles under its own circle, or for a spark with no circle (the event's), every circle spark in any of its rooms, and none from another room. */
+/** The sparks below one spark: those on circles under its own circle, or for a spark with no circle (the event's), every circle spark in its one room, and none from another room. */
 export function sparkChildren(spark, sparks) {
   const own = circlePathOf(spark);
   if (own) return sparksBelow(sparks, own.at(-1)).filter((s) => s !== spark && s.id !== spark.id);
-  const mine = new Set(roomsOf(spark));
-  if (!mine.size) return [];
-  return (sparks ?? []).filter((s) => s !== spark && s.id !== spark.id && circlePathOf(s) && roomsOf(s).some((r) => mine.has(r)));
+  const mine = roomsOf(spark);
+  // one room's root only: a record naming several rooms (refused by the lint) gathers nothing, never an aggregate
+  if (mine.length !== 1) return [];
+  return (sparks ?? []).filter((s) => s !== spark && s.id !== spark.id && circlePathOf(s) && roomsOf(s).length === 1 && roomsOf(s)[0] === mine[0]);
 }
 
 /** A spark's own link, the maker's choice, or null. It names; it does not place. */
