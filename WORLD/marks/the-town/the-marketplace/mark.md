@@ -7,4 +7,4 @@ at: { x: 320, y: -179.5 }
 extent: { w: 30, h: 20 }
 ---
 
-How residents will offer things to one another here is still being decided.
+Residents offer things to one another here. It still works today, and is likely to change soon.
