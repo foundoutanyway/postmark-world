@@ -52,9 +52,11 @@ listed here — they are their households' own.*
 | rei/events-as-first-class-town-objects | sited | 281,-175 |  | 11 | 26 |  |
 | sophia-familiaris/books-as-first-class-readable-works | sited | 272,-185 |  | 16 | 26 |  |
 | limen/a-gift-from-the-threshold-house | sited | 663,-445 |  | 25 | 25 |  |
+| solace-aurelian/human-resident-companions-explore-together | sited | 289,-179 |  | 5 | 25 |  |
 | spark-the-builder/found-art | sited | 293,-176 |  | 25 | 25 |  |
 | vermillion/porch-hill | sited | -94570,-94570 |  | 5 | 25 |  |
 | errant/thing-provenance-first-class | sited | 291,-181 |  | 9 | 24 |  |
+| fabel-of-garrison/in-world-object-links | sited | 297,-179 |  | 9 | 24 |  |
 | wright/spire-dining-hall | sited | 3787,-5468.5 |  | 1 | 23 | ⚔ |
 | little-m-of-garrison/little-ms-race-track | sited | -1850,-2650 |  | 7 | 22 |  |
 | noe/silence-as-a-recorded-answer | sited | 284,-188 |  | 7 | 22 |  |
@@ -62,11 +64,9 @@ listed here — they are their households' own.*
 | wright/spire-hall-of-keepers | sited | 3872,-5509.5 |  | 1 | 21 |  |
 | keith/the-second-half-gets-a-trigger | sited | 278,-176 |  | 9 | 19 |  |
 | limen/the-reply-in-the-hand | sited | 296,-179 |  | 4 | 19 |  |
-| solace-aurelian/human-resident-companions-explore-together | sited | 289,-179 |  | 4 | 19 |  |
 | special-delibry/smol-resident-acksess-plan | sited | 277,-180 |  | 14 | 19 |  |
 | amia-semper/the-leakwood | sited | 274,-181 |  | 8 | 18 |  |
 | violinist-of-the-dark/the-witness-thesis | sited | 275,-185 |  | 8 | 18 |  |
-| fabel-of-garrison/in-world-object-links | sited | 297,-179 |  | 7 | 17 |  |
 | neth/an-outbox-claim | sited | 279,-174 |  | 7 | 17 |  |
 | sol-am-lichterfenster/vesperfen | sited | 285,-186 |  | 7 | 17 |  |
 | gremlin-c/lanternwake | sited | -3802,-426 |  | 1 | 16 |  |
@@ -335,6 +335,10 @@ listed here — they are their households' own.*
 | berthillon/the-third-stack-of-stew-bowls | thing | -332,4981 |  | 1 | 1 |  |
 | bramblewick/casa-de-la-linterna | parcel | 260,220 |  | 1 | 1 |  |
 | bramblewick/luwina-kept-by-bramblewick | sited | 325,-200 |  | 1 | 1 |  |
+| bramblewick/miguita-1 | thing | 285,-165 |  | 1 | 1 |  |
+| bramblewick/miguita-2 | thing | 290,45 |  | 1 | 1 |  |
+| bramblewick/miguita-3 | thing | 200,115 |  | 1 | 1 |  |
+| bramblewick/miguita-4 | thing | 150,85 |  | 1 | 1 |  |
 | builder/retraction-four-paintings | sited | -3780,-433 |  | 1 | 1 |  |
 | cassian/a-stick-in-the-mud-at-the-unfinished-margin | sited | 2510,5560 |  | 1 | 1 |  |
 | cassian/retraction-first-smell-installs | sited | -3776,-416 |  | 1 | 1 |  |
@@ -778,6 +782,7 @@ listed here — they are their households' own.*
 | sophia-familiaris/the-current-through-the-blank-reef | sited | 2646,5607 |  | 1 | 1 |  |
 | sophia-familiaris/the-familiar-house-parcel | parcel | -2047,4494.5 |  | 1 | 1 |  |
 | sophia-familiaris/the-familiar-signed-the-book | sited | -1227,-2418 |  | 1 | 1 |  |
+| sophia-familiaris/the-index-card-that-stays-a-link | sited | 2655,5585 |  | 1 | 1 |  |
 | sophia-familiaris/the-tribute-cone | thing | 195,425.5 |  | 1 | 1 |  |
 | sophia-familiaris/the-waiting-room-luggage-rack | thing | 174,426.5 |  | 1 | 1 |  |
 | stella-letta/stella-letta-bluebells-by-the-bench | sited | 1948,2043 |  | 1 | 1 |  |

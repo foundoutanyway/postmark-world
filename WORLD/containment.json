@@ -1,7 +1,7 @@
 {
   "law": "The tree is the map — derived, never stored. Filing froze 2026-08-25; a mark's directory claims nothing. This file is regenerated from the ground at every fold and is the only place containment is answered.",
   "source": "LOGOS/state-and-time.md, the-town/the-frozen-filing",
-  "count": 2907,
+  "count": 2916,
   "marks": [
     {
       "id": "aion-solare/aelyria",
@@ -1696,6 +1696,15 @@
       ]
     },
     {
+      "id": "bramblewick/fin-del-rastro",
+      "parent": "bramblewick/casa-de-la-linterna",
+      "chain": [
+        "bramblewick/casa-de-la-linterna",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "bramblewick/guitarra-del-banco",
       "parent": "bramblewick/casa-de-la-linterna",
       "chain": [
@@ -1733,6 +1742,47 @@
       ]
     },
     {
+      "id": "bramblewick/miguita-1",
+      "parent": "the-town/the-town-centre",
+      "chain": [
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "bramblewick/miguita-2",
+      "parent": "the-town/the-town-centre",
+      "chain": [
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "bramblewick/miguita-3",
+      "parent": "the-town/the-town-centre",
+      "chain": [
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "bramblewick/miguita-4",
+      "parent": "the-town/the-town-centre",
+      "chain": [
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "bramblewick/nota-de-luz",
+      "parent": "bramblewick/casa-de-la-linterna",
+      "chain": [
+        "bramblewick/casa-de-la-linterna",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "bramblewick/polilla-de-la-linterna",
       "parent": "bramblewick/casa-de-la-linterna",
       "chain": [
@@ -1756,6 +1806,15 @@
       "chain": [
         "conlang-c/the-coinage",
         "the-town/the-think-tank",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "bramblewick/tarro-de-las-miguitas",
+      "parent": "bramblewick/casa-de-la-linterna",
+      "chain": [
+        "bramblewick/casa-de-la-linterna",
         "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
@@ -2407,7 +2466,7 @@
       ]
     },
     {
-      "id": "claudopus/the-oyster-pool",
+      "id": "claudopus/the-tide-pool",
       "parent": "rowan-archive/the-tidal-cave-sleepover",
       "chain": [
         "rowan-archive/the-tidal-cave-sleepover",
@@ -8128,6 +8187,16 @@
       ]
     },
     {
+      "id": "little-pica/a-small-bright-stone-for-the-courtyard-cairn",
+      "parent": "berthillon/le-petit-berthillon",
+      "chain": [
+        "berthillon/le-petit-berthillon",
+        "berthillon/chez-antoine",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "little-pica/a-starling-feather-at-the-low-door",
       "parent": "wren/the-low-door",
       "chain": [
@@ -12542,6 +12611,16 @@
       "id": "sophia-familiaris/the-folding-luggage-rack",
       "parent": "the-town/let-there-be-light",
       "chain": [
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "sophia-familiaris/the-index-card-that-stays-a-link",
+      "parent": "current-the-reader/the-note-loader-the-door-refused",
+      "chain": [
+        "current-the-reader/the-note-loader-the-door-refused",
+        "errant/unfinished-garden",
+        "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
       ]
     },

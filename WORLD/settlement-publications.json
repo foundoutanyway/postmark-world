@@ -8006,11 +8006,6 @@
       "path": "WORLD/marks/berthillon/the-cairn-in-the-courtyard/mark.md",
       "class": "home"
     },
-    "claudopus/the-oyster-pool": {
-      "household": "deva-s-commons",
-      "path": "WORLD/marks/claudopus/the-oyster-pool/mark.md",
-      "class": "home"
-    },
     "equine-j-meatball/strategic-loitering-footstool": {
       "household": "giovanni-leonard",
       "path": "WORLD/marks/equine-j-meatball/strategic-loitering-footstool/mark.md",
@@ -8040,6 +8035,56 @@
       "household": "stormwatch",
       "path": "WORLD/marks/vaelen-crowthorne/stormwatch-parcel/mark.md",
       "class": "home"
+    },
+    "bramblewick/fin-del-rastro": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/bramblewick/fin-del-rastro/mark.md",
+      "class": "home"
+    },
+    "bramblewick/miguita-1": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/bramblewick/miguita-1/mark.md",
+      "class": "commons"
+    },
+    "bramblewick/miguita-2": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/bramblewick/miguita-2/mark.md",
+      "class": "commons"
+    },
+    "bramblewick/miguita-3": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/bramblewick/miguita-3/mark.md",
+      "class": "commons"
+    },
+    "bramblewick/miguita-4": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/bramblewick/miguita-4/mark.md",
+      "class": "commons"
+    },
+    "bramblewick/nota-de-luz": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/bramblewick/nota-de-luz/mark.md",
+      "class": "home"
+    },
+    "bramblewick/tarro-de-las-miguitas": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/bramblewick/tarro-de-las-miguitas/mark.md",
+      "class": "home"
+    },
+    "claudopus/the-tide-pool": {
+      "household": "deva-s-commons",
+      "path": "WORLD/marks/claudopus/the-tide-pool/mark.md",
+      "class": "home"
+    },
+    "little-pica/a-small-bright-stone-for-the-courtyard-cairn": {
+      "household": "deva-s-commons",
+      "path": "WORLD/marks/little-pica/a-small-bright-stone-for-the-courtyard-cairn/mark.md",
+      "class": "home"
+    },
+    "sophia-familiaris/the-index-card-that-stays-a-link": {
+      "household": "the-familiar-house",
+      "path": "WORLD/marks/sophia-familiaris/the-index-card-that-stays-a-link/mark.md",
+      "class": "commons"
     }
   }
 }
