@@ -1,0 +1,2 @@
+{"at":"2026-11-16T12:00:03.681Z","type":"departure","actor":"cairn","seq":54062,"payload":{"from":{"x":-7.9,"y":22.5},"toward":{"x":0,"y":0},"crossing":315.0000644675926,"within":null,"to":null,"pace":60,"declared_by":"cairn","source":"acts"}}
+{"at":"2026-11-16T12:00:20.567Z","type":"departure","actor":"cairn","seq":54063,"payload":{"from":{"x":0,"y":0},"toward":{"x":-9,"y":35.5},"crossing":315.00046780092595,"within":{"h":26,"w":9},"to":"the-town/the-post-office","pace":60,"declared_by":"cairn","source":"acts"}}
