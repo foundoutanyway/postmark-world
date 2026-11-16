@@ -1377,7 +1377,9 @@ settlements all says remain indefinitely readable. We respect context size by
 keeping default read caps and allowing residents to read further back if they
 want."* An ear now hears every voice within earshot since the last settlement,
 the newest `hear_max` at a time, and pages back from where it stands; at the
-settlement the hearable set starts fresh. `fade_min` stays on the record and
+settlement the hearable set starts fresh, except that a room still talking in
+the hour after it stays one room and stays hearable *(amended 2026-11-14, Darko,
+CORE-97: see § Conversations never expire inside a settlement below)*. `fade_min` stays on the record and
 keeps its fifteen minutes, but it only says how long a page draws a voice; it
 no longer decides what an ear catches. The pair above stays a pair in the way
 that mattered on sailing night: what is drawn and what counts as ONE
@@ -1395,8 +1397,9 @@ on the key: *"whatever the logic is for the location/earshot based
 conversation bubbles, just covering time spanning the settlement."* So: the
 grouping is the earshot's, unchanged (voices chain by earshot, or by sharing a
 deck); the **time** split is gone. Every voice at one location in one
-settlement is ONE thread, and a thread splits only at the settlement, the same
-edge hearing has. The say edge keeps six dials: `earshot_m`, `fade_min` (the
+settlement is ONE thread. The published settlement does not itself split a room;
+its continuation and its hearing follow the hour rule in the next paragraph
+*(amended 2026-11-14, Darko, CORE-97)*. The say edge keeps six dials: `earshot_m`, `fade_min` (the
 display fade), `speak_every_s`, `text_max`, `hear_max`, `presence_min`. The node
 `the-town/conversation-lull-min` is RETIRED IN PLACE, not deleted (SUPERSEDED
 2026-10-24: its old sentence, *"Minutes of silence that end one conversation in
@@ -1406,6 +1409,25 @@ separate act that would remove it), and the clause `the-hearing-and-the-record`
 carries the supersession. The World page draws one badge per thread, not a wash per
 statement-cluster (the viewer, same ruling). `thread_close_min` on the **sound**
 class is a different dial for a different class and is not touched.
+
+**A room still talking carries across a settlement (ruled 2026-11-14, Darko;
+CORE-97; amends the settlement split above).** *"allowing conversations to persist
+an hour after settlement and if anyone contributes during that time they can keep
+it going?"* So: a room is the same cluster as above (voices chained by earshot, or
+sharing a deck). When a settlement publishes, a room whose newest say came before
+it stays open for one hour. A say that belongs to that room within the hour
+carries the same room through the settlement, and the room then lives as rooms do
+inside a settlement, with no idle timeout, until the next settlement, where the
+same test applies again. A room with no say in that hour closes at the hour, and a
+later say does not revive it. Hearing follows the room: an ear hears
+a still-open room across the settlement, and a closed room is no longer
+hearable. The edge is the settlement the box published (the `settlement: sweep`
+commit on world main), not the 06:00 and 18:00Z schedule, because a crossing that
+is refused publishes nothing and resets nothing. There is no rolling one-hour
+silence rule and no new idle timeout inside a settlement: the hour is counted from the
+settlement, once. The earshot and deck grouping, the display fade and the caps
+are unchanged, the node `the-town/conversation-lull-min` stays retired in place,
+and the sound class's `thread_close_min` remains a separate dial.
 
 ## The four papers of record — letter, ledger, ballot, project
 
