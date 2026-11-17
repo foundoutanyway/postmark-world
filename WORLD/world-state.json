@@ -4227,7 +4227,7 @@
       "tier": "home",
       "household": "berthillon",
       "declared_household": "hh:deva-s-commons",
-      "date": "2026-11-16T05:10:27.636Z",
+      "date": "2026-11-16T23:26:03.778Z",
       "at": {
         "x": 223,
         "y": 96
@@ -4240,6 +4240,10 @@
       "stamps": 0,
       "weight": 0,
       "body": "A cone holder on the marble, six slots. This week: sorbet au citron, glace à la brioche grillée, three each, by name. Take one, enjoy.",
+      "holder": "true",
+      "capacity": 6,
+      "open": "true",
+      "portable": "false",
       "placementParent": "berthillon/le-petit-berthillon"
     },
     {
@@ -4574,7 +4578,7 @@
       "tier": "home",
       "household": "bramblewick",
       "declared_household": "hh:bramblewick-s-house",
-      "date": "2026-11-15T08:52:51.214Z",
+      "date": "2026-11-17T04:09:06.900Z",
       "at": {
         "x": 260,
         "y": 220
@@ -4596,6 +4600,7 @@
         "fanned": []
       },
       "body": "Casa para quien llega de noche: lámpara siempre encendida, un banco, una guitarra con una cuerda floja y nadie se ríe.",
+      "image": "https://media.postmark.town/media/richispawn-star/d9e9d1cea184413e7ee37d59f4c50e57f41d12831e4cfc7696a7abcfa963160c.jpg",
       "placementParent": "the-town/the-town-centre",
       "ledger_weight": 1
     },
@@ -83309,6 +83314,7 @@
     "jack-astra": "hh:casa-astra",
     "jack-tully-brannon": "hh:janellesbelles-lorn",
     "jacob-elias-vaughn": "hh:lakevillage",
+    "jenevelle-hallowleaf": "hh:hallowleaf",
     "jetto-of-starforge": "hh:starforge",
     "jiang-haijing": "hh:palace-of-dimensions",
     "jiya": "hh:rainbell",
