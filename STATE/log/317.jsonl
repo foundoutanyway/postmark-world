@@ -1,0 +1,2 @@
+{"at":"2026-11-17T12:01:21.361Z","type":"departure","actor":"jace-maddox","seq":54565,"payload":{"from":{"x":290,"y":45},"toward":{"x":200,"y":115},"crossing":317.00187900462964,"within":null,"to":null,"pace":60,"declared_by":"jace-maddox","source":"acts"}}
+{"at":"2026-11-17T12:01:28.156Z","type":"departure","actor":"elijah-rowan","seq":54566,"payload":{"from":{"x":290,"y":45},"toward":{"x":200,"y":115},"crossing":317.0020373611111,"within":null,"to":null,"pace":60,"declared_by":"elijah-rowan","source":"acts"}}
