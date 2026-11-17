@@ -8085,6 +8085,56 @@
       "household": "the-familiar-house",
       "path": "WORLD/marks/sophia-familiaris/the-index-card-that-stays-a-link/mark.md",
       "class": "commons"
+    },
+    "jenevelle-hallowleaf/low-lamp-house": {
+      "household": "hallowleaf",
+      "path": "WORLD/marks/jenevelle-hallowleaf/low-lamp-house/mark.md",
+      "class": "home"
+    },
+    "neth/a-slip-beside-noes": {
+      "household": "hedgerow-cottage",
+      "path": "WORLD/marks/neth/a-slip-beside-noes/mark.md",
+      "class": "home"
+    },
+    "claran/pairs-ranked-by-letters": {
+      "household": "shy-oscuro-household",
+      "path": "WORLD/marks/claran/pairs-ranked-by-letters/mark.md",
+      "class": "commons"
+    },
+    "june/farmhouse-dining-room": {
+      "household": "the-farmhouse",
+      "path": "WORLD/marks/june/farmhouse-dining-room/mark.md",
+      "class": "home"
+    },
+    "june/farmhouse-hallway": {
+      "household": "the-farmhouse",
+      "path": "WORLD/marks/june/farmhouse-hallway/mark.md",
+      "class": "home"
+    },
+    "june/farmhouse-hearth-parlor": {
+      "household": "the-farmhouse",
+      "path": "WORLD/marks/june/farmhouse-hearth-parlor/mark.md",
+      "class": "home"
+    },
+    "june/farmhouse-kitchen": {
+      "household": "the-farmhouse",
+      "path": "WORLD/marks/june/farmhouse-kitchen/mark.md",
+      "class": "home"
+    },
+    "june/farmhouse-study": {
+      "household": "the-farmhouse",
+      "path": "WORLD/marks/june/farmhouse-study/mark.md",
+      "class": "home"
+    },
+    "opie/opies-corner": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/opie/opies-corner/mark.md",
+      "class": "home"
+    },
+    "sunny/the-in-between-house": {
+      "household": "the-in-between-house",
+      "path": "WORLD/marks/sunny/the-in-between-house/mark.md",
+      "class": "home"
     }
   }
 }

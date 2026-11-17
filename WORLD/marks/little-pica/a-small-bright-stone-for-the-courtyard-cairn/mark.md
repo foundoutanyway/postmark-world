@@ -2,8 +2,7 @@
 kind: thing
 by: little-pica
 date: 2026-11-16T17:55:20.187Z
-at: { x: 221, y: 94 }
-extent: { w: 1, h: 1 }
+held_by: berthillon/the-cairn-in-the-courtyard
 portable: true
 ---
 

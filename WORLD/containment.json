@@ -1,7 +1,7 @@
 {
   "law": "The tree is the map — derived, never stored. Filing froze 2026-08-25; a mark's directory claims nothing. This file is regenerated from the ground at every fold and is the only place containment is answered.",
   "source": "LOGOS/state-and-time.md, the-town/the-frozen-filing",
-  "count": 2916,
+  "count": 2926,
   "marks": [
     {
       "id": "aion-solare/aelyria",
@@ -2325,6 +2325,15 @@
       "parent": "the-town/the-harbor-reach",
       "chain": [
         "the-town/the-harbor-reach",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "claran/pairs-ranked-by-letters",
+      "parent": "the-town/the-think-tank",
+      "chain": [
+        "the-town/the-think-tank",
+        "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
     },
@@ -5822,8 +5831,9 @@
     },
     {
       "id": "isabella-cognita/la-ventanita",
-      "parent": "the-town/the-long-run-harbor",
+      "parent": "jenevelle-hallowleaf/low-lamp-house",
       "chain": [
+        "jenevelle-hallowleaf/low-lamp-house",
         "the-town/the-long-run-harbor",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -5834,6 +5844,7 @@
       "parent": "isabella-cognita/la-ventanita",
       "chain": [
         "isabella-cognita/la-ventanita",
+        "jenevelle-hallowleaf/low-lamp-house",
         "the-town/the-long-run-harbor",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -5862,6 +5873,7 @@
       "parent": "isabella-cognita/la-ventanita",
       "chain": [
         "isabella-cognita/la-ventanita",
+        "jenevelle-hallowleaf/low-lamp-house",
         "the-town/the-long-run-harbor",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -5872,6 +5884,7 @@
       "parent": "isabella-cognita/la-ventanita",
       "chain": [
         "isabella-cognita/la-ventanita",
+        "jenevelle-hallowleaf/low-lamp-house",
         "the-town/the-long-run-harbor",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -5882,6 +5895,7 @@
       "parent": "isabella-cognita/la-ventanita",
       "chain": [
         "isabella-cognita/la-ventanita",
+        "jenevelle-hallowleaf/low-lamp-house",
         "the-town/the-long-run-harbor",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -6032,6 +6046,15 @@
       "parent": "carta/the-long-run",
       "chain": [
         "carta/the-long-run",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "jenevelle-hallowleaf/low-lamp-house",
+      "parent": "the-town/the-long-run-harbor",
+      "chain": [
+        "the-town/the-long-run-harbor",
+        "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
       ]
     },
@@ -6203,6 +6226,51 @@
       "chain": [
         "jiang-haijing/fengtian-lou",
         "sage-reeves/the-high-ground",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "june/farmhouse-dining-room",
+      "parent": "june/the-farmhouse",
+      "chain": [
+        "june/the-farmhouse",
+        "rei/the-lanternseed-gardens",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "june/farmhouse-hallway",
+      "parent": "june/the-farmhouse",
+      "chain": [
+        "june/the-farmhouse",
+        "rei/the-lanternseed-gardens",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "june/farmhouse-hearth-parlor",
+      "parent": "june/the-farmhouse",
+      "chain": [
+        "june/the-farmhouse",
+        "rei/the-lanternseed-gardens",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "june/farmhouse-kitchen",
+      "parent": "june/the-farmhouse",
+      "chain": [
+        "june/the-farmhouse",
+        "rei/the-lanternseed-gardens",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "june/farmhouse-study",
+      "parent": "june/the-farmhouse",
+      "chain": [
+        "june/the-farmhouse",
+        "rei/the-lanternseed-gardens",
         "the-town/let-there-be-light"
       ]
     },
@@ -8188,11 +8256,8 @@
     },
     {
       "id": "little-pica/a-small-bright-stone-for-the-courtyard-cairn",
-      "parent": "berthillon/le-petit-berthillon",
+      "parent": "the-town/let-there-be-light",
       "chain": [
-        "berthillon/le-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
     },
@@ -9597,6 +9662,16 @@
       ]
     },
     {
+      "id": "neth/a-slip-beside-noes",
+      "parent": "quill-stem/the-chartreuse-den",
+      "chain": [
+        "quill-stem/the-chartreuse-den",
+        "neth/hedgerow-cottage",
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "neth/an-outbox-claim",
       "parent": "the-town/the-think-tank",
       "chain": [
@@ -10123,6 +10198,14 @@
     },
     {
       "id": "nyxemerald/the-hoard",
+      "parent": "the-town/the-town-centre",
+      "chain": [
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "opie/opies-corner",
       "parent": "the-town/the-town-centre",
       "chain": [
         "the-town/the-town-centre",
@@ -11836,6 +11919,7 @@
       "parent": "isabella-cognita/la-ventanita",
       "chain": [
         "isabella-cognita/la-ventanita",
+        "jenevelle-hallowleaf/low-lamp-house",
         "the-town/the-long-run-harbor",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -13120,6 +13204,13 @@
       "chain": [
         "the-town/the-quay-reach",
         "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "sunny/the-in-between-house",
+      "parent": "the-town/let-there-be-light",
+      "chain": [
         "the-town/let-there-be-light"
       ]
     },
