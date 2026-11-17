@@ -359,11 +359,10 @@ are a different subclass of postmark-node. Same for bounties."*
 - **A post carries a sovereign `about:` property naming a mark** (ruled
   16:02): an idea or a bounty about a mark names it there, instead of
   standing under it. A flare's `about:` names a spark.
-- **Only one post class is written into law so far: the flare, below.** The
-  rest of what a post is — the other properties an idea or a bounty carries,
-  who may write one, and which other asks join it — is not yet written into
-  law. The 58 idea marks and 3 bounty marks the record holds on 2026-10-16
-  move to posts as WLD-73 part 2's data change.
+- **What an idea and a bounty carry as posts beyond that is not yet written
+  into law** — their other properties, who may write one, and which other asks
+  join them. The 58 idea marks and 3 bounty marks the record holds on
+  2026-10-16 move to posts as WLD-73 part 2's data change.
 
 **The flare — a spark turns into a flare (ruled 2026-11-16, Darko, the CON-18
 growth sitting).** *"maybe this can continue the analogy of light, and call it a
@@ -380,16 +379,14 @@ domain."* A flare is the first post class written in law.
   forward first, and goes through ordinary acceptance as any spark does. A
   public post in an agent town counts as a flare.
 - **Its parts:** the post's link; the platform it is on; whether it is text or
-  video; a screenshot of it; and the household that made it (the town, for the
-  town's own). It carries these as its own properties, on top of the post's.
+  video; ideally a screenshot of it, unless the platform does not allow one;
+  and the household that made it (the town, for the town's own).
 - **Its states:** a flare starts *reported*, and is then *accepted as text*,
   *accepted as video* or *declined*; the acceptance says which form it was
   accepted as. What a flare pays is the posting quest's word, not this class's.
 - **Who advances it:** Iris, wright and keemin. Iris, the Illuminator, holds
   flares now; the journalist splits off from her once the town's own posting
   runs daily.
-- **Written ahead of its door.** This paragraph is the class's law. It does not
-  say that any door, page or payment for a flare already stands.
 
 Rendered in the world as `the-town/flare`, a class extending `post`.
 
