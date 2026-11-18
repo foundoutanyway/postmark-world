@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 
 import {
   OVERLAY_PIP_R, HOME_CARD, homeCardPath, markerScale,
-  overlayHomeCardSVG, homesOfParcel, houseIsLit, houseLight, lightNote, lightsRequest, enclosingParcels, homeFaceSVG, fillFromTown, TOWN_FILL_FIELDS,
+  overlayHomeCardSVG, homesOfParcel, houseIsLit, houseLight, lightNote, lightsRequest, enclosingParcels, homeFaceSVG, fillFromTown, fillOwnFromTown, TOWN_FILL_FIELDS,
   sceneArtSVG, parcelLeadImage, markImagePath, housePicture,
 } from "../spectator/viewer.mjs";
 
@@ -272,4 +272,42 @@ test("sceneArtSVG is what drew the square, and it still draws for real furniture
   // and reusable, the caller decides what is furniture.
   assert.ok(sceneArtSVG({ ...chair, id: "a/b-parcel", kind: "parcel" }, px).length > 0,
     "the function itself is unchanged and still answers for any embodied mark");
+});
+
+test("a resident's own mark that is not a house gets its picture from the town's record, and nothing is added", () => {
+  // little-bird's bug post, 2026-11-18: seven crumbs, each published with a
+  // picture. Signed in, a crumb the read did not carry stayed a my-marks row
+  // with no `image`, and its column showed no picture; crumb 7, in sight,
+  // showed its picture. fillFromTown is handed houses only, so it never ran.
+  const IMG = "https://media.postmark.town/media/foundoutanyway/9b9db5528300b4850b08b552e032c779de12bde81cdf30a3c23fded63d7b08b5.png";
+  const town = { id: "little-bird/crumb-5-of-7", kind: "sited", by: "little-bird", tier: "market",
+    at: { x: -146, y: 1097.5 }, extent: { w: 50, h: 49 }, body: "Crumb 5 of 7.", image: IMG };
+  const elsewhere = { id: "keith/porch-bowl", kind: "thing", by: "keith", at: { x: 3975, y: -400 }, image: IMG };
+  // the row my-marks hands the page for a pending amend: its own footprint, no picture
+  const row = { id: town.id, by: "little-bird", kind: "sited", body: "Crumb 5 of 7, bigger.", at: { x: -146, y: 1097.5 }, extent: { w: 210, h: 205.8 } };
+  const byId = new Map([[row.id, row]]);
+
+  assert.equal(markImagePath(byId.get(row.id)), null, "before: the row has no picture to show");
+  fillFromTown(byId, []);   // what withTownHouses did on its own: houses only
+  assert.equal(markImagePath(byId.get(row.id)), null, "the houses-only fill does not reach it");
+
+  const touched = fillOwnFromTown(byId, [town, elsewhere]);
+  assert.deepEqual(touched, [row.id], "the resident's own mark was filled");
+  const filled = byId.get(row.id);
+  assert.equal(markImagePath(filled), "/shelf/foundoutanyway/9b9db5528300b4850b08b552e032c779de12bde81cdf30a3c23fded63d7b08b5.png", "after: the town's picture");
+  assert.deepEqual(filled.extent, { w: 210, h: 205.8 }, "the pending edit keeps its own footprint");
+  assert.equal(filled.body, "Crumb 5 of 7, bigger.", "and its own words");
+  assert.equal(filled.tier, "market", "a missing field comes from the record");
+  assert.equal(byId.has(elsewhere.id), false, "a mark the index did not hold is not added");
+
+  // never overwrite, and a record that is already the index's own is left alone
+  const own = new Map([[row.id, { ...row, image: "https://media.postmark.town/media/foundoutanyway/mine.png" }]]);
+  fillOwnFromTown(own, [town]);
+  assert.equal(own.get(row.id).image, "https://media.postmark.town/media/foundoutanyway/mine.png");
+  assert.deepEqual(fillOwnFromTown(new Map([[town.id, town]]), [town]), [], "the read's own record is not touched");
+});
+
+test("[pin] withTownHouses fills the resident's own marks from the town's whole record", () => {
+  assert.match(SOURCE, /fillFromTown\(byId, townHouses\);\s*\/\/[^\n]*\n\s*\/\/[^\n]*\n\s*if \(townWorld\) fillOwnFromTown\(byId, townWorld\.marks\);/,
+    "after the houses, the rest of the resident's own marks, from the same record");
 });

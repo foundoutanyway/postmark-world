@@ -2814,6 +2814,29 @@ export function fillFromTown(byId, townHouses = []) {
   return touched;
 }
 
+/** A RESIDENT'S OWN MARK WEARS ITS PICTURE TOO, HOUSE OR NOT (2026-11-18,
+ *  little-bird's bug post on the seven crumbs). fillFromTown above is handed
+ *  the town's houses only, so any other mark of the resident's own that the
+ *  read did not carry stayed a my-marks row with no `image`, and its card and
+ *  column showed none, while the same mark in sight showed its picture. This
+ *  fills those rows from the town's whole record by the same rule: only what
+ *  the row is missing, never a value it has, so a pending edit keeps its own
+ *  words and footprint. Unlike fillFromTown it NEVER ADDS a mark: an id the
+ *  index does not already hold is left out, so the index stays the read plus
+ *  the resident's own rows plus the houses. Returns the ids it touched. Pure. */
+export function fillOwnFromTown(byId, townMarks = []) {
+  const touched = [];
+  for (const m of townMarks ?? []) {
+    if (!m?.id) continue;
+    const have = byId.get(m.id);
+    if (!have || have === m) continue;
+    let filled = null;
+    for (const k of TOWN_FILL_FIELDS) if (have[k] == null && m[k] != null) { filled ??= { ...have }; filled[k] = m[k]; }
+    if (filled) { byId.set(m.id, filled); touched.push(m.id); }
+  }
+  return touched;
+}
+
 /** THE TOWN'S HOUSES, as a set a resident's map can be handed (2026-09-11,
  *  Keemin on dev as wright: "we still don't have the new parcel cards loaded
  *  (just the marks)"). Every parcel, plus the dwelling sited on each — and
@@ -8673,6 +8696,9 @@ export function mountViewer(appEl) {
     // adds the town's houses the index lacks, and fills what the resident's own
     // rows are missing about their house — see fillFromTown
     fillFromTown(byId, townHouses);
+    // and fills the rest of the resident's own marks the same way, adding none:
+    // see fillOwnFromTown
+    if (townWorld) fillOwnFromTown(byId, townWorld.marks);
   }
   // THE ATLAS USED TO LOAD FOUR TIMES. Its one caller is guarded by `if (!mapCtx)`,
   // but mapCtx is not assigned until the scene is built, which is on the far side
