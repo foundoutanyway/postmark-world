@@ -2110,6 +2110,16 @@ export function disciplineAtlasImages(root) {
 // issues. The narrow rule is the one the reader's browser gets asked to fetch.
 const MARK_IMAGE_SHELF = /^https:\/\/media\.postmark\.town\/media\/[A-Za-z0-9][A-Za-z0-9/._-]*$/;
 
+// ── A MARK'S CARD SHOWS ITS PICTURE BY DEFAULT (Darko, 2026-11-18, on
+// little-bird's bug post world-page-a-small-mark-s-card-shows-an-empty-grey-
+// square-in; WLD-202). `?mark-art=off` turns it off; any other value, or none,
+// leaves it on. This reaches the card only. Whether a picture hangs on the
+// GROUND is the placed_art_min_m draw dial (200 m), which this does not touch.
+//
+// Until then the default was off, by the founder's ruling of 2026-08-21: "just
+// by default, let's NOT load these images in for let-there-be-light for now".
+// The notes below were written for that default and still describe the switch.
+//
 // ── THE MAP CARRIES NO PICTURES, FOR NOW (founder, 2026-08-21: "just by
 // default, let's NOT load these images in for let-there-be-light for now") ───
 //
@@ -2127,8 +2137,8 @@ const MARK_IMAGE_SHELF = /^https:\/\/media\.postmark\.town\/media\/[A-Za-z0-9][A
 // is not a state test at render time — it is which surface asks.
 export const MARK_ART_PARAM = "mark-art";
 export function markArtOnMap(search = typeof location === "undefined" ? "" : location.search) {
-  try { return new URLSearchParams(String(search ?? "")).get(MARK_ART_PARAM) === "on"; }
-  catch { return false; }
+  try { return new URLSearchParams(String(search ?? "")).get(MARK_ART_PARAM) !== "off"; }
+  catch { return true; }
 }
 
 export function markImageURL(mark) {
