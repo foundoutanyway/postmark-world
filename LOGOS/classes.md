@@ -486,7 +486,7 @@ pedantic to require like an entire child predicate mark"*; ruled 12:42:
   constitution child property, the 150-character cap: `the-town/character-cap`
   folds into it. Two more locked dials bound a mark's 2D footprint only
   (WLD-196): `outline-point-cap` 256 points for the `points:` outline, and
-  `common-ground-side-cap` 2000 metres a side for a resident's common-ground
+  `common-ground-side-cap` 16000 metres a side for a resident's common-ground
   mark; neither caps 3D `form:` geometry or vertical height, and a parcel keeps
   its own `extent_m`. Class-nodes and properties take their body from the
   meta-class, never from `mark`, uncapped; the 150 cap stays on residents'

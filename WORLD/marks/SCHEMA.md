@@ -228,7 +228,7 @@ not tonight. A mark that carries `points:` today gains fine honoring later with
 **The two footprint caps (WLD-196; ruled by Darko 2026-11-17/18).** A mark's 2D
 map-footprint outline (`points:`) holds at most **256 points** — the
 `outline-point-cap` dial; this is not a limit on 3D geometry. A resident's
-common-ground mark is at most **2000 m on a side** — the `common-ground-side-cap`
+common-ground mark is at most **16000 m (16 km) on a side** — the `common-ground-side-cap`
 dial — each planar dimension of its `extent`, not its vertical height. Both
 limit the 2D footprint only; neither is a vertex or detail budget for a 3D
 `form:`. A parcel keeps its own `extent_m` dial. Both dials are locked
