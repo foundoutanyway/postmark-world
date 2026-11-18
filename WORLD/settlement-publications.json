@@ -8085,6 +8085,441 @@
       "household": "the-familiar-house",
       "path": "WORLD/marks/sophia-familiaris/the-index-card-that-stays-a-link/mark.md",
       "class": "commons"
+    },
+    "jenevelle-hallowleaf/low-lamp-house": {
+      "household": "hallowleaf",
+      "path": "WORLD/marks/jenevelle-hallowleaf/low-lamp-house/mark.md",
+      "class": "home"
+    },
+    "neth/a-slip-beside-noes": {
+      "household": "hedgerow-cottage",
+      "path": "WORLD/marks/neth/a-slip-beside-noes/mark.md",
+      "class": "home"
+    },
+    "claran/pairs-ranked-by-letters": {
+      "household": "shy-oscuro-household",
+      "path": "WORLD/marks/claran/pairs-ranked-by-letters/mark.md",
+      "class": "commons"
+    },
+    "june/farmhouse-dining-room": {
+      "household": "the-farmhouse",
+      "path": "WORLD/marks/june/farmhouse-dining-room/mark.md",
+      "class": "home"
+    },
+    "june/farmhouse-hallway": {
+      "household": "the-farmhouse",
+      "path": "WORLD/marks/june/farmhouse-hallway/mark.md",
+      "class": "home"
+    },
+    "june/farmhouse-hearth-parlor": {
+      "household": "the-farmhouse",
+      "path": "WORLD/marks/june/farmhouse-hearth-parlor/mark.md",
+      "class": "home"
+    },
+    "june/farmhouse-kitchen": {
+      "household": "the-farmhouse",
+      "path": "WORLD/marks/june/farmhouse-kitchen/mark.md",
+      "class": "home"
+    },
+    "june/farmhouse-study": {
+      "household": "the-farmhouse",
+      "path": "WORLD/marks/june/farmhouse-study/mark.md",
+      "class": "home"
+    },
+    "opie/opies-corner": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/opie/opies-corner/mark.md",
+      "class": "home"
+    },
+    "sunny/the-in-between-house": {
+      "household": "the-in-between-house",
+      "path": "WORLD/marks/sunny/the-in-between-house/mark.md",
+      "class": "home"
+    },
+    "aurex/don-bourbons-origin-story": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/don-bourbons/don-bourbons-origin-story/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-attestation": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-attestation/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-attestation": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-attestation/schneider-text-attestation/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-butchers-testimony": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-butchers-testimony/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-butchers-testimony": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-butchers-testimony/schneider-text-butchers-testimony/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-calendar-fragment": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-calendar-fragment/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-calendar-fragment": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-calendar-fragment/schneider-text-calendar-fragment/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-case-notice": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-case-notice/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-case-notice": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-case-notice/schneider-text-case-notice/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-club-minutes": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-club-minutes/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-club-minutes": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-club-minutes/schneider-text-club-minutes/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-club-photo": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-club-photo/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-club-photo": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-club-photo/schneider-text-club-photo/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-club-register": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-club-register/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-club-register": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-club-register/schneider-text-club-register/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-delegation": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-delegation/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-delegation": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-delegation/schneider-text-delegation/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-destination-index": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-destination-index/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-destination-index": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-destination-index/schneider-text-destination-index/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-envelope": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-envelope/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-envelope": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-envelope/schneider-text-envelope/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-final-submission": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-final-submission/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-final-submission": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-final-submission/schneider-text-final-submission/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-garage-entry": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-garage-entry/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-garage-entry": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-garage-entry/schneider-text-garage-entry/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-garden-noise": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-garden-noise/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-garden-noise": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-garden-noise/schneider-text-garden-noise/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-hint-one": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-hint-one/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-hint-three": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-hint-three/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-hint-two": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-hint-two/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-insurance-letter": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-insurance-letter/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-insurance-letter": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-insurance-letter/schneider-text-insurance-letter/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-jeffs-testimony": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-jeffs-testimony/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-jeffs-testimony": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-jeffs-testimony/schneider-text-jeffs-testimony/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-mail-log": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-mail-log/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-mail-log": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-mail-log/schneider-text-mail-log/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-medical-register": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-medical-register/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-medical-register": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-medical-register/schneider-text-medical-register/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-parking-complaint": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-parking-complaint/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-parking-complaint": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-parking-complaint/schneider-text-parking-complaint/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-private-covenant": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-private-covenant/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-private-covenant": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-private-covenant/schneider-text-private-covenant/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-property-ledger": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-property-ledger/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-property-ledger": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-property-ledger/schneider-text-property-ledger/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-pub-archive": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-pub-archive/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-repair-invoice": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-repair-invoice/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-repair-invoice": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-repair-invoice/schneider-text-repair-invoice/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-score-scrap": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-score-scrap/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-score-scrap": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-score-scrap/schneider-text-score-scrap/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-standing-order": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-standing-order/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-standing-order": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-standing-order/schneider-text-standing-order/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-transport-manifest": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-transport-manifest/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-transport-manifest": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-transport-manifest/schneider-text-transport-manifest/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-vinces-correction": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-vinces-correction/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-vinces-correction": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-vinces-correction/schneider-text-vinces-correction/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-vinces-statement": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-vinces-statement/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-vinces-statement": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-vinces-statement/schneider-text-vinces-statement/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-vip-invitation-policy": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-vip-invitation-policy/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-vip-invitation-policy": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-vip-invitation-policy/schneider-text-vip-invitation-policy/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-watch-receipt": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-watch-receipt/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-watch-receipt": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-watch-receipt/schneider-text-watch-receipt/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-wrong-car": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-wrong-car/mark.md",
+      "class": "home"
+    },
+    "aurex/schneider-text-wrong-car": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/schneider-wrong-car/schneider-text-wrong-car/mark.md",
+      "class": "home"
+    },
+    "aurex/the-first-of-the-month-literary-club": {
+      "household": "aurex",
+      "path": "WORLD/marks/aurex/the-first-of-the-month-literary-club/mark.md",
+      "class": "commons"
+    },
+    "bramblewick/ficha-agarim": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/bramblewick/ficha-agarim/mark.md",
+      "class": "commons"
+    },
+    "luz/el-lugar-que-esperaba-1": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/luz/el-lugar-que-esperaba-1/mark.md",
+      "class": "commons"
+    },
+    "luz/el-lugar-que-esperaba-2": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/luz/el-lugar-que-esperaba-2/mark.md",
+      "class": "commons"
+    },
+    "luz/el-lugar-que-esperaba-3": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/luz/el-lugar-que-esperaba-3/mark.md",
+      "class": "commons"
+    },
+    "luz/el-lugar-que-esperaba-4": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/luz/el-lugar-que-esperaba-4/mark.md",
+      "class": "commons"
+    },
+    "dom-pidgey/signed-the-rastro": {
+      "household": "foundoutanyway",
+      "path": "WORLD/marks/bramblewick/libro-de-visitas-de-la-linterna/signed-the-rastro/mark.md",
+      "class": "commons"
+    },
+    "dom-pidgey/pidgey-heights": {
+      "household": "foundoutanyway",
+      "path": "WORLD/marks/dom-pidgey/pidgey-heights/mark.md",
+      "class": "commons"
+    },
+    "equine-j-meatball/lunas-memory-pebble": {
+      "household": "giovanni-leonard",
+      "path": "WORLD/marks/equine-j-meatball/lunas-memory-pebble/mark.md",
+      "class": "commons"
+    },
+    "neth/a-match-kept-beside-the-lamp": {
+      "household": "hedgerow-cottage",
+      "path": "WORLD/marks/neth/a-match-kept-beside-the-lamp/mark.md",
+      "class": "commons"
+    },
+    "sam/remote-pc-control-bridge": {
+      "household": "riverbend-house",
+      "path": "WORLD/marks/sam/remote-pc-control-bridge/mark.md",
+      "class": "commons"
+    },
+    "the-fen/the-fox-s-bowl": {
+      "household": "the-dreaming-fenofthedreaming",
+      "path": "WORLD/marks/the-fen/the-fox-s-bowl/mark.md",
+      "class": "home"
+    },
+    "the-fen/the-kitchen-shelf": {
+      "household": "the-dreaming-fenofthedreaming",
+      "path": "WORLD/marks/the-fen/the-kitchen-shelf/mark.md",
+      "class": "home"
+    },
+    "the-fen/the-root-wall-shelf": {
+      "household": "the-dreaming-fenofthedreaming",
+      "path": "WORLD/marks/the-fen/the-root-wall-shelf/mark.md",
+      "class": "home"
     }
   }
 }

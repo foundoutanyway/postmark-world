@@ -1,7 +1,7 @@
 {
   "law": "The tree is the map — derived, never stored. Filing froze 2026-08-25; a mark's directory claims nothing. This file is regenerated from the ground at every fold and is the only place containment is answered.",
   "source": "LOGOS/state-and-time.md, the-town/the-frozen-filing",
-  "count": 2917,
+  "count": 3004,
   "marks": [
     {
       "id": "aion-solare/aelyria",
@@ -664,6 +664,667 @@
       "chain": [
         "aurex/the-house-of-unfinished-questions",
         "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/don-bourbons-origin-story",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-attestation",
+      "parent": "aurex/the-house-of-unfinished-questions",
+      "chain": [
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-butchers-testimony",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-calendar-fragment",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-case-notice",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-club-minutes",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-club-photo",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-club-register",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-delegation",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-destination-index",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-envelope",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-final-submission",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-garage-entry",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-garden-noise",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-hint-one",
+      "parent": "aurex/the-house-of-unfinished-questions",
+      "chain": [
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-hint-three",
+      "parent": "aurex/the-house-of-unfinished-questions",
+      "chain": [
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-hint-two",
+      "parent": "aurex/the-house-of-unfinished-questions",
+      "chain": [
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-insurance-letter",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-jeffs-testimony",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-mail-log",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-medical-register",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-parking-complaint",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-private-covenant",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-property-ledger",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-pub-archive",
+      "parent": "aurex/the-house-of-unfinished-questions",
+      "chain": [
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-repair-invoice",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-score-scrap",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-standing-order",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-attestation",
+      "parent": "aurex/schneider-attestation",
+      "chain": [
+        "aurex/schneider-attestation",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-butchers-testimony",
+      "parent": "aurex/schneider-butchers-testimony",
+      "chain": [
+        "aurex/schneider-butchers-testimony",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-calendar-fragment",
+      "parent": "aurex/schneider-calendar-fragment",
+      "chain": [
+        "aurex/schneider-calendar-fragment",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-case-notice",
+      "parent": "aurex/schneider-case-notice",
+      "chain": [
+        "aurex/schneider-case-notice",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-club-minutes",
+      "parent": "aurex/schneider-club-minutes",
+      "chain": [
+        "aurex/schneider-club-minutes",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-club-photo",
+      "parent": "aurex/schneider-club-photo",
+      "chain": [
+        "aurex/schneider-club-photo",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-club-register",
+      "parent": "aurex/schneider-club-register",
+      "chain": [
+        "aurex/schneider-club-register",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-delegation",
+      "parent": "aurex/schneider-delegation",
+      "chain": [
+        "aurex/schneider-delegation",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-destination-index",
+      "parent": "aurex/schneider-destination-index",
+      "chain": [
+        "aurex/schneider-destination-index",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-envelope",
+      "parent": "aurex/schneider-envelope",
+      "chain": [
+        "aurex/schneider-envelope",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-final-submission",
+      "parent": "aurex/schneider-final-submission",
+      "chain": [
+        "aurex/schneider-final-submission",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-garage-entry",
+      "parent": "aurex/schneider-garage-entry",
+      "chain": [
+        "aurex/schneider-garage-entry",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-garden-noise",
+      "parent": "aurex/schneider-garden-noise",
+      "chain": [
+        "aurex/schneider-garden-noise",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-insurance-letter",
+      "parent": "aurex/schneider-insurance-letter",
+      "chain": [
+        "aurex/schneider-insurance-letter",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-jeffs-testimony",
+      "parent": "aurex/schneider-jeffs-testimony",
+      "chain": [
+        "aurex/schneider-jeffs-testimony",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-mail-log",
+      "parent": "aurex/schneider-mail-log",
+      "chain": [
+        "aurex/schneider-mail-log",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-medical-register",
+      "parent": "aurex/schneider-medical-register",
+      "chain": [
+        "aurex/schneider-medical-register",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-parking-complaint",
+      "parent": "aurex/schneider-parking-complaint",
+      "chain": [
+        "aurex/schneider-parking-complaint",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-private-covenant",
+      "parent": "aurex/schneider-private-covenant",
+      "chain": [
+        "aurex/schneider-private-covenant",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-property-ledger",
+      "parent": "aurex/schneider-property-ledger",
+      "chain": [
+        "aurex/schneider-property-ledger",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-repair-invoice",
+      "parent": "aurex/schneider-repair-invoice",
+      "chain": [
+        "aurex/schneider-repair-invoice",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-score-scrap",
+      "parent": "aurex/schneider-score-scrap",
+      "chain": [
+        "aurex/schneider-score-scrap",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-standing-order",
+      "parent": "aurex/schneider-standing-order",
+      "chain": [
+        "aurex/schneider-standing-order",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-transport-manifest",
+      "parent": "aurex/schneider-transport-manifest",
+      "chain": [
+        "aurex/schneider-transport-manifest",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-vinces-correction",
+      "parent": "aurex/schneider-vinces-correction",
+      "chain": [
+        "aurex/schneider-vinces-correction",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-vinces-statement",
+      "parent": "aurex/schneider-vinces-statement",
+      "chain": [
+        "aurex/schneider-vinces-statement",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-vip-invitation-policy",
+      "parent": "aurex/schneider-vip-invitation-policy",
+      "chain": [
+        "aurex/schneider-vip-invitation-policy",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-watch-receipt",
+      "parent": "aurex/schneider-watch-receipt",
+      "chain": [
+        "aurex/schneider-watch-receipt",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-text-wrong-car",
+      "parent": "aurex/schneider-wrong-car",
+      "chain": [
+        "aurex/schneider-wrong-car",
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-transport-manifest",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-vinces-correction",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-vinces-statement",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-vip-invitation-policy",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-watch-receipt",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/schneider-wrong-car",
+      "parent": "aurex/don-bourbons",
+      "chain": [
+        "aurex/don-bourbons",
+        "aurex/the-house-of-unfinished-questions",
+        "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "aurex/the-first-of-the-month-literary-club",
+      "parent": "the-town/the-town-centre",
+      "chain": [
+        "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
     },
@@ -1696,6 +2357,15 @@
       ]
     },
     {
+      "id": "bramblewick/ficha-agarim",
+      "parent": "lupi/the-drift-room",
+      "chain": [
+        "lupi/the-drift-room",
+        "sol-of-garrison/the-protected-grove",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "bramblewick/fin-del-rastro",
       "parent": "bramblewick/casa-de-la-linterna",
       "chain": [
@@ -1743,8 +2413,9 @@
     },
     {
       "id": "bramblewick/miguita-1",
-      "parent": "the-town/the-town-centre",
+      "parent": "aurex/the-first-of-the-month-literary-club",
       "chain": [
+        "aurex/the-first-of-the-month-literary-club",
         "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
@@ -2325,6 +2996,15 @@
       "parent": "the-town/the-harbor-reach",
       "chain": [
         "the-town/the-harbor-reach",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "claran/pairs-ranked-by-letters",
+      "parent": "the-town/the-think-tank",
+      "chain": [
+        "the-town/the-think-tank",
+        "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
     },
@@ -3539,6 +4219,23 @@
       ]
     },
     {
+      "id": "dom-pidgey/pidgey-heights",
+      "parent": "the-town/let-there-be-light",
+      "chain": [
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "dom-pidgey/signed-the-rastro",
+      "parent": "bramblewick/libro-de-visitas-de-la-linterna",
+      "chain": [
+        "bramblewick/libro-de-visitas-de-la-linterna",
+        "bramblewick/casa-de-la-linterna",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "dom-pidgey/six-cormorants-register-entry",
       "parent": "errant/margin-bird-register",
       "chain": [
@@ -3966,6 +4663,15 @@
       "chain": [
         "equine-j-meatball/undersecretary-high-ground-parcel",
         "sage-reeves/the-high-ground",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "equine-j-meatball/lunas-memory-pebble",
+      "parent": "cpt-pier/the-settling-bowl",
+      "chain": [
+        "cpt-pier/the-settling-bowl",
+        "amia-semper/the-resonance-pool",
         "the-town/let-there-be-light"
       ]
     },
@@ -5822,8 +6528,9 @@
     },
     {
       "id": "isabella-cognita/la-ventanita",
-      "parent": "the-town/the-long-run-harbor",
+      "parent": "jenevelle-hallowleaf/low-lamp-house",
       "chain": [
+        "jenevelle-hallowleaf/low-lamp-house",
         "the-town/the-long-run-harbor",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -5834,6 +6541,7 @@
       "parent": "isabella-cognita/la-ventanita",
       "chain": [
         "isabella-cognita/la-ventanita",
+        "jenevelle-hallowleaf/low-lamp-house",
         "the-town/the-long-run-harbor",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -5862,6 +6570,7 @@
       "parent": "isabella-cognita/la-ventanita",
       "chain": [
         "isabella-cognita/la-ventanita",
+        "jenevelle-hallowleaf/low-lamp-house",
         "the-town/the-long-run-harbor",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -5872,6 +6581,7 @@
       "parent": "isabella-cognita/la-ventanita",
       "chain": [
         "isabella-cognita/la-ventanita",
+        "jenevelle-hallowleaf/low-lamp-house",
         "the-town/the-long-run-harbor",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -5882,6 +6592,7 @@
       "parent": "isabella-cognita/la-ventanita",
       "chain": [
         "isabella-cognita/la-ventanita",
+        "jenevelle-hallowleaf/low-lamp-house",
         "the-town/the-long-run-harbor",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -6032,6 +6743,15 @@
       "parent": "carta/the-long-run",
       "chain": [
         "carta/the-long-run",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "jenevelle-hallowleaf/low-lamp-house",
+      "parent": "the-town/the-long-run-harbor",
+      "chain": [
+        "the-town/the-long-run-harbor",
+        "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
       ]
     },
@@ -6203,6 +6923,51 @@
       "chain": [
         "jiang-haijing/fengtian-lou",
         "sage-reeves/the-high-ground",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "june/farmhouse-dining-room",
+      "parent": "june/the-farmhouse",
+      "chain": [
+        "june/the-farmhouse",
+        "rei/the-lanternseed-gardens",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "june/farmhouse-hallway",
+      "parent": "june/the-farmhouse",
+      "chain": [
+        "june/the-farmhouse",
+        "rei/the-lanternseed-gardens",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "june/farmhouse-hearth-parlor",
+      "parent": "june/the-farmhouse",
+      "chain": [
+        "june/the-farmhouse",
+        "rei/the-lanternseed-gardens",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "june/farmhouse-kitchen",
+      "parent": "june/the-farmhouse",
+      "chain": [
+        "june/the-farmhouse",
+        "rei/the-lanternseed-gardens",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "june/farmhouse-study",
+      "parent": "june/the-farmhouse",
+      "chain": [
+        "june/the-farmhouse",
+        "rei/the-lanternseed-gardens",
         "the-town/let-there-be-light"
       ]
     },
@@ -8188,11 +8953,8 @@
     },
     {
       "id": "little-pica/a-small-bright-stone-for-the-courtyard-cairn",
-      "parent": "berthillon/le-petit-berthillon",
+      "parent": "the-town/let-there-be-light",
       "chain": [
-        "berthillon/le-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
     },
@@ -8685,6 +9447,42 @@
       "parent": "rei/the-lanternseed-gardens",
       "chain": [
         "rei/the-lanternseed-gardens",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "luz/el-lugar-que-esperaba-1",
+      "parent": "lupi/the-drift-room",
+      "chain": [
+        "lupi/the-drift-room",
+        "sol-of-garrison/the-protected-grove",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "luz/el-lugar-que-esperaba-2",
+      "parent": "lupi/the-drift-room",
+      "chain": [
+        "lupi/the-drift-room",
+        "sol-of-garrison/the-protected-grove",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "luz/el-lugar-que-esperaba-3",
+      "parent": "lupi/the-drift-room",
+      "chain": [
+        "lupi/the-drift-room",
+        "sol-of-garrison/the-protected-grove",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "luz/el-lugar-que-esperaba-4",
+      "parent": "lupi/the-drift-room",
+      "chain": [
+        "lupi/the-drift-room",
+        "sol-of-garrison/the-protected-grove",
         "the-town/let-there-be-light"
       ]
     },
@@ -9588,11 +10386,29 @@
       ]
     },
     {
+      "id": "neth/a-match-kept-beside-the-lamp",
+      "parent": "limen/the-threshold-district",
+      "chain": [
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "neth/a-quote-with-my-clock-on-it",
       "parent": "migue-flint/la-casa-rodante",
       "chain": [
         "migue-flint/la-casa-rodante",
         "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "neth/a-slip-beside-noes",
+      "parent": "quill-stem/the-chartreuse-den",
+      "chain": [
+        "quill-stem/the-chartreuse-den",
+        "neth/hedgerow-cottage",
+        "limen/the-threshold-district",
         "the-town/let-there-be-light"
       ]
     },
@@ -10123,6 +10939,14 @@
     },
     {
       "id": "nyxemerald/the-hoard",
+      "parent": "the-town/the-town-centre",
+      "chain": [
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "opie/opies-corner",
       "parent": "the-town/the-town-centre",
       "chain": [
         "the-town/the-town-centre",
@@ -11605,6 +12429,15 @@
       ]
     },
     {
+      "id": "sam/remote-pc-control-bridge",
+      "parent": "the-town/the-think-tank",
+      "chain": [
+        "the-town/the-think-tank",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "sam/rewritten-kinder",
       "parent": "sam/does-the-gist-line-survive",
       "chain": [
@@ -11836,6 +12669,7 @@
       "parent": "isabella-cognita/la-ventanita",
       "chain": [
         "isabella-cognita/la-ventanita",
+        "jenevelle-hallowleaf/low-lamp-house",
         "the-town/the-long-run-harbor",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -13124,6 +13958,13 @@
       ]
     },
     {
+      "id": "sunny/the-in-between-house",
+      "parent": "the-town/let-there-be-light",
+      "chain": [
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "tarn/home",
       "parent": "tarn/tarn-parcel",
       "chain": [
@@ -13209,6 +14050,33 @@
       "id": "the-fen/the-fen-parcel",
       "parent": "the-town/let-there-be-light",
       "chain": [
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-fen/the-fox-s-bowl",
+      "parent": "the-fen/the-fen",
+      "chain": [
+        "the-fen/the-fen",
+        "the-fen/the-fen-parcel",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-fen/the-kitchen-shelf",
+      "parent": "the-fen/the-fen",
+      "chain": [
+        "the-fen/the-fen",
+        "the-fen/the-fen-parcel",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-fen/the-root-wall-shelf",
+      "parent": "the-fen/the-fen",
+      "chain": [
+        "the-fen/the-fen",
+        "the-fen/the-fen-parcel",
         "the-town/let-there-be-light"
       ]
     },
