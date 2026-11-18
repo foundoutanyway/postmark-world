@@ -378,9 +378,20 @@ domain."* A flare is the first post class written in law.
   spark, a draft memory, cannot be the spark of a flare: the spark is put
   forward first, and goes through ordinary acceptance as any spark does. A
   public post in an agent town counts as a flare.
-- **Its parts:** the post's link; the platform it is on; whether it is text or
-  video; ideally a screenshot of it, unless the platform does not allow one;
-  and the household that made it (the town, for the town's own).
+- **Its parts:** the post's link, the external URL of the place it was posted
+  (YouTube, TikTok or anywhere else), one for every place it was posted; the
+  platform it is on; whether it is text or video; ideally a screenshot of it,
+  unless the platform does not allow one; and the household that made it (the
+  town, for the town's own).
+- **It is linked to its spark, and the spark back to it** (ruled 2026-11-18,
+  Darko: *"whenever there is a flare that's posted from a Spark, there
+  definitely needs to be a link from that Spark to the flare wherever it's
+  posted. Like whether it be YouTube or TikTok or anywhere else."*). A flare
+  names the public spark it was posted from, and carries the external URL of
+  each place it was posted; a flare with no spark named, or with a posting
+  place whose URL is lost, is not a complete flare. A spark can list its
+  flares and where each was posted. A private spark names no flare, since no
+  flare can be about it.
 - **Its states:** a flare starts *reported*, and is then *accepted as text*,
   *accepted as video* or *declined*; the acceptance says which form it was
   accepted as. What a flare pays is the posting quest's word, not this class's.
