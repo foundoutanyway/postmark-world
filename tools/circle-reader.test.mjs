@@ -18,7 +18,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  modelOfRoom, modelOfCircle, shapeLines, linesOfBlocks, crumbsOf, createCircleReader, mountCircleReader, READER_CSS, READER_WORDS, whenOf, dateTimeOf,
+  modelOfRoom, modelOfCircle, shapeLines, linesOfBlocks, threadOf, linesOfThread, crumbsOf, createCircleReader, mountCircleReader, READER_CSS, READER_WORDS, whenOf, dateTimeOf,
 } from "../spectator/circle-reader.mjs";
 import {
   TABLE, say, roomFind, circle50101, circle50105Page1, circle50105Page2, circle50106, forkedLines,
@@ -75,6 +75,10 @@ const find = (node, pred) => { const out = []; walk(node, (n) => { if (pred(n)) 
 const byAttr = (node, name, value) => find(node, (n) => n.attrs[name] !== undefined && (value === undefined || n.attrs[name] === String(value)));
 const text = (node) => serialize(node).replace(/\s+/g, " ").trim();
 const tick = () => new Promise((ok) => setImmediate(ok));
+// WLD-178: every reply thread starts folded behind "View N replies"; a test that wants the whole transcript presses each one it finds (a press redraws in place)
+const openAll = (root) => { for (let i = 0; i < 200; i++) { const v = byAttr(root, "data-thread-view")[0]; if (!v) return; v.click(); } throw new Error("openAll never finished"); };
+const openAllAsync = async (root) => { for (let i = 0; i < 200; i++) { const v = byAttr(root, "data-thread-view")[0]; if (!v) { await tick(); if (!byAttr(root, "data-thread-view")[0]) return; continue; } v.click(); await tick(); } throw new Error("openAllAsync never finished"); };
+const WORDS_OF = (root) => text(root);
 
 /** a reader on a fresh host, with a stub office whose answers a test can change and whose every call is recorded */
 function harness({ room = roomFind(), circles = {}, canReply = false, onReply = null, onState = null, hrefForCircle = null } = {}) {
@@ -164,33 +168,37 @@ test("LANE FALSIFIER · a forked room with a flat strand, a named nested back pa
   const ownOnly = served.filter((l) => [50101, 50105, 50106, 50110, 50111].includes(l.id));
   assert.ok(ownOnly.length < served.length, "control: keeping one branch drops statements");
 
-  // THE READER, on the real code path: the room, then the circle whole.
+  // THE READER, on the real code path: the room, then the circle whole, with every thread opened (the reader starts folded: WLD-178).
   const h = harness({ circles: { "50101|": circle50101() } });
   await h.reader.showRoom(); await tick();
-  byAttr(h.root, "data-circle", 50101)[0].click(); await tick();
+  byAttr(h.root, "data-circle-open", 50101)[0].click(); await tick();
   assert.equal(h.root.getAttribute("data-state"), "circle");
-  const forks = byAttr(h.root, "data-fork");
-  assert.equal(forks.length, 1, "the fork is drawn as a fork, not flattened");
-  const strands = byAttr(h.root, "data-strand");
-  assert.equal(strands.length, 4, "the opener's strand and three branch strands");
-  assert.deepEqual(strands.map((s) => byAttr(s, "data-say").length), [1, 3, 4, 2], "each strand flat, in served order");
+  assert.equal(byAttr(h.root, "data-say").length, 1, "the circle opens on its first statement: every reply starts folded");
+  openAll(h.root);
   const drawn = byAttr(h.root, "data-say").map((n) => Number(n.attrs["data-say"]));
-  assert.deepEqual(drawn, served.map((l) => l.id), "NO statement lost at the fold: every served say is on screen, once");
+  assert.deepEqual([...drawn].sort(), served.map((l) => l.id).sort(), "NO statement lost at the fold: every served say is reachable on screen, once");
+  assert.equal(byAttr(h.root, "data-strand").length + byAttr(h.root, "data-fork").length, 0, "and nothing is drawn as a strand or a fork any more");
+  // ancestry is kept: each reply sits inside the thread of the statement it answers
+  const under = (id) => byAttr(byAttr(h.root, "data-say", id)[0], "data-say").map((n) => Number(n.attrs["data-say"])).filter((x) => x !== id);
+  assert.deepEqual(under(50102).sort(), [50103, 50104], "50102's replies are under it");
+  assert.deepEqual(under(50105).sort(), [50106, 50110, 50111], "a deeper reply stays under the chain it answers");
 
   // PAGED HISTORY on a NESTED circle: page 1, then the served `next`, a named back path through the ancestors, nothing re-fetched by guess.
   const p = harness({ circles: { "50105|": circle50105Page1(), "50105|50106": circle50105Page2(), "50106|": circle50106() } });
   await p.reader.showCircle(50105); await tick();
+  openAll(p.root);
   assert.deepEqual(byAttr(p.root, "data-say").map((n) => Number(n.attrs["data-say"])), [50105, 50106], "page one");
-  assert.ok(byAttr(p.root, "data-notice", "paged").length, "it discloses that the circle is paged");
+  assert.ok(byAttr(p.root, "data-notice", "paged").length, "it says there is more");
   byAttr(p.root, "data-next")[0].click(); await tick();
+  openAll(p.root);
   assert.deepEqual(p.calls.filter((c) => c[0] === "circle"), [["circle", 50105, undefined], ["circle", 50105, 50106]], "the continuation is the served `next`, and nothing else");
-  assert.deepEqual(byAttr(p.root, "data-say").map((n) => Number(n.attrs["data-say"])), [50105, 50106, 50110, 50111], "page two appended, nothing lost");
+  assert.deepEqual(byAttr(p.root, "data-say").map((n) => Number(n.attrs["data-say"])).sort(), [50105, 50106, 50110, 50111], "page two appended, nothing lost");
   assert.equal(byAttr(p.root, "data-next").length, 0, "no next on the last page");
-  assert.ok(byAttr(p.root, "data-notice", "complete").length, "and it says the circle is whole");
+  assert.equal(byAttr(p.root, "data-notice", "complete").length, 0, "a whole thread says nothing about being whole (WLD-178: no completeness badge)");
   const n = harness({ circles: { "50106|": circle50106() } });
   await n.reader.showCircle(50106); await tick();
   const crumbs = byAttr(n.root, "data-crumbs")[0];
-  assert.match(text(crumbs), /Back to the room.*Cave Interior.*pica's circle.*claran's circle.*amia's circle/, "a NAMED back path, root first, through the nested circle");
+  assert.match(text(crumbs), /Back to the room.*Cave Interior.*pica's statement.*claran's statement.*amia's statement/, "a NAMED back path, root first, through the nested conversation");
   assert.equal(byAttr(crumbs, "data-crumb").length, 3);
   assert.equal(byAttr(crumbs, "aria-current").length, 1, "the circle you are in is the current crumb");
   assert.equal(byAttr(crumbs, "data-crumb").filter((c) => c.tagName === "BUTTON").length, 2, "the two ancestors are buttons that go there");
@@ -198,40 +206,212 @@ test("LANE FALSIFIER · a forked room with a flat strand, a named nested back pa
 
 // ── the room (spectator) ────────────────────────────────────────────────────
 
-test("room view: top circles are stubs in the order served (start order); there is no invented 'your circle', ranking or topic", async () => {
+test("room view: the room's top statements come in the order served (start order), each with its reply count; there is no invented 'yours', ranking or topic", async () => {
   const h = harness();
   await h.reader.showRoom();
   assert.equal(h.root.getAttribute("data-state"), "room");
   const stubs = byAttr(h.root, "data-circle-stub");
   assert.deepEqual(stubs.map((b) => Number(b.attrs["data-circle"])), [50101, 50107, 50114], "served order, not re-ranked");
-  assert.match(text(stubs[0]), /pica: Welcome, everyone! Sorbet's on the counter…/);
-  assert.match(text(stubs[0]), /10 statements · 5 speakers/);
-  assert.doesNotMatch(text(h.root), /your circle/i, "a visitor has none");
+  assert.match(text(stubs[0]), /pica .*Welcome, everyone! Sorbet's on the counter…/);
+  assert.match(text(stubs[0]), /View 9 replies/, "the count is the stub's served says, less the statement itself");
+  assert.match(text(stubs[1]), /View 2 replies/);
+  assert.doesNotMatch(text(stubs[2]), /repl/, "a statement nobody answered has no reply control at all");
+  assert.equal(byAttr(stubs[2], "data-thread").length, 0);
+  assert.doesNotMatch(text(h.root), /your circle|yours/i, "a visitor has none");
   assert.ok(find(h.root, (n) => n.tagName === "BUTTON").every((b) => b.attrs.type === "button"));
-  // choosing a stub reads that circle by the stub's OWN served `read`
+  // opening a statement's replies reads that conversation by the stub's OWN served `read`, once, and keeps it
   h.answers.circles["50107|"] = { find: { ...circle50101().find, circle: 50107, circle_read: { ...circle50101().find.circle_read, circle: 50107, path: [50107], lines: TABLE.slice(6, 9).map((l) => ({ ...l, depth: 0 })), says: 3, people: 2 } } };
-  stubs[1].click(); await tick();
+  byAttr(stubs[1], "data-thread-view")[0].click(); await tick();
   assert.deepEqual(h.calls.at(-1), ["circle", 50107, undefined]);
-  assert.equal(h.reader.getState().view, "circle");
+  assert.equal(h.reader.getState().view, "room", "the room stays: replies open inside it");
+  assert.deepEqual(byAttr(byAttr(h.root, "data-circle", "50107")[0], "data-say").map((n) => Number(n.attrs["data-say"])).filter((x) => x !== 50107), [50108], "the reply is drawn under its statement");
 });
 
-test("back to the room: the Back button returns to the room view and the stubs", async () => {
+test("back to the room: the Back button returns to the room view and the statements", async () => {
   const h = harness({ circles: { "50101|": circle50101() } });
   await h.reader.showRoom();
-  byAttr(h.root, "data-circle", 50101)[0].click(); await tick();
+  byAttr(h.root, "data-circle-open", 50101)[0].click(); await tick();
+  assert.equal(h.reader.getState().view, "circle");
   byAttr(h.root, "data-back")[0].click(); await tick();
   assert.equal(h.root.getAttribute("data-state"), "room");
   assert.equal(byAttr(h.root, "data-circle-stub").length, 3);
 });
 
-test("context lines in a circle are labelled as context, drawn apart from the circle's own lines, and carry no Reply", async () => {
+test("context lines in a conversation are labelled as context, drawn apart from its own lines, and carry no Reply", async () => {
   const h = harness({ circles: { "50105|": circle50105Page1() }, canReply: true });
   await h.reader.showCircle(50105);
   const ctx = byAttr(h.root, "data-context")[0];
   assert.ok(ctx, "context is drawn");
-  assert.match(text(ctx), /Earlier in this circle, for context/);
+  assert.match(text(ctx), /Earlier in this conversation/);
   assert.equal(byAttr(ctx, "data-reply").length, 0, "you do not reply to the context block from here");
-  assert.ok(!byAttr(h.root, "data-strand").some((s) => byAttr(s, "data-say", 50101).length), "the context say is not among the circle's lines");
+  assert.ok(!byAttr(byAttr(h.root, "data-thread-list")[0], "data-say", 50101).length, "the context say is not among the conversation's own statements");
+});
+
+// ── WLD-178: the comment thread ─────────────────────────────────────────────
+
+test("threadOf: replies sit under the statement they answer, in served order, with a total per statement; a loop or a missing parent loses nothing", () => {
+  const t = threadOf(circle50101().find.circle_read.lines);
+  assert.equal(t.roots.length, 1);
+  const top = t.roots[0];
+  assert.equal(top.line.id, 50101);
+  assert.deepEqual(top.replies.map((r) => r.line.id), [50102, 50105, 50112], "the three replies, in served order");
+  assert.deepEqual(top.replies.map((r) => r.total), [2, 3, 1], "each counts everything under it, however deep");
+  assert.equal(top.total, 9);
+  assert.deepEqual(linesOfThread(t.roots).map((l) => l.id).sort(), circle50101().find.circle_read.lines.map((l) => l.id).sort(), "every served line is in exactly one node");
+  // a reply whose parent is not in the read is loose and never re-parented; one to a context line is not
+  assert.equal(threadOf([say(8, "a", 1, "x", 7, 7)]).roots[0].loose, true);
+  assert.equal(threadOf([say(8, "a", 1, "x", 7, 7)], { known: [7] }).roots[0].loose, undefined);
+  // a loop in served data neither hangs nor drops
+  const loop = threadOf([say(1, "a", 1, "x", 2, 1), say(2, "b", 2, "y", 1, 1)]);
+  assert.deepEqual(linesOfThread(loop.roots).map((l) => l.id).sort(), [1, 2]);
+  // lines with no id are a timeline, never a thread
+  const old = threadOf([{ handle: "rei", said: "old words" }]);
+  assert.deepEqual([old.roots.length, old.plain.length], [0, 1]);
+});
+
+const openCircle = async (opts = {}) => {
+  const h = harness({ circles: { "50101|": circle50101() }, ...opts });
+  await h.reader.showCircle(50101); await tick();
+  return h;
+};
+const threadOfSay = (root, id) => byAttr(byAttr(root, "data-say", id)[0], "data-thread")[0];
+
+test("WLD-178 · replies START FOLDED behind 'View N replies'; opening one opens only that statement's replies, deeper ones stay folded until opened", async () => {
+  const h = await openCircle();
+  assert.deepEqual(byAttr(h.root, "data-say").map((n) => Number(n.attrs["data-say"])), [50101], "only the top statement on screen");
+  const first = byAttr(h.root, "data-thread-view")[0];
+  assert.equal(text(first), "View 9 replies", "the count is what was served: nine statements sit under the opener");
+  assert.equal(first.attrs["aria-expanded"], "false");
+  first.click();
+  assert.deepEqual(byAttr(h.root, "data-say").map((n) => Number(n.attrs["data-say"])), [50101, 50102, 50105, 50112], "its three replies, and no deeper");
+  assert.equal(text(byAttr(byAttr(h.root, "data-say", 50102)[0], "data-thread-view")[0]), "View 2 replies", "each reply with replies has its own folded count");
+  assert.equal(text(byAttr(byAttr(h.root, "data-say", 50105)[0], "data-thread-view")[0]), "View 3 replies");
+  assert.equal(byAttr(byAttr(h.root, "data-say", 50112)[0], "data-thread-view").length, 1);
+  byAttr(byAttr(h.root, "data-say", 50105)[0], "data-thread-view")[0].click();
+  assert.deepEqual(byAttr(h.root, "data-say").map((n) => Number(n.attrs["data-say"])), [50101, 50102, 50105, 50106, 50112], "only that branch opened one level");
+  assert.equal(byAttr(h.root, "data-say", 50110).length, 0, "the next level is still folded");
+});
+
+test("WLD-178 · every statement with replies has a circle AND a line on its thread; either folds and opens the same whole subtree; the circle is the line's midpoint control", async () => {
+  const h = await openCircle();
+  const thread = () => threadOfSay(h.root, 50101);
+  // folded: the line, the circle and the 'View' text are all named controls on the same thread, all folded
+  assert.equal(thread().attrs["data-open"], "false");
+  for (const sel of ["data-thread-line", "data-thread-dot", "data-thread-view"]) {
+    const c = byAttr(thread(), sel)[0];
+    assert.ok(c, sel + " is there");
+    assert.equal(c.tagName, "BUTTON", "a real button: keyboard activation (Enter, Space) is the browser's");
+    assert.equal(c.attrs["aria-expanded"], "false");
+    assert.equal(c.attrs["aria-label"], "View 9 replies", "named");
+    assert.ok(c.attrs["aria-controls"], "and it says what it controls");
+  }
+  byAttr(thread(), "data-thread-dot")[0].click();                              // the CIRCLE opens it
+  assert.equal(thread().attrs["data-open"], "true");
+  assert.equal(byAttr(h.root, "data-say").length, 4);
+  assert.equal(thread().children.filter((c) => c.attrs["data-thread-view"] !== undefined).length, 0, "the 'View' text is gone once open");
+  assert.equal(byAttr(thread(), "data-thread-dot")[0].attrs["aria-label"], "Hide 9 replies");
+  // the circle is a CHILD OF THE THREAD (so it centres on the thread's own height), never of the first statement
+  const dot = byAttr(thread(), "data-thread-dot")[0];
+  assert.equal(dot.parent, thread(), "the circle sits on the thread, whose height is the whole subtree's");
+  assert.equal(byAttr(byAttr(h.root, "data-say", 50101)[0], "data-thread-dot")[0], dot, "one circle for this statement");
+  byAttr(thread(), "data-thread-line")[0].click();                             // the LINE folds the same subtree
+  assert.equal(thread().attrs["data-open"], "false");
+  assert.deepEqual(byAttr(h.root, "data-say").map((n) => Number(n.attrs["data-say"])), [50101]);
+  byAttr(thread(), "data-thread-line")[0].click();                             // and opens it again
+  assert.equal(byAttr(h.root, "data-say").length, 4);
+  // a statement with no replies has no circle, no line, no 'View'
+  assert.equal(byAttr(byAttr(h.root, "data-say", 50112)[0], "data-thread-dot").length, 1, "50112 has one reply, so it has one");
+  openAll(h.root);
+  assert.equal(byAttr(byAttr(h.root, "data-say", 50104)[0], "data-thread").length, 0, "a leaf has none");
+});
+
+test("WLD-178 · the circle is at the thread's VERTICAL MIDPOINT: the stylesheet centres it at 50% of the thread, the line is split around it, and it is not tied to the first statement", () => {
+  assert.match(READER_CSS, /\.cr-thread > \.cr-dot \{[^}]*\btop: 50%;[^}]*translate\(-50%, -50%\)/, "centred on the thread's own height");
+  assert.match(READER_CSS, /\.cr-thread \{[^}]*position: relative/, "the thread is the circle's positioning box");
+  assert.match(READER_CSS, /calc\(50% - \.75em\)[^;]*calc\(50% \+ \.75em\)/, "the line leaves the circle its room");
+  assert.doesNotMatch(READER_CSS, /\.cr-dot \{[^}]*\btop: (0|auto|\.\d+em)\b/, "never pinned beside the first statement");
+});
+
+test("WLD-178 · nothing of the machinery is drawn as text: no id, act number, 'strand', 'branch', 'circle', fork, complete or folded badge in the room, a conversation or an opened thread", async () => {
+  const c107 = { find: { ...circle50101().find, circle: 50107, circle_read: { ...circle50101().find.circle_read, circle: 50107, path: [50107], lines: TABLE.slice(6, 9).map((l) => ({ ...l, depth: 0 })), says: 3, people: 2 } } };
+  const h = harness({ circles: { "50101|": circle50101(), "50107|": c107, "50105|": circle50105Page1(), "50106|": circle50106() } });
+  await h.reader.showRoom(); await tick();
+  const seen = [text(h.root)];
+  await openAllAsync(h.root);
+  seen.push(text(h.root));
+  const n = harness({ circles: { "50106|": circle50106() }, canReply: true });
+  await n.reader.showCircle(50106); await tick();
+  openAll(n.root);
+  seen.push(text(n.root));
+  const p = harness({ circles: { "50105|": circle50105Page1() }, hrefForCircle: (c) => `/conversations/#circle-${c}` });
+  await p.reader.showCircle(50105); await tick();
+  seen.push(text(p.root));
+  for (const t of seen) {
+    assert.doesNotMatch(t, /(?<![\d:-])5\d{4}(?![\d:Z-])/, "no say or circle id is on screen: " + (t.match(/.{0,30}(?<![\d:-])5\d{4}(?![\d:Z-]).{0,30}/)?.[0] ?? ""));
+    assert.doesNotMatch(t, /strand|branch|fork|\bcircle\b|circles|depth|reply_to|say \d/i, "no jargon: " + t.slice(0, 120));
+    assert.doesNotMatch(t, /whole circle|folded|complete|unavailable/i, "and no state badge");
+  }
+  // internal ids stay FUNCTIONAL: they ride as data-*, never as words
+  assert.ok(byAttr(h.root, "data-say", 50101).length, "data-say still carries the id");
+});
+
+test("WLD-178 · a failed or partial read is still SAID, in plain words, with the served statements kept: hiding the machinery never turns a failure into silence", async () => {
+  // the opener's replies cannot be read: the statement stays, the words say so, Try again reads again
+  let up = false;
+  const h = harness({ circles: { "50101|": () => { if (!up) throw new Error("503"); return circle50101(); } } });
+  await h.reader.showRoom(); await tick();
+  byAttr(byAttr(h.root, "data-circle", 50101)[0], "data-thread-view")[0].click(); await tick(); await tick();
+  assert.match(text(byAttr(h.root, "data-circle", 50101)[0]), /Welcome, everyone!/, "the served statement stays");
+  assert.match(text(byAttr(h.root, "data-circle", 50101)[0]), /These replies couldn't be loaded/, "and the words say so");
+  assert.equal(byAttr(h.root, "data-notice", "unavailable").length, 1);
+  up = true;
+  byAttr(h.root, "data-retry-replies")[0].click(); await tick(); await tick();
+  assert.equal(byAttr(h.root, "data-notice", "unavailable").length, 0);
+  assert.deepEqual(byAttr(byAttr(h.root, "data-circle", 50101)[0], "data-say").map((n) => Number(n.attrs["data-say"])).slice(0, 4), [50101, 50102, 50105, 50112], "the retry opened them");
+  // an unavailable history with lines: they stay, the thread says older replies could not load, and it never invents an ending
+  const partial = harness({ circles: { "50101|": circle50101({ history: "unavailable" }) } });
+  await partial.reader.showCircle(50101); await tick();
+  openAll(partial.root);
+  assert.equal(byAttr(partial.root, "data-say").length, 10);
+  assert.match(text(partial.root), /Some older replies couldn't be loaded, so this may not be everything/);
+});
+
+test("WLD-178 · opened threads, scroll and focus survive a refresh; new says are offered, never pulled in, and stale answers stay discarded", async () => {
+  const c = circle50101();
+  const h = harness({ circles: { "50101|": c }, canReply: true });
+  await h.reader.showRoom(); await tick();
+  byAttr(byAttr(h.root, "data-circle", 50101)[0], "data-thread-view")[0].click(); await tick(); await tick();
+  byAttr(byAttr(h.root, "data-say", 50105)[0], "data-thread-view")[0].click();       // a deeper branch, opened too
+  const opened = byAttr(h.root, "data-say").map((n) => Number(n.attrs["data-say"]));
+  assert.ok(opened.includes(50106));
+  h.scroller.scrollTop = 310;
+  const dot = byAttr(threadOfSay(h.root, 50105), "data-thread-dot")[0];
+  dot.focus();
+  assert.equal(doc.activeElement.attrs["data-key"], "dot-t-50105");
+  await h.reader.refresh(); await tick(); await tick();
+  assert.deepEqual(byAttr(h.root, "data-say").map((n) => Number(n.attrs["data-say"])), opened, "every branch the visitor opened is still open");
+  assert.equal(h.scroller.scrollTop, 310, "scroll kept");
+  assert.equal(doc.activeElement?.attrs["data-key"], "dot-t-50105", "focus kept on the same control");
+  // a new reply arrives in the office: offered, not drawn
+  const later = JSON.parse(JSON.stringify(c));
+  later.find.circle_read.lines.push({ ...say(50115, "seth", 15, "One more thing!", 50113, 50101), depth: 3 });
+  h.answers.circles["50101|"] = later;
+  await h.reader.refresh(); await tick(); await tick();
+  assert.equal(byAttr(h.root, "data-say", 50115).length, 0, "the new reply is not drawn unasked");
+  assert.match(text(byAttr(h.root, "data-new")[0]), /^1 new — show$/);
+  assert.equal(h.scroller.scrollTop, 310, "no unsolicited jump");
+  byAttr(h.root, "data-new")[0].click();
+  assert.equal(byAttr(h.root, "data-say", 50115).length, 0, "it sits under 50113, which is still folded: opened state is the visitor's, not the office's");
+  assert.deepEqual(byAttr(h.root, "data-say").map((n) => Number(n.attrs["data-say"])), opened, "and the open branches are as they were");
+  // a late inline read after Back is dropped
+  const g = gate();
+  const late = harness({ circles: { "50107|": () => g.wait.then(() => ({ find: { ...circle50101().find, circle: 50107, circle_read: { ...circle50101().find.circle_read, circle: 50107, path: [50107], lines: TABLE.slice(6, 9).map((l) => ({ ...l, depth: 0 })) } } })) } });
+  await late.reader.showRoom(); await tick();
+  byAttr(byAttr(late.root, "data-circle", 50107)[0], "data-thread-view")[0].click();
+  late.reader.showCircle(50101).catch(() => {});                                     // the visitor goes elsewhere while it is in flight
+  await tick();
+  g.release(); await tick(); await tick();
+  assert.equal(late.reader.getState().view, "circle", "the late room answer was not drawn over the circle");
 });
 
 // ── three different sentences: unavailable, empty, folded ───────────────────
@@ -250,7 +430,8 @@ test("an unavailable history, a read that failed, a known-empty room and a folde
   assert.match(sentences.empty.text, /Nobody has spoken here yet/);
   assert.doesNotMatch(sentences.unavailableHistory.text, /Nobody has spoken here yet/, "unavailable is not 'nobody spoke'");
   assert.match(sentences.unavailableHistory.text, /couldn't read this/);
-  assert.match(sentences.folded.text, /Circles not shown here: 2/, "the served continuation ids are offered as buttons, not guessed");
+  assert.match(sentences.folded.text, /More conversations in this room:.*Another conversation.*Another conversation/, "the served continuations are offered as buttons, not guessed, and without their ids");
+  assert.doesNotMatch(sentences.folded.text, /50120|50121/, "an id is never words");
 });
 
 test("Try again after an unavailable read reads again; a 422 refusal from the office is shown with its own defect", async () => {
@@ -268,11 +449,11 @@ test("Try again after an unavailable read reads again; a 422 refusal from the of
   assert.match(text(h.root), /say 99999 is not in circle 50101/, "the refusal, verbatim");
 });
 
-test("old talk (no ids) is a plain timeline: no stubs, no strands, no circle pretended", async () => {
+test("old talk (no ids) is a plain timeline: no statements with threads, no circle pretended", async () => {
   const h = harness({ room: legacyRoom() });
   await h.reader.showRoom();
   assert.equal(byAttr(h.root, "data-circle-stub").length, 0);
-  assert.equal(byAttr(h.root, "data-strand").length, 0, "a timeline is not a strand");
+  assert.equal(byAttr(h.root, "data-thread").length, 0, "a timeline has no thread controls");
   assert.equal(byAttr(h.root, "data-timeline").length, 1, "one plain list");
   assert.equal(byAttr(h.root, "data-say-plain").length, 2);
   assert.equal(byAttr(h.root, "data-say").length, 0, "no say carries an id it was not given");
@@ -284,7 +465,8 @@ test("a reply whose parent the read does not hold is named, with the producer's 
   await h.reader.showRoom();
   const broken = byAttr(h.root, "data-notice", "broken");
   assert.equal(broken.length, 1);
-  assert.match(text(broken[0]), /claran \(say 50110\).*this say replies to one this read does not hold/);
+  assert.match(text(broken[0]), /A reply to a statement that isn't shown: claran\..*this say replies to one this read does not hold/);
+  assert.doesNotMatch(text(broken[0]), /50110/, "its id is not words");
   assert.equal(byAttr(h.root, "data-circle-stub").length, 3, "and it did not mint a stub");
 });
 
@@ -299,8 +481,9 @@ test("what residents said is TEXT: markup in a say, a handle and a stub makes no
   circle.find.circle_read.lines[1] = { ...circle.find.circle_read.lines[1], said: HOSTILE, handle: "<script>x</script>" };
   const h = harness({ room, circles: { "50101|": circle }, canReply: true });
   await h.reader.showRoom();
-  assert.match(text(byAttr(h.root, "data-circle-stub")[0]), /<i>pica<\/i>: <img src=x/, "the stub's words, literally");
-  byAttr(h.root, "data-circle", 50101)[0].click(); await tick();
+  assert.match(text(byAttr(h.root, "data-circle-stub")[0]), /<i>pica<\/i> .*<img src=x/, "the stub's words, literally");
+  byAttr(h.root, "data-circle-open", 50101)[0].click(); await tick();
+  openAll(h.root);
   assert.ok(text(h.root).includes(HOSTILE), "the say, literally");
   assert.equal(find(h.root, (n) => ["IMG", "B", "I", "SCRIPT", "A"].includes(n.tagName)).filter((n) => n.tagName !== "A").length, 0, "no element was made from a resident's words");
   assert.equal(find(h.root, (n) => n.tagName === "A").length, 0, "and no link either");
@@ -312,6 +495,8 @@ test("Reply: with canReply each line that has an id carries one, and pressing it
   const got = [];
   const h = harness({ circles: { "50101|": circle50101() }, canReply: true, onReply: (t) => got.push(t) });
   await h.reader.showCircle(50101); await tick();
+  assert.equal(byAttr(h.root, "data-reply").length, 1, "folded: the one statement on screen carries one");
+  openAll(h.root);
   const buttons = byAttr(h.root, "data-reply");
   assert.equal(buttons.length, 10, "one per say");
   byAttr(h.root, "data-reply", 50106)[0].click();
@@ -331,6 +516,7 @@ test("refresh keeps the scroll position and the focused control, and new says ar
   const c = circle50101();
   const h = harness({ circles: { "50101|": c }, canReply: true });
   await h.reader.showCircle(50101); await tick();
+  openAll(h.root);
   h.scroller.scrollTop = 240;
   const reply = byAttr(h.root, "data-reply", 50104)[0];
   reply.focus();
@@ -354,6 +540,7 @@ test("refresh keeps the scroll position and the focused control, and new says ar
   assert.ok(offer, "the reader offers it");
   assert.match(text(offer), /^1 new — show$/);
   offer.click();
+  openAll(h.root);                                   // the new reply sits under a statement the visitor had not opened
   assert.equal(byAttr(h.root, "data-say").length, before + 1, "asked for, it is drawn");
   assert.ok(byAttr(h.root, "data-say", 50115).length);
   assert.equal(h.scroller.scrollTop, 240, "and still the reader's place");
@@ -389,9 +576,11 @@ test("a signed-in default (own path, folded stubs, elsewhere, paged own path) re
   } };
   const h = harness({ room: { find } });
   await h.reader.showRoom();
-  assert.match(text(h.root), /Your circle/);
+  assert.match(text(h.root), /Yours/);
+  assert.doesNotMatch(text(h.root), /your circle/i);
   assert.ok(byAttr(h.root, "data-notice", "paged").length);
   assert.match(text(byAttr(h.root, "data-notice", "paged")[0]), /5 lines of 16 shown/);
+  assert.match(text(h.root), /More of yours/, "the folded side conversation is offered, in plain words");
   byAttr(h.root, "data-next")[0].click(); await tick();
   assert.deepEqual(h.calls.at(-1), ["circle", 50101, 50105], "the served own_path.next, nothing computed");
   assert.equal(byAttr(h.root, "data-circle-stub").length, 0, "the circle view replaced the room");
@@ -409,8 +598,8 @@ test("modelOfRoom / modelOfCircle read the served keys and invent none; an unava
   assert.equal(modelOfRoom({ find: { circles: { elsewhere: [] } } }).empty, false, "no history said: not claimed empty");
   const circle = modelOfCircle(circle50106());
   assert.deepEqual(circle.path, [50101, 50105, 50106]);
-  assert.deepEqual(circle.crumbs.map((c) => c.label), ["pica's circle", "claran's circle", "amia's circle"]);
-  assert.deepEqual(crumbsOf([1, 2], new Map([["1", "x"]])).map((c) => c.label), ["x's circle", "say 2"], "an id it cannot name is 'say <id>', never invented");
+  assert.deepEqual(circle.crumbs.map((c) => c.label), ["pica's statement", "claran's statement", "amia's statement"]);
+  assert.deepEqual(crumbsOf([1, 2], new Map([["1", "x"]])).map((c) => [c.label, c.id]), [["x's statement", 1], ["an earlier statement", 2]], "an id it cannot name is 'an earlier statement': the id is data, never words");
   assert.equal(modelOfCircle({ find: { circle: 9, history: "unavailable", circle_read: {} } }).unavailable, true);
   assert.deepEqual(modelOfCircle(circle50105Page1()).next, { circle: 50105, after: 50106 });
 });
@@ -518,7 +707,7 @@ test("a slow background refresh that answers AFTER the visitor opened a circle d
   const g = gate();
   h.answers.room = () => g.wait.then(() => roomFind());
   const polling = h.reader.refresh();                               // the poll is in flight …
-  byAttr(h.root, "data-circle", 50101)[0].click(); await tick();   // … and the visitor opens a circle
+  byAttr(h.root, "data-circle-open", 50101)[0].click(); await tick();   // … and the visitor opens a conversation
   assert.equal(h.reader.getState().view, "circle");
   g.release(); await polling; await tick();
   assert.equal(h.reader.getState().view, "circle", "the state still says circle");
@@ -556,7 +745,7 @@ test("a 'show more' page that answers after the visitor went elsewhere, or after
     await h.reader.showRoom(); await tick();                         // the visitor goes back to the room
     g.release(); await tick(); await tick();
     assert.equal(h.reader.getState().view, "room");
-    assert.equal(byAttr(h.root, "data-say").length, 0, "the second page was not drawn over the room");
+    assert.equal(byAttr(h.root, "data-say", 50110).length + byAttr(h.root, "data-say", 50111).length, 0, "the second page was not drawn over the room");
     assert.equal(byAttr(h.root, "data-crumbs").length, 0);
   }
   {
@@ -573,7 +762,8 @@ test("an unavailable history with lines keeps the lines and says so: it is never
   const partial = circle50101({ history: "unavailable" });            // complete:true and history:unavailable together, with ten lines
   const h = harness({ circles: { "50101|": partial } });
   await h.reader.showCircle(50101); await tick();
-  assert.equal(byAttr(h.root, "data-say").length, 10, "every served line is still on screen");
+  openAll(h.root);
+  assert.equal(byAttr(h.root, "data-say").length, 10, "every served line is still reachable on screen");
   const kinds = byAttr(h.root, "data-notice").map((n) => n.attrs["data-notice"]);
   assert.ok(kinds.includes("unavailable"), "the unavailable history is said aloud");
   assert.equal(kinds.includes("complete"), false, "and the circle is not called complete");
@@ -613,6 +803,7 @@ test("the host can switch Reply on or off while the reader is open: the view is 
   const h = harness({ circles: { "50101|": circle50101() }, canReply: false });
   await h.reader.showCircle(50101); await tick();
   assert.equal(byAttr(h.root, "data-reply").length, 0);
+  openAll(h.root);
   const reads = h.calls.length;
   h.scroller.scrollTop = 120;
   h.reader.setCanReply(true, (t) => targets.push(t.id));
@@ -639,7 +830,8 @@ test("the column keeps ONE reader for a conversation, yet live metadata and canR
   col.open(view()); await tick(); await tick();
   const reader = host.__circleReader;
   assert.ok(reader);
-  byAttr(host, "data-circle", 50101)[0].click(); await tick(); await tick();
+  byAttr(host, "data-circle-open", 50101)[0].click(); await tick(); await tick();
+  openAll(host);
   assert.equal(reader.getState().view, "circle");
   assert.equal(byAttr(host, "data-reply").length, 0);
   const reads = calls.length;

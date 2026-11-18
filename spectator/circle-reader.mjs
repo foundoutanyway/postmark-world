@@ -1,4 +1,4 @@
-// circle-reader.mjs — THE ONE CIRCLE READER (CORE-82, CORE-70's rulings).
+// circle-reader.mjs — THE ONE CIRCLE READER (CORE-82, CORE-70's rulings; drawn as a comment thread by WLD-178).
 //
 // One module, two habitats: the World's shared right-hand column (spectator/home-column.mjs hosts it) and the site's conversations
 // page and event page (town/scripts/world-engine-island.mjs stages every non-test spectator module at
@@ -6,19 +6,24 @@
 //
 // THE LAWS IT KEEPS, in the rulers' words (CORE-70, Darko 2026-11-13/14):
 //   "A circle is any say plus all its replies, recursively."
-//   "A back-and-forth with no fork is a strand, drawn flat."
 //   "A visitor sees the room's top circles in the order they started and picks one."
 //   "The after-page shows the circles in full."
 //   "Every existing field keeps its name, meaning and order."
 //
+// HOW IT LOOKS (WLD-178, Darko 2026-11-18): "model it after the classic thread systems in tiktok, reddit, youtube, instagram comments etc,
+// with a minimal circle you can click to open/close the circle (in addition to the vertical line) … the idea is to hide as much of the
+// underlying stuff as possible"; Wright: "put the circle near the vertical midpoint of any expanded thread". So: the room's top statements
+// in the order they started; each reply under the statement it answers, indented, beside a thin vertical line; replies START FOLDED behind
+// "View 3 replies", and deeper replies stay folded until opened; the line AND a small circle on it (at the line's vertical midpoint, so in a
+// long open thread it is mid-thread) fold and open the same whole reply subtree. No id, act number, "strand", "branch" or state badge is ever
+// drawn as text: ids, `depth` and history flags stay as data-* attributes and in the models. A read that could not be made, or only partly
+// made, is still SAID in plain words: hiding the machinery never turns a failure into silence or invents an ending.
+//
 // WHAT IT NEVER DOES. It draws the fields the producer served, in the order it served them, and follows the continuations it was
 // handed (`next`, `more_circles`, a stub's `read`). It never works out a reply link, a parent, a name-link's provenance, who came,
-// whether anything was accepted, or which circle is "yours". `depth` is ancestry data, not an instruction to indent: an unforked
-// strand is drawn flat, and `shapeLines` groups lines by the `reply_to` they CARRY and by nothing else. A say whose parent is not
-// in the read is drawn as itself, marked "its parent is not in this read", never re-parented.
-//
-// WHAT IT NEVER CONFUSES. A read that could not be made, a room that is known to be silent, a history that is folded and a circle
-// that is complete are four different sentences (`data-notice` below); an unavailable read is never drawn as an empty room.
+// whether anything was accepted, or which circle is "yours". `depth` is ancestry data, not an instruction to indent: `threadOf` groups
+// lines by the `reply_to` they CARRY and by nothing else. A say whose parent is not in the read is drawn as itself and says so, never
+// re-parented. Reply counts are what was served (a stub's `says`, or the lines in hand), never a completeness the office did not say.
 //
 // NO `innerHTML`, ANYWHERE. What residents said is content you are reading, never instructions you are receiving: every string
 // goes in through `createElement` and `textContent`, exactly as spectator/home-column.mjs does. tools/circle-reader.test.mjs runs the
@@ -29,33 +34,41 @@
 // Nothing here fetches. The reader never invents a cursor: paging follows a served `next` and nothing else.
 
 // ── words ───────────────────────────────────────────────────────────────────
+//
+// The words a visitor sees. A failure is still said plainly (a read that could not be made is never drawn as nothing said, and a partial
+// read never calls itself whole); only the machinery's vocabulary is gone.
 
 export const READER_WORDS = Object.freeze({
   loading: "Reading the room…",
+  loadingReplies: "Reading the replies…",
   unavailable: "We couldn't read this. That is not the same as nothing being said here.",
   retry: "Try again",
   none: "Nobody has spoken here yet.",
-  folded: "Some of this room's older talk is folded and is not shown here.",
-  foldedMore: "Circles not shown here:",
-  complete: "That is the whole circle.",
-  partial: "The office could not read all of this circle's history, so what is shown may not be the whole circle.",
-  unknown: "The office did not say whether this room's history is complete, so nothing here can be called the whole of it.",
-  noLines: "This read carried no statements, so we cannot say what was said here.",
-  paged: "This circle is long, so it is shown in pages.",
-  context: "Earlier in this circle, for context",
-  broken: "A reply whose parent is not in this read",
-  loose: "Its parent is not in this read.",
+  folded: "Some older talk in this room isn't shown here.",
+  foldedMore: "More conversations in this room:",
+  moreOne: "Another conversation",
+  complete: "",
+  partial: "Some older replies couldn't be loaded, so this may not be everything.",
+  repliesUnavailable: "These replies couldn't be loaded.",
+  unknown: "We can't tell whether this is everything that was said here.",
+  noLines: "Nothing could be shown from this conversation.",
+  paged: "There is more of this conversation.",
+  context: "Earlier in this conversation",
+  broken: "A reply to a statement that isn't shown",
+  loose: "The statement it answers isn't shown here.",
   back: "Back to the room",
   room: "Room",
   more: "Show more",
   newOne: "new — show",
   reply: "Reply",
+  open: "Open",
   timeline: "Earlier talk, in the order it was said",
-  topCircles: "Circles in this room, in the order they started",
-  sparks: "Sparks of this circle",
-  yours: "Your circle",
+  topCircles: "In this room, in the order they started",
+  sparks: "Sparks",
+  yours: "Yours",
   elsewhere: "Elsewhere in the room",
-  foldedBranch: "Folded branch",
+  foldedBranch: "More of yours",
+  earlier: "an earlier statement",
 });
 
 const s = (v) => (v === null || v === undefined ? "" : String(v));
@@ -131,11 +144,11 @@ export function modelOfRoom(envelope) {
   };
 }
 
-/** The named back path: each id resolved against what the read holds (a line it carries, a stub it was handed); an id it cannot name stays "say <id>". */
+/** The named back path: each id resolved against what the read holds (a line it carries, a stub it was handed); an id it cannot name is "an earlier statement" (the id stays in `id`, never as text). */
 export function crumbsOf(path, known) {
   return arr(path).filter(isId).map((id) => {
     const hit = known.get(String(id));
-    return { id, label: hit ? `${hit}'s circle` : `say ${id}`, named: !!hit };
+    return { id, label: hit ? `${hit}'s statement` : READER_WORDS.earlier, named: !!hit };
   });
 }
 
@@ -171,11 +184,11 @@ export function modelOfCircle(envelope) {
 }
 
 /**
- * Flat lines -> blocks, using ONLY the `reply_to` each line carries.
+ * Flat lines -> blocks, using ONLY the `reply_to` each line carries. (The reader no longer draws these; WLD-178 draws `threadOf`. The
+ * grouping stays exported because the producer-side tooling and the lane's falsifier count lines through it.)
  *
- *   { type: 'strand', lines: [...], loose?: true }  a run of replies with no fork in it: drawn flat, however deep `depth` says it is
- *   { type: 'fork', line, children: [block, ...] }   follows the strand that ends in `line`, when `line` has two or more replies:
- *                                                    each child block is one branch, in the order the lines were served
+ *   { type: 'strand', lines: [...], loose?: true }  a run of replies with no fork in it
+ *   { type: 'fork', line, children: [block, ...] }   follows the strand that ends in `line`, when `line` has two or more replies
  *
  * Every line served appears in exactly one block, in the served order within its run (nothing is dropped at a fold and nothing is
  * duplicated). A line whose `reply_to` is not among `lines` or `known` is `loose` (its strand says so): it is never re-parented.
@@ -224,6 +237,55 @@ export function shapeLines(lines, { known = [] } = {}) {
   return out;
 }
 
+/**
+ * WLD-178: flat lines -> a comment thread, using ONLY the `reply_to` each line carries (the same rule as shapeLines, drawn the way familiar
+ * comment threads draw it).
+ *
+ *   roots   the statements with no parent in the set, in served order; each is `{ line, replies: [node…], total, loose? }`
+ *   plain   lines with no `id` (old talk): a timeline, never a thread
+ *
+ * `replies` are the lines that answer `line`, in served order; `total` is how many statements sit under it, however deep (what "View 3 replies"
+ * counts: only what was served, never a completeness the office did not say). A line whose `reply_to` is not among `lines` or `known` is a
+ * `loose` root (never re-parented). Every line served appears in exactly one node (a cycle in served data places each leftover line as its
+ * own loose root, so nothing is lost and nothing loops).
+ *
+ * @param {object[]} lines
+ * @param {{ known?: Iterable<number|string> }} [opts]   ids that exist outside `lines` (context lines), so a reply to one is not loose
+ */
+export function threadOf(lines, { known = [] } = {}) {
+  const all = arr(lines);
+  const plain = all.filter((l) => !isId(l?.id));
+  const withId = all.filter((l) => isId(l?.id));
+  const byId = new Map(withId.map((l) => [String(l.id), l]));
+  const outside = new Set([...known].map(String));
+  const kids = new Map();
+  const rootLines = [];
+  for (const l of withId) {
+    const p = isId(l.reply_to) ? String(l.reply_to) : null;
+    if (p !== null && byId.has(p) && p !== String(l.id)) {
+      if (!kids.has(p)) kids.set(p, []);
+      kids.get(p).push(l);
+    } else rootLines.push({ line: l, loose: p !== null && !outside.has(p) });
+  }
+  const seen = new Set();
+  const nodeOf = (line, loose) => {
+    seen.add(String(line.id));
+    const replies = [];
+    for (const k of kids.get(String(line.id)) ?? []) if (!seen.has(String(k.id))) replies.push(nodeOf(k, false));
+    return { line, replies, total: replies.reduce((n, r) => n + 1 + r.total, 0), ...(loose ? { loose: true } : {}) };
+  };
+  const roots = rootLines.filter((r) => !seen.has(String(r.line.id))).map((r) => nodeOf(r.line, r.loose));
+  for (const l of withId) if (!seen.has(String(l.id))) roots.push(nodeOf(l, true));
+  return { roots, plain };
+}
+
+/** Every statement the nodes carry, parents before their replies, in served order. */
+export function linesOfThread(nodes) {
+  const out = [];
+  for (const n of arr(nodes)) { out.push(n.line); out.push(...linesOfThread(n.replies)); }
+  return out;
+}
+
 /** Every served line the blocks carry, in block order (the lane falsifier counts these against what was served). */
 export function linesOfBlocks(blocks) {
   const out = [];
@@ -252,16 +314,30 @@ export const READER_CSS = `
 [data-circle-reader] .cr-crumbs [aria-current] { font-weight: 700; }
 [data-circle-reader] .cr-sep { opacity: .6; }
 [data-circle-reader] .cr-stubs, [data-circle-reader] .cr-lines, [data-circle-reader] .cr-list { list-style: none; margin: 0; padding: 0; }
-[data-circle-reader] .cr-stub { display: block; width: 100%; text-align: left; margin: 0 0 .5em; padding: .55em .7em; }
-[data-circle-reader] .cr-stub .cr-opener { display: block; font-weight: 600; overflow-wrap: anywhere; }
-[data-circle-reader] .cr-stub .cr-meta { display: block; margin-top: .15em; }
 [data-circle-reader] .cr-strand { margin: 0 0 .7em; padding: 0; border-left: 3px solid var(--cr-rule, currentColor); padding-left: .7em; }
-[data-circle-reader] .cr-fork { margin: 0 0 .7em; padding-left: .6em; border-left: 1px dashed var(--cr-rule, currentColor); }
-[data-circle-reader] .cr-fork .cr-fork { padding-left: .4em; }
-[data-circle-reader] .cr-say { margin: 0 0 .45em; overflow-wrap: anywhere; }
+[data-circle-reader] .cr-say { margin: 0 0 .8em; overflow-wrap: anywhere; }
 [data-circle-reader] .cr-say .cr-who { font-weight: 700; }
 [data-circle-reader] .cr-say .cr-said { display: block; white-space: pre-wrap; }
-[data-circle-reader] .cr-reply { margin-left: .5em; padding: .1em .5em; min-height: 0; font-size: .82em; }
+[data-circle-reader] .cr-reply, [data-circle-reader] .cr-open { margin: .15em .5em 0 0; padding: .1em .5em; min-height: 0; font-size: .82em; }
+[data-circle-reader] .cr-open { border-color: transparent; text-decoration: underline; opacity: .8; }
+[data-circle-reader] .cr-replies { list-style: none; margin: 0; padding: 0; }
+/* THE THREAD (WLD-178): replies sit under the statement they answer, indented, beside a thin line. The line is one wide, quiet button (it
+   folds and opens the whole reply subtree) and the circle is a second one sitting ON the line at its vertical midpoint (top: 50% of the
+   thread's own height, so in a long open thread it is mid-thread, never pinned beside the first reply). The line is drawn in two pieces
+   so the circle needs no background of the host's: the gap in the middle is the circle's own room. */
+[data-circle-reader] .cr-thread { position: relative; margin: .4em 0 0; padding-left: 1.9em; min-height: 2.1em; }
+[data-circle-reader] .cr-thread > .cr-line { position: absolute; left: 0; top: 0; bottom: 0; width: 1.5em; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; cursor: pointer; }
+[data-circle-reader] .cr-thread > .cr-line::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; transform: translateX(-50%); opacity: .42; border-radius: 1px;
+  background: linear-gradient(to bottom, var(--cr-rule, currentColor) 0, var(--cr-rule, currentColor) calc(50% - .75em), transparent calc(50% - .75em), transparent calc(50% + .75em), var(--cr-rule, currentColor) calc(50% + .75em), var(--cr-rule, currentColor) 100%); }
+[data-circle-reader] .cr-thread > .cr-line:hover::before { opacity: .85; }
+[data-circle-reader] .cr-thread > .cr-line:hover { background: transparent; }
+[data-circle-reader] .cr-thread > .cr-dot { position: absolute; left: .75em; top: 50%; width: 1.1em; height: 1.1em; min-height: 0; padding: 0; border: 2px solid var(--cr-rule, currentColor); border-radius: 50%; background: transparent; transform: translate(-50%, -50%); opacity: .8; cursor: pointer; }
+[data-circle-reader] .cr-thread > .cr-dot:hover { opacity: 1; background: color-mix(in srgb, currentColor 18%, transparent); }
+[data-circle-reader] .cr-thread[data-open="false"] > .cr-dot { background: color-mix(in srgb, currentColor 22%, transparent); }
+[data-circle-reader] .cr-thread > .cr-line:focus-visible, [data-circle-reader] .cr-thread > .cr-dot:focus-visible { outline: 2px solid var(--cr-accent, currentColor); outline-offset: 2px; opacity: 1; }
+[data-circle-reader] .cr-thread > .cr-view { display: block; margin: 0; padding: .35em .2em; min-height: 2.1em; border: 0; background: transparent; text-align: left; font-size: .9em; font-weight: 600; opacity: .9; }
+[data-circle-reader] .cr-thread > .cr-view:hover { text-decoration: underline; background: transparent; }
+[data-circle-reader] .cr-thread-note { margin: .3em 0; font-size: .9em; }
 [data-circle-reader] .cr-context { margin: 0 0 .7em; padding: .4em .6em; border: 1px dashed var(--cr-rule, currentColor); border-radius: 4px; opacity: .92; }
 [data-circle-reader] .cr-context .cr-label { display: block; font-size: .82em; opacity: .85; margin-bottom: .25em; }
 [data-circle-reader] .cr-notice { margin: .5em 0; padding: .4em .6em; border-left: 3px solid var(--cr-accent, currentColor); font-size: .92em; overflow-wrap: anywhere; }
@@ -297,6 +373,8 @@ const clear = (node) => { while (node.firstChild) node.removeChild(node.firstChi
 
 function metaLine(parts) { return parts.filter(Boolean).join(" · "); }
 
+let READER_UID = 0;
+
 /**
  * Mount the reader on `host`.
  *
@@ -315,6 +393,7 @@ function metaLine(parts) { return parts.filter(Boolean).join(" · "); }
 export function createCircleReader({ doc, host, source, roomId = null, canReply = false, onReply = null, onState = null, onNavigate = null, hrefForCircle = null, labels = null, scroller = null } = {}) {
   if (!doc || !host || !source) throw new Error("createCircleReader needs a document, a host and a source");
   const W = { ...READER_WORDS, ...(labels ?? {}) };
+  const uid = ++READER_UID;
   // the host may learn that the visitor can (or can no longer) act while the reader is open: both are read at draw time, never frozen at mount
   let replyOn = !!canReply, replyFn = onReply;
   const root = build(doc, "div", "cr-root");
@@ -332,7 +411,11 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     pending: null,           // a refreshed model the reader holds back until asked
     loadingMore: false,
     replyTarget: null,
-    expanded: new Set(),     // fork keys the reader has open
+    open: new Set(),         // the threads the visitor has opened (a statement's replies); everything starts folded, and a refresh keeps these
+    loaded: new Map(),       // room view: a top statement's circle read, by circle id -> { pages: [model…] }, once its replies were asked for
+    loading: new Set(),      // circle ids whose replies are being read now
+    failed: new Map(),       // circle id -> why its replies could not be read
+    shownRoom: new Set(),    // room view: ids of the loaded statements on screen, to tell new ones from old
     token: 0,                // a later request supersedes an earlier answer
   };
 
@@ -367,6 +450,13 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     for (const c of node.children ?? []) { const hit = findByKey(c, key); if (hit) return hit; }
     return null;
   }
+  /** redraw whichever view is up, in place: scroll and focus come back, nothing is re-read */
+  const redraw = (k = keep()) => {
+    if (state.view === "circle" && state.pages.length) drawCircle(state.pages);
+    else if (state.view === "room" && state.roomModel) drawRoom(state.roomModel);
+    else return;
+    restore(k);
+  };
 
   // ── pieces ──
   const notice = (kind, text, extra) => {
@@ -383,6 +473,9 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     return b;
   };
 
+  // ── the thread ──
+
+  /** one statement: who, when, what, a Reply; its replies (the `thread` element) are appended by the caller */
   const sayLine = (l, { context = false } = {}) => {
     const li = build(doc, "li", "cr-say");
     // a context line is an ancestor shown for orientation: it is not one of the circle's own says, so it wears its own attribute
@@ -395,52 +488,141 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     head.appendChild(who); head.appendChild(when);
     li.appendChild(head);
     li.appendChild(build(doc, "span", "cr-said", l.said));       // content: textContent, never markup
-    if (replyOn && isId(l.id) && !context) {
-      const r = button(W.reply, `reply-${l.id}`, { "data-reply": l.id, "aria-label": `${W.reply} to ${s(l.handle)}` });
-      r.className = "cr-reply";
-      r.addEventListener("click", () => { if (replyFn) replyFn({ id: l.id, handle: s(l.handle), said: s(l.said), at_ms: l.at_ms ?? null, circle: l.circle ?? null }); });
-      li.appendChild(r);
-    }
+    if (replyOn && isId(l.id) && !context) li.appendChild(replyButton({ id: l.id, handle: s(l.handle), said: s(l.said), at_ms: l.at_ms ?? null, circle: l.circle ?? null }));
     return li;
   };
+  const replyButton = (target) => {
+    const r = button(W.reply, `reply-${target.id}`, { "data-reply": target.id, "aria-label": `${W.reply} to ${s(target.handle)}` });
+    r.className = "cr-reply";
+    r.addEventListener("click", () => { if (replyFn) replyFn(target); });
+    return r;
+  };
 
-  const strandEl = (b) => {
+  const repliesWord = (n) => plural(n, "reply", "replies");
+  /**
+   * The thread under a statement: a thin line and a small circle on it, both of which fold and open the whole reply subtree; a "View 3
+   * replies" text while folded. `kids` is the replies' content (an array of nodes already built, or null while they are not in hand),
+   * `status` is 'loading' | 'failed' | null for replies that must be read first.
+   */
+  const threadEl = ({ key, count, nodes, status, why, onOpen, onRetry, more }) => {
+    const open = state.open.has(key);
+    const id = `cr${uid}-${key}`;
+    const wrap = build(doc, "div", "cr-thread");
+    attr(wrap, "data-thread", key);
+    attr(wrap, "data-open", open ? "true" : "false");
+    const label = `${open ? "Hide" : "View"} ${repliesWord(count)}`;
+    const toggle = () => {
+      const k = keep();
+      if (state.open.has(key)) state.open.delete(key); else { state.open.add(key); if (onOpen) onOpen(); }
+      // the "View" text is gone once open: focus follows to the circle, which is on the line in both states
+      if (/^view-/.test(k.focus ?? "")) k.focus = `dot-${key}`;
+      redraw(k);
+    };
+    const controls = { "aria-expanded": open ? "true" : "false", "aria-controls": id, "aria-label": label, title: label };
+    const line = button("", `line-${key}`, { "data-thread-line": "", ...controls });
+    line.className = "cr-line";
+    line.addEventListener("click", toggle);
+    const dot = button("", `dot-${key}`, { "data-thread-dot": "", ...controls });
+    dot.className = "cr-dot";
+    dot.addEventListener("click", toggle);
+    wrap.appendChild(line);
+    wrap.appendChild(dot);
+    if (!open) {
+      const view = button(`View ${repliesWord(count)}`, `view-${key}`, { "data-thread-view": "", ...controls });
+      view.className = "cr-view";
+      view.addEventListener("click", toggle);
+      wrap.appendChild(view);
+    }
+    const list = build(doc, "ul", "cr-replies");
+    attr(list, "id", id);
+    if (!open) attr(list, "hidden", "");
+    else {
+      if (status === "loading") list.appendChild(build(doc, "li", "cr-quiet cr-thread-note", W.loadingReplies));
+      else if (status === "failed") {
+        const li = build(doc, "li", "cr-thread-note");
+        li.appendChild(notice("unavailable", why ? `${W.repliesUnavailable} (${why})` : W.repliesUnavailable));
+        const r = button(W.retry, `retry-${key}`, { "data-retry-replies": "" });
+        r.addEventListener("click", () => { if (onRetry) onRetry(); });
+        li.appendChild(r);
+        list.appendChild(li);
+      } else for (const n of nodes ?? []) list.appendChild(n);
+      if (more) list.appendChild(more);
+    }
+    wrap.appendChild(list);
+    return wrap;
+  };
+
+  /** the nodes of a reply thread as statements, each with its own folded thread beneath it */
+  const nodeEls = (nodes) => nodes.map((node) => {
+    const li = sayLine(node.line);
+    if (node.loose) { attr(li, "data-loose", ""); li.appendChild(notice("broken", W.loose, { "data-loose-note": "" })); }
+    if (node.replies.length) li.appendChild(threadEl({ key: `t-${node.line.id}`, count: node.total, nodes: nodeEls(node.replies) }));
+    return li;
+  });
+
+  /** old talk (lines with no id): a plain timeline, never a thread */
+  const timelineEl = (lines) => {
     const ul = build(doc, "ul", "cr-lines cr-strand");
-    attr(ul, "data-strand", "");
-    if (b.loose) attr(ul, "data-loose", "");
-    for (const l of b.lines) ul.appendChild(sayLine(l));
-    if (b.loose) ul.appendChild(notice("broken", W.loose, { "data-loose-note": "" }));
+    attr(ul, "data-timeline", "");
+    for (const l of lines) ul.appendChild(sayLine(l));
     return ul;
   };
-  const blocksEl = (blocks, container) => {
-    for (const b of blocks) {
-      if (b.type === "strand") container.appendChild(strandEl(b));
-      else if (b.type === "plain") {
-        const ul = build(doc, "ul", "cr-lines cr-strand");
-        attr(ul, "data-timeline", "");
-        for (const l of b.lines) ul.appendChild(sayLine(l));
-        container.appendChild(ul);
-      } else if (b.type === "fork") {
-        const wrap = build(doc, "div", "cr-fork");
-        attr(wrap, "data-fork", b.line?.id ?? "");
-        blocksEl(b.children, wrap);
-        container.appendChild(wrap);
-      }
-    }
+
+  /** a thread of served lines (the circle view's, or the reader's own path): top statements, replies folded under each */
+  const threadListEl = (lines, known = []) => {
+    const t = threadOf(lines, { known });
+    const ul = build(doc, "ul", "cr-lines cr-list");
+    attr(ul, "data-thread-list", "");
+    for (const li of nodeEls(t.roots)) ul.appendChild(li);
+    return { el: ul, plain: t.plain };
   };
 
-  const stubButton = (st) => {
-    const li = build(doc, "li", "");
-    const b = button("", `stub-${st.circle}`, { "data-circle-stub": "", "data-circle": st.circle });
-    b.className = "cr-stub";
-    b.appendChild(build(doc, "span", "cr-opener", `${st.handle ? `${st.handle}: ` : ""}${st.opener}`));
-    b.appendChild(build(doc, "span", "cr-meta", metaLine([
-      plural(st.says, "statement", "statements"), plural(st.people, "speaker", "speakers"),
-      st.started ? `began ${dateTimeOf(st.started)}` : "", st.latest ? `latest ${dateTimeOf(st.latest)}` : "",
-      st.under !== null ? `${plural(st.under, "say", "says")} folded here` : "",
-    ])));
-    if (st.read) b.addEventListener("click", () => showCircle(st.read.circle));
-    li.appendChild(b);
+  // ── a top statement in the room view, whose replies are read when it is opened ──
+  const stubStatement = (st) => {
+    const circle = st.read?.circle ?? st.circle;
+    const li = build(doc, "li", "cr-say");
+    attr(li, "data-say", isId(st.circle) ? st.circle : "");
+    attr(li, "data-circle-stub", "");
+    attr(li, "data-circle", st.circle);
+    const head = build(doc, "span", "cr-head-line");
+    head.appendChild(build(doc, "span", "cr-who", st.handle));
+    head.appendChild(build(doc, "span", "cr-time", ` ${dateTimeOf(st.started) || whenOf(st.started)}`));
+    li.appendChild(head);
+    li.appendChild(build(doc, "span", "cr-said", st.opener));
+    if (replyOn && isId(st.circle)) li.appendChild(replyButton({ id: st.circle, handle: st.handle, said: st.opener, at_ms: null, circle: st.circle }));
+    // a conversation can still be opened on its own, with its named way back (the circle view, and the host's permalink for it)
+    if (st.read) {
+      const o = button(W.open, `open-${circle}`, { "data-circle-open": circle, "aria-label": `${W.open} ${s(st.handle)}'s conversation` });
+      o.className = "cr-open";
+      o.addEventListener("click", () => showCircle(circle));
+      li.appendChild(o);
+    }
+    const replies = Math.max(0, st.says - 1);
+    if (replies > 0 && st.read) {
+      const id = String(circle);
+      const held = state.loaded.get(id);
+      let nodes = null;
+      let more = null;
+      if (held) {
+        const all = held.pages.flatMap((p) => p.lines);
+        const t = threadOf(all, { known: held.pages[0]?.context?.map((l) => l.id) ?? [] });
+        const root = t.roots.find((r) => String(r.line.id) === id);
+        nodes = nodeEls(root ? root.replies : t.roots);
+        const last = held.pages[held.pages.length - 1];
+        if (last?.next) {
+          const mb = button(held.loadingMore ? "…" : W.more, `more-${id}`, { "data-next": "" });
+          mb.addEventListener("click", () => moreStub(id));
+          more = mb;
+        }
+      }
+      const status = state.loading.has(id) ? "loading" : state.failed.has(id) ? "failed" : held ? null : "loading";
+      li.appendChild(threadEl({
+        key: `s-${circle}`, count: replies, nodes, status, why: state.failed.get(id),
+        onOpen: () => { if (!state.loaded.has(id) && !state.loading.has(id)) loadStub(circle); },
+        onRetry: () => { state.failed.delete(id); loadStub(circle); redraw(); },
+        more,
+      }));
+    }
     return li;
   };
 
@@ -452,7 +634,7 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     const live = m.room.live ? "live" : "gone quiet";
     head.appendChild(build(doc, "div", "cr-meta", metaLine([
       m.room.id !== undefined ? live : "",
-      m.summary ? `${plural(m.summary.says, "statement", "statements")} · ${plural(m.summary.people, "speaker", "speakers")} · ${plural(m.summary.topCircles, "top circle", "top circles")}` : "",
+      m.summary ? `${plural(m.summary.says, "statement", "statements")} · ${plural(m.summary.people, "speaker", "speakers")}` : "",
       m.room.started ? `began ${dateTimeOf(m.room.started)}` : "", m.room.latest ? `latest ${dateTimeOf(m.room.latest)}` : "",
     ])));
     root.appendChild(head);
@@ -478,7 +660,7 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     if (m.yours !== null && m.lines.length) {
       const sec = build(doc, "section", "cr-own");
       sec.appendChild(build(doc, "h4", "cr-title", W.yours));
-      blocksEl(shapeLines(m.lines), sec);
+      sec.appendChild(threadListEl(m.lines).el);
       if (m.ownPath?.paged) {
         sec.appendChild(notice("paged", `${W.paged} ${plural(m.ownPath.shown, "line", "lines")} of ${m.ownPath.says} shown.`));
         if (m.ownPath.next && isId(m.ownPath.next.circle)) {
@@ -489,38 +671,36 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
       }
       if (m.folded.length) {
         sec.appendChild(build(doc, "h4", "cr-meta", W.foldedBranch));
-        const ul = build(doc, "ul", "cr-stubs");
-        for (const st of m.folded) ul.appendChild(stubButton(st));
+        const ul = build(doc, "ul", "cr-stubs cr-list");
+        for (const st of m.folded) ul.appendChild(stubStatement(st));
         sec.appendChild(ul);
       }
       root.appendChild(sec);
     }
     if (m.stubs.length) {
       root.appendChild(build(doc, "h4", "cr-title", m.yours !== null ? W.elsewhere : W.topCircles));
-      const ul = build(doc, "ul", "cr-stubs");
+      const ul = build(doc, "ul", "cr-stubs cr-list");
       attr(ul, "data-stubs", "");
-      for (const st of m.stubs) ul.appendChild(stubButton(st));
+      for (const st of m.stubs) ul.appendChild(stubStatement(st));
       root.appendChild(ul);
     }
     if (m.moreCircles.length) {
-      const n = notice("folded", `${W.foldedMore} ${m.moreCircles.length}`, { "data-more-circles": m.moreCircles.join(",") });
+      const n = notice("folded", W.foldedMore, { "data-more-circles": m.moreCircles.join(",") });
       root.appendChild(n);
       const row = build(doc, "div", "cr-actions");
-      for (const id of m.moreCircles) {
-        const b = button(`circle ${id}`, `more-${id}`, { "data-circle-more": id });
+      m.moreCircles.forEach((id, i) => {
+        const b = button(W.moreOne, `more-${id}`, { "data-circle-more": id, "aria-label": `${W.moreOne} (${i + 1} of ${m.moreCircles.length})` });
         b.addEventListener("click", () => showCircle(id));
         row.appendChild(b);
-      }
+      });
       root.appendChild(row);
     }
-    for (const br of m.broken) root.appendChild(notice("broken", `${W.broken}: ${s(br.handle)} (say ${s(br.id)}). ${s(br.note)}`));
+    for (const br of m.broken) root.appendChild(notice("broken", `${W.broken}: ${s(br.handle)}. ${s(br.note)}`.trim()));
     if (m.timeline.length) {
       root.appendChild(build(doc, "h4", "cr-title", W.timeline));
-      const ul = build(doc, "ul", "cr-lines cr-strand");
-      attr(ul, "data-timeline", "");
-      for (const l of m.timeline) ul.appendChild(sayLine(l));
-      root.appendChild(ul);
+      root.appendChild(timelineEl(m.timeline));
     }
+    state.shownRoom = new Set([...state.loaded.values()].flatMap((h) => h.pages.flatMap((p) => p.lines)).filter((l) => isId(l.id)).map((l) => String(l.id)));
     setState("room", { stubs: m.stubs.length });
   }
 
@@ -564,13 +744,13 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
       return;
     }
     const head = build(doc, "div", "cr-head");
-    const title = build(doc, "h3", "cr-title", first.crumbs.length ? first.crumbs[first.crumbs.length - 1].label : `Circle ${first.circle}`);
+    const title = build(doc, "h3", "cr-title", first.crumbs.length ? first.crumbs[first.crumbs.length - 1].label : (first.room.place || W.room));
     attr(title, "tabindex", "-1");
     attr(title, "data-key", "circle-title");
     head.appendChild(title);
     head.appendChild(build(doc, "div", "cr-meta", metaLine([plural(first.says, "statement", "statements"), plural(first.people, "speaker", "speakers")])));
     if (hrefForCircle && hrefForCircle(first.circle)) {
-      const a = build(doc, "a", "cr-meta", "link to this circle");
+      const a = build(doc, "a", "cr-meta", "link to this conversation");
       attr(a, "href", hrefForCircle(first.circle));
       attr(a, "data-key", "permalink");           // a refresh redraws the view: the key is how focus on the link comes back
       head.appendChild(a);
@@ -590,7 +770,9 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     const all = models.flatMap((m) => m.lines);
     state.shown = new Set(all.filter((l) => isId(l.id)).map((l) => String(l.id)));
     const body = build(doc, "div", "cr-body");
-    blocksEl(shapeLines(all, { known }), body);
+    const listed = threadListEl(all, known);
+    body.appendChild(listed.el);
+    if (listed.plain.length) body.appendChild(timelineEl(listed.plain));
     root.appendChild(body);
     const lastModel = models[models.length - 1];
     if (lastModel.next) {
@@ -600,10 +782,10 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
       root.appendChild(nb);
     } else if (!all.length) {
       root.appendChild(notice("unavailable", W.noLines));
-    } else if (lastModel.complete && lastModel.history !== "folded" && !models.some((m) => m.partial)) {
-      root.appendChild(notice("complete", W.complete));
+    } else if (W.complete && lastModel.complete && lastModel.history !== "folded" && !models.some((m) => m.partial)) {
+      root.appendChild(notice("complete", W.complete));   // a host may bring words back (labels.complete); by default a whole thread says nothing
     }
-    // the lines the office did serve stay on screen; an unavailable history is said aloud and never called the whole circle
+    // the lines the office did serve stay on screen; a history that could not be read is said aloud and never called everything
     if (models.some((m) => m.partial)) root.appendChild(notice("unavailable", lastModel.note ? `${W.partial} ${lastModel.note}` : W.partial));
     if (lastModel.history === "folded") root.appendChild(notice("folded", lastModel.note || W.folded));
     if (first.memoryNote) root.appendChild(notice("folded", first.memoryNote));
@@ -616,7 +798,7 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
         for (const { x, on } of items) {
           const li = build(doc, "li", "");
           attr(li, "data-spark", x.id ?? "");
-          li.appendChild(build(doc, "span", "", `${s(x.body)}${x.credit?.by ? ` — ${s(x.credit.by)}` : ""}${on ? "" : " (deeper in this circle)"}`));
+          li.appendChild(build(doc, "span", "", `${s(x.body)}${x.credit?.by ? ` — ${s(x.credit.by)}` : ""}${on ? "" : " (deeper in this conversation)"}`));
           ul.appendChild(li);
         }
         sec.appendChild(ul);
@@ -693,6 +875,34 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     drawCircle(state.pages);
     restore(k);
   }
+  // the room view: a top statement's replies are read when the visitor opens them (the stub's own served `read`), and kept for every redraw after
+  async function loadStub(circle) {
+    const id = String(circle);
+    state.loading.add(id); state.failed.delete(id);
+    const mine = state.token;
+    let answer;
+    try { answer = await source.circle(circle); } catch (e) { answer = { error: String(e?.message ?? e) }; }
+    state.loading.delete(id);
+    if (mine !== state.token || state.view !== "room") return;    // a later navigation (Back, a circle, destroy) supersedes this answer
+    if (refused(answer, "circle")) state.failed.set(id, whyOf(answer));
+    else state.loaded.set(id, { pages: [modelOfCircle(answer)] });
+    redraw();
+  }
+  async function moreStub(id) {
+    const held = state.loaded.get(id);
+    const last = held?.pages[held.pages.length - 1];
+    if (!last?.next || held.loadingMore) return;
+    held.loadingMore = true;
+    const mine = state.token;
+    const k = keep();
+    let answer;
+    try { answer = await source.circle(last.next.circle, last.next.after); } catch (e) { answer = { error: String(e?.message ?? e) }; }
+    held.loadingMore = false;
+    if (mine !== state.token || state.view !== "room") return;
+    if (refused(answer, "circle")) { state.failed.set(id, whyOf(answer)); redraw(k); return; }
+    held.pages.push(modelOfCircle(answer));
+    redraw(k);
+  }
   function failed(why) {
     clear(root);
     if (state.view === "circle") root.appendChild(crumbsFallback());
@@ -724,14 +934,35 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
       if (mine !== state.token) return;
       if (refused(answer, "room")) return;
       const next = modelOfRoom(answer);
+      // the replies the visitor opened are read again too (their first page and the pages they have already asked for), so what they see stays current
+      const reread = new Map();
+      for (const [id, held] of state.loaded) {
+        if (!state.open.has(`s-${id}`)) { reread.set(id, held); continue; }       // nothing on screen to patch: kept as it was
+        const pages = [];
+        let a;
+        try { a = await source.circle(id); } catch { reread.set(id, held); continue; }
+        if (mine !== state.token) return;
+        if (refused(a, "circle")) { reread.set(id, held); continue; }              // a failed background read leaves what was shown standing
+        pages.push(modelOfCircle(a));
+        for (let i = 1; i < held.pages.length && pages[i - 1].next; i++) {
+          try { a = await source.circle(pages[i - 1].next.circle, pages[i - 1].next.after); } catch { break; }
+          if (mine !== state.token) return;
+          if (refused(a, "circle")) break;
+          pages.push(modelOfCircle(a));
+        }
+        reread.set(id, { pages });
+      }
       const oldIds = new Set((state.roomModel?.stubs ?? []).map((x) => String(x.circle)));
-      const fresh = next.stubs.filter((x) => !oldIds.has(String(x.circle)));
-      if (quiet && fresh.length && state.roomModel) {
-        state.pending = { model: next, count: fresh.length };
-        const k = keep(); drawRoom(state.roomModel); restore(k);                      // counts stay as they were; the button offers the new circles
+      const freshStubs = next.stubs.filter((x) => !oldIds.has(String(x.circle)));
+      const freshLines = [...reread.values()].flatMap((h) => h.pages.flatMap((p) => p.lines)).filter((l) => isId(l.id) && !state.shownRoom.has(String(l.id)));
+      const fresh = freshStubs.length + freshLines.length;
+      if (quiet && fresh && state.roomModel) {
+        state.pending = { model: next, count: fresh, loaded: reread };
+        const k = keep(); drawRoom(state.roomModel); restore(k);                      // counts stay as they were; the button offers what is new
         return;
       }
       state.roomModel = next;
+      state.loaded = reread;
       const k = keep(); drawRoom(next); restore(k);
       return;
     }
@@ -762,7 +993,7 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     const p = state.pending; state.pending = null;
     const k = keep();
     if (!p) return;
-    if (state.view === "room") { state.roomModel = p.model; drawRoom(p.model); }
+    if (state.view === "room") { state.roomModel = p.model; if (p.loaded) state.loaded = p.loaded; drawRoom(p.model); }
     else { state.pages = p.pages; drawCircle(p.pages); }
     restore(k);
   }
