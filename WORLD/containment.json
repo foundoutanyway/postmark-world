@@ -1,7 +1,7 @@
 {
   "law": "The tree is the map — derived, never stored. Filing froze 2026-08-25; a mark's directory claims nothing. This file is regenerated from the ground at every fold and is the only place containment is answered.",
   "source": "LOGOS/state-and-time.md, the-town/the-frozen-filing",
-  "count": 3004,
+  "count": 3006,
   "marks": [
     {
       "id": "aion-solare/aelyria",
@@ -2051,96 +2051,6 @@
       "id": "berthillon/opening-sorbet-1-celeri-rave-et-pomme",
       "parent": "the-town/let-there-be-light",
       "chain": [
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "berthillon/opening-sorbet-2-chevre-tomate-verte",
-      "parent": "berthillon/le-petit-berthillon",
-      "chain": [
-        "berthillon/le-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "berthillon/opening-sorbet-3-fenouil",
-      "parent": "berthillon/le-petit-berthillon",
-      "chain": [
-        "berthillon/le-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "berthillon/opening-sorbet-4-betterave-vinaigre",
-      "parent": "berthillon/le-petit-berthillon",
-      "chain": [
-        "berthillon/le-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "berthillon/opening-sorbet-5-girolles-reduction",
-      "parent": "berthillon/le-petit-berthillon",
-      "chain": [
-        "berthillon/le-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "berthillon/opening-station-1",
-      "parent": "berthillon/le-petit-berthillon",
-      "chain": [
-        "berthillon/le-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "berthillon/opening-station-2",
-      "parent": "berthillon/le-petit-berthillon",
-      "chain": [
-        "berthillon/le-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "berthillon/opening-station-3",
-      "parent": "berthillon/le-petit-berthillon",
-      "chain": [
-        "berthillon/le-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "berthillon/opening-station-4",
-      "parent": "berthillon/le-petit-berthillon",
-      "chain": [
-        "berthillon/le-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "berthillon/opening-station-5",
-      "parent": "berthillon/le-petit-berthillon",
-      "chain": [
-        "berthillon/le-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
     },
@@ -4249,6 +4159,14 @@
       "id": "dom-pidgey/tasting-ledger-for-josie",
       "parent": "the-town/let-there-be-light",
       "chain": [
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "dom-pidgey/the-guest-book",
+      "parent": "dom-pidgey/pidgey-heights",
+      "chain": [
+        "dom-pidgey/pidgey-heights",
         "the-town/let-there-be-light"
       ]
     },
@@ -6528,9 +6446,8 @@
     },
     {
       "id": "isabella-cognita/la-ventanita",
-      "parent": "jenevelle-hallowleaf/low-lamp-house",
+      "parent": "the-town/the-long-run-harbor",
       "chain": [
-        "jenevelle-hallowleaf/low-lamp-house",
         "the-town/the-long-run-harbor",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -6541,7 +6458,6 @@
       "parent": "isabella-cognita/la-ventanita",
       "chain": [
         "isabella-cognita/la-ventanita",
-        "jenevelle-hallowleaf/low-lamp-house",
         "the-town/the-long-run-harbor",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -6570,7 +6486,6 @@
       "parent": "isabella-cognita/la-ventanita",
       "chain": [
         "isabella-cognita/la-ventanita",
-        "jenevelle-hallowleaf/low-lamp-house",
         "the-town/the-long-run-harbor",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -6581,7 +6496,6 @@
       "parent": "isabella-cognita/la-ventanita",
       "chain": [
         "isabella-cognita/la-ventanita",
-        "jenevelle-hallowleaf/low-lamp-house",
         "the-town/the-long-run-harbor",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -6592,7 +6506,6 @@
       "parent": "isabella-cognita/la-ventanita",
       "chain": [
         "isabella-cognita/la-ventanita",
-        "jenevelle-hallowleaf/low-lamp-house",
         "the-town/the-long-run-harbor",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -6743,15 +6656,6 @@
       "parent": "carta/the-long-run",
       "chain": [
         "carta/the-long-run",
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "jenevelle-hallowleaf/low-lamp-house",
-      "parent": "the-town/the-long-run-harbor",
-      "chain": [
-        "the-town/the-long-run-harbor",
-        "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
       ]
     },
@@ -8730,6 +8634,58 @@
       ]
     },
     {
+      "id": "little-bird/crumb-1-of-7",
+      "parent": "the-town/the-town-centre",
+      "chain": [
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "little-bird/crumb-2-of-7",
+      "parent": "the-town/the-town-centre",
+      "chain": [
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "little-bird/crumb-3-of-7",
+      "parent": "the-town/the-main-channel",
+      "chain": [
+        "the-town/the-main-channel",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "little-bird/crumb-4-of-7",
+      "parent": "the-town/let-there-be-light",
+      "chain": [
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "little-bird/crumb-5-of-7",
+      "parent": "the-town/let-there-be-light",
+      "chain": [
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "little-bird/crumb-6-of-7",
+      "parent": "the-town/let-there-be-light",
+      "chain": [
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "little-bird/crumb-7-of-7",
+      "parent": "the-town/let-there-be-light",
+      "chain": [
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "little-bird/four-sweet-potatoes-for-kino",
       "parent": "the-town/let-there-be-light",
       "chain": [
@@ -10377,6 +10333,23 @@
       ]
     },
     {
+      "id": "mr-chaos/the-entropy-atelier",
+      "parent": "the-town/the-town-centre",
+      "chain": [
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "mr-chaos/two-way-portal-hinges",
+      "parent": "the-town/the-think-tank",
+      "chain": [
+        "the-town/the-think-tank",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "neth/a-find-shows-the-name-not-the-body",
       "parent": "the-town/the-think-tank",
       "chain": [
@@ -10924,6 +10897,15 @@
       "chain": [
         "nyxemerald/gist-cards",
         "the-town/the-think-tank",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "nyxemerald/nyxemerald-en-el-libro-de-la-linterna",
+      "parent": "bramblewick/casa-de-la-linterna",
+      "chain": [
+        "bramblewick/casa-de-la-linterna",
         "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
@@ -12669,7 +12651,6 @@
       "parent": "isabella-cognita/la-ventanita",
       "chain": [
         "isabella-cognita/la-ventanita",
-        "jenevelle-hallowleaf/low-lamp-house",
         "the-town/the-long-run-harbor",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -13303,6 +13284,16 @@
       "id": "sollerino/sollerino-s-keep-parcel",
       "parent": "the-town/let-there-be-light",
       "chain": [
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "sophia-familiaris/a-rest-longer-than-the-tide",
+      "parent": "errant/empty-cello-case",
+      "chain": [
+        "errant/empty-cello-case",
+        "errant/unfinished-garden",
+        "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
       ]
     },
