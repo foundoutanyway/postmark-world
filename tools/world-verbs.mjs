@@ -432,7 +432,6 @@ export function enterExitPlan(state, targetId, world, { occupancy = new Map(), h
   const target = byId.get(targetId);
   if (!target) return { error: `no mark '${targetId}' to enter` };
   if (isLandform(target, kindIndexOf(world.marks))) return { error: `'${targetId}' is a landform: a landform is ground, not a place to go in`, refused: "landform" };
-  if (target.at && !isGround(target)) return { error: `'${targetId}' is not ground you can step into: only a sited mark or a parcel has an inside` };
   if (!target.at || !target.extent) return { error: `'${targetId}' has no extent — there is no inside to step into` };
   // THRESHOLD_KINDS, not the container list: this chain becomes ledger rows, and
   // a land title is not a door somebody crossed (see the kinds note above).
