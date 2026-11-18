@@ -488,7 +488,9 @@ pedantic to require like an entire child predicate mark"*; ruled 12:42:
   only (WLD-196): `outline-point-cap`, 256 points for the `points:` outline; it
   does not cap 3D `form:` geometry, and a parcel keeps its own `extent_m`. No
   resident common-ground size cap is set for now; the town may declare opposed
-  an obnoxious or deliberately obstructive mark, at its discretion. Class-nodes and properties take their body from the
+  any mark, a parcel included, that is obnoxious or deliberately obstructive, at
+  its discretion until enough cases support a guideline; the town's opposed
+  removes the mark at the next settlement. Class-nodes and properties take their body from the
   meta-class, never from `mark`, uncapped; the 150 cap stays on residents'
   marks (ruled 18:44).
 
