@@ -376,6 +376,46 @@ test("WLD-178 · a failed or partial read is still SAID, in plain words, with th
   assert.match(text(partial.root), /Some older replies couldn't be loaded, so this may not be everything/);
 });
 
+test("WLD-178 · ROOM view: an opened top statement over an unavailable, folded or incomplete read says so; an empty unavailable read is a failure with Try again, never silence", async () => {
+  const open = async (answer) => {
+    const h = harness({ circles: { "50101|": answer } });
+    await h.reader.showRoom(); await tick();
+    byAttr(byAttr(h.root, "data-circle", 50101)[0], "data-thread-view")[0].click(); await tick(); await tick();
+    return { h, stub: byAttr(h.root, "data-circle", 50101)[0] };
+  };
+  // control: a complete read draws no notice
+  let r = await open(circle50101());
+  assert.equal(byAttr(r.stub, "data-notice").length, 0, "a complete read says nothing");
+  // unavailable WITH lines: they stay and the thread says older replies could not load
+  r = await open(circle50101({ history: "unavailable" }));
+  assert.ok(byAttr(r.stub, "data-say").length > 1, "served replies stay");
+  assert.match(text(r.stub), /Some older replies couldn't be loaded, so this may not be everything/);
+  // unavailable with NO lines: not an empty thread; the failure sentence and Try again
+  const none = circle50101({ history: "unavailable" }); none.find.circle_read.lines = [];
+  r = await open(none);
+  assert.match(text(r.stub), /These replies couldn't be loaded/);
+  assert.equal(byAttr(r.stub, "data-retry-replies").length, 1, "and it can be tried again");
+  // folded history: the plain folded sentence
+  r = await open(circle50101({ history: "folded" }));
+  assert.equal(byAttr(r.stub, "data-notice", "folded").length, 1);
+  assert.match(text(r.stub), /isn't shown here/);
+  // an incomplete read with nothing further to page: it may not be everything
+  const few = circle50101(); few.find.circle_read.lines = few.find.circle_read.lines.slice(0, 4); few.find.circle_read.complete = false;
+  r = await open(few);
+  assert.match(text(r.stub), /may not be everything/);
+  assert.doesNotMatch(text(r.stub), /unavailable|folded|complete|strand|branch/i, "plain words only");
+});
+
+test("WLD-178 · the thread line and circle are drawn in the reader's own foreground, never the host's faint --cr-rule/--line (the World column's border colour)", async () => {
+  const strokes = READER_CSS.split("\n").filter((l) => /\.cr-thread > \.cr-(line::before|dot) \{|currentColor 0, currentColor/.test(l)).join("\n");
+  assert.ok(strokes.includes("currentColor"), "the stroke follows the text colour");
+  assert.doesNotMatch(strokes, /--cr-rule|--line/, "not the host's border colour");
+  assert.match(READER_CSS, /\.cr-line::before \{[^}]*opacity: \.[5-9]/, "line is not dimmed below .5");
+  assert.match(READER_CSS, /\.cr-dot \{[^}]*opacity: \.[7-9]/, "circle is not dimmed below .7");
+  const col = (await import("node:fs")).readFileSync(new URL("../spectator/home-column.mjs", import.meta.url), "utf8");
+  assert.match(col, /\.wv-homecol-reader \{[^}]*color:var\(--paper\)/, "the column's text colour is the foreground the stroke follows");
+});
+
 test("WLD-178 · opened threads, scroll and focus survive a refresh; new says are offered, never pulled in, and stale answers stay discarded", async () => {
   const c = circle50101();
   const h = harness({ circles: { "50101|": c }, canReply: true });

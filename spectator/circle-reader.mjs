@@ -327,11 +327,11 @@ export const READER_CSS = `
    so the circle needs no background of the host's: the gap in the middle is the circle's own room. */
 [data-circle-reader] .cr-thread { position: relative; margin: .4em 0 0; padding-left: 1.9em; min-height: 2.1em; }
 [data-circle-reader] .cr-thread > .cr-line { position: absolute; left: 0; top: 0; bottom: 0; width: 1.5em; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; cursor: pointer; }
-[data-circle-reader] .cr-thread > .cr-line::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; transform: translateX(-50%); opacity: .42; border-radius: 1px;
-  background: linear-gradient(to bottom, var(--cr-rule, currentColor) 0, var(--cr-rule, currentColor) calc(50% - .75em), transparent calc(50% - .75em), transparent calc(50% + .75em), var(--cr-rule, currentColor) calc(50% + .75em), var(--cr-rule, currentColor) 100%); }
+[data-circle-reader] .cr-thread > .cr-line::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; transform: translateX(-50%); opacity: .6; border-radius: 1px;
+  background: linear-gradient(to bottom, currentColor 0, currentColor calc(50% - .75em), transparent calc(50% - .75em), transparent calc(50% + .75em), currentColor calc(50% + .75em), currentColor 100%); }
 [data-circle-reader] .cr-thread > .cr-line:hover::before { opacity: .85; }
 [data-circle-reader] .cr-thread > .cr-line:hover { background: transparent; }
-[data-circle-reader] .cr-thread > .cr-dot { position: absolute; left: .75em; top: 50%; width: 1.1em; height: 1.1em; min-height: 0; padding: 0; border: 2px solid var(--cr-rule, currentColor); border-radius: 50%; background: transparent; transform: translate(-50%, -50%); opacity: .8; cursor: pointer; }
+[data-circle-reader] .cr-thread > .cr-dot { position: absolute; left: .75em; top: 50%; width: 1.1em; height: 1.1em; min-height: 0; padding: 0; border: 2px solid currentColor; border-radius: 50%; background: transparent; transform: translate(-50%, -50%); opacity: .85; cursor: pointer; }
 [data-circle-reader] .cr-thread > .cr-dot:hover { opacity: 1; background: color-mix(in srgb, currentColor 18%, transparent); }
 [data-circle-reader] .cr-thread[data-open="false"] > .cr-dot { background: color-mix(in srgb, currentColor 22%, transparent); }
 [data-circle-reader] .cr-thread > .cr-line:focus-visible, [data-circle-reader] .cr-thread > .cr-dot:focus-visible { outline: 2px solid var(--cr-accent, currentColor); outline-offset: 2px; opacity: 1; }
@@ -504,7 +504,7 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
    * replies" text while folded. `kids` is the replies' content (an array of nodes already built, or null while they are not in hand),
    * `status` is 'loading' | 'failed' | null for replies that must be read first.
    */
-  const threadEl = ({ key, count, nodes, status, why, onOpen, onRetry, more }) => {
+  const threadEl = ({ key, count, nodes, status, why, onOpen, onRetry, more, notes }) => {
     const open = state.open.has(key);
     const id = `cr${uid}-${key}`;
     const wrap = build(doc, "div", "cr-thread");
@@ -546,6 +546,7 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
         li.appendChild(r);
         list.appendChild(li);
       } else for (const n of nodes ?? []) list.appendChild(n);
+      for (const n of status ? [] : notes ?? []) { const li = build(doc, "li", "cr-thread-note"); li.appendChild(n); list.appendChild(li); }
       if (more) list.appendChild(more);
     }
     wrap.appendChild(list);
@@ -603,11 +604,18 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
       const held = state.loaded.get(id);
       let nodes = null;
       let more = null;
+      const notes = [];
       if (held) {
         const all = held.pages.flatMap((p) => p.lines);
+        // the same plain disclosures the circle view makes: what the office served stays, and is never called everything when it was not
+        const lastPage = held.pages[held.pages.length - 1];
+        if (held.pages.some((p) => p.partial)) notes.push(notice("unavailable", lastPage.note ? `${W.partial} ${lastPage.note}` : W.partial));
+        else if (lastPage.history === "folded") notes.push(notice("folded", lastPage.note || W.folded));
+        else if (!lastPage.next && !lastPage.complete) notes.push(notice("unavailable", W.partial));
         const t = threadOf(all, { known: held.pages[0]?.context?.map((l) => l.id) ?? [] });
         const root = t.roots.find((r) => String(r.line.id) === id);
         nodes = nodeEls(root ? root.replies : t.roots);
+        if (!nodes.length && !notes.length) notes.push(notice("unavailable", W.partial));   // opened to nothing: never silent
         const last = held.pages[held.pages.length - 1];
         if (last?.next) {
           const mb = button(held.loadingMore ? "…" : W.more, `more-${id}`, { "data-next": "" });
@@ -617,7 +625,7 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
       }
       const status = state.loading.has(id) ? "loading" : state.failed.has(id) ? "failed" : held ? null : "loading";
       li.appendChild(threadEl({
-        key: `s-${circle}`, count: replies, nodes, status, why: state.failed.get(id),
+        key: `s-${circle}`, count: replies, nodes, status, why: state.failed.get(id), notes,
         onOpen: () => { if (!state.loaded.has(id) && !state.loading.has(id)) loadStub(circle); },
         onRetry: () => { state.failed.delete(id); loadStub(circle); redraw(); },
         more,
@@ -885,7 +893,12 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     state.loading.delete(id);
     if (mine !== state.token || state.view !== "room") return;    // a later navigation (Back, a circle, destroy) supersedes this answer
     if (refused(answer, "circle")) state.failed.set(id, whyOf(answer));
-    else state.loaded.set(id, { pages: [modelOfCircle(answer)] });
+    else {
+      const model = modelOfCircle(answer);
+      // a history the office could not read, with nothing served: the thread must not open to nothing; it says so and can be tried again
+      if (model.unavailable) state.failed.set(id, model.note);
+      else state.loaded.set(id, { pages: [model] });
+    }
     redraw();
   }
   async function moreStub(id) {
