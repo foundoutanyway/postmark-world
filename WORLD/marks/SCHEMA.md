@@ -397,6 +397,84 @@ world position, extent and ring. **A writer that emits a world coordinate into a
 nested record is now wrong**; take the target's `_origin` and write
 `worldToFile(at, _origin)`.
 
+### First-laid facts: `claimed_at` and `footprints` (POS-449, POS-571)
+
+Two lines a record may carry, both **printed by the office from its store**,
+never authored by a resident. They are when the mark was laid, which decides who
+may oppose whom (LOGOS conflict-matrix § Roles from seniority):
+
+```yaml
+claimed_at: 2026-08-01T00:00:00Z
+footprints: [{"since":"2026-08-01T00:00:00Z","at":{"x":1000,"y":2000},"extent":{"w":100,"h":100}},{"since":"2026-08-20T00:00:00Z","at":{"x":1050,"y":2000},"extent":{"w":200,"h":100}}]
+```
+
+- **`claimed_at`** is the instant of the mark's **first** claim, the start of its
+  claim chain. An amend re-dates `date` but never this (Darko, 2026-10-07: *"an
+  amend does not make an elder mark young"*). Absent, the mark's age is its `date`
+  (`tools/claim-instant.mjs § claimInstant`).
+- **`footprints`** is every footprint the mark has stood on: its origin, then each
+  successful amend that changed its geometry, each with the instant it took
+  effect (`since`). It is one line of strict JSON, oldest first, and each entry is
+  `{ since, at, extent, points? }`. **Its positions are WORLD numbers whatever the
+  tree's frame**: a past footprint has no parent to be an offset from, so
+  `loadMarks` never reframes it. With it, seniority at contact is read **cell by
+  cell** on the ground two marks share: whoever first covered a cell is that
+  cell's incumbent, and an expansion is a newcomer on its new cells
+  (`tools/consent.mjs § seniorAtContact`). Absent, or with any entry that does not
+  read whole, every cell is dated by the one instant above, as before.
+
+### A spark: `kind: spark` (WLD-173; LOGOS/classes.md § The spark)
+
+A spark files at its id, writes `kind: spark` (never the old form `kind: sited` +
+`class: spark`, which the lint refuses), and carries `at` and `extent` as its
+place, but **it is neither sited nor anchored**. It writes no `parent:` (that is the
+predicate's edge), no `slot`/`value`, and no `consent:`. The fold gives it the
+ground it stands in, never makes it anyone's container, and keeps it out of the
+market's contest (`tools/consent.mjs § IN THE MARKET`). Its body is its headline
+(≤ 150 characters). Its parts are flat fields, checked by `tools/spark.mjs`:
+
+```yaml
+kind: spark
+at: {x: 1000, y: 2000}
+extent: {w: 120, h: 120}
+recounting: We sang the ferry song until the lamps came on.
+experienced_at: 2026-11-14T20:03:00Z
+experienced_until: 2026-11-14T20:41:00Z
+rooms: ["<the circle's source room id>"]
+circle: 50102
+circle_path: [50101, 50102]
+present: ["<household id>", "<household id>"]
+parent_spark: pica/the-lamp-song
+```
+
+- **Required:** `recounting`, `experienced_at`, and the place (`at`, `extent`): four
+  finite numbers as written, the sides 0 or more. A missing, null or quoted value is
+  refused, never defaulted or coerced.
+- **Its time:** `experienced_at` and the optional `experienced_until` are the moment
+  itself: an event's window, a circle's first to last say, or for a spark tied to
+  neither, its maker's stated start and end. `date` stays when it was made.
+- **The room:** `rooms` is one line of strict JSON, a list of **at most one** room id:
+  a circle's spark its source room, an event's spark the one room it is for ("each
+  room gets its own spark", 04:11Z). A list of several rooms is refused, never
+  combined or cut to its first. A singular `room:` is refused: it has no alias, and
+  is never read as no room.
+- **The place:** its room's, frozen when made: the centre and the sides of the room's
+  absolute bounds `{x0, y0, x1, y1}` (`tools/spark.mjs § roomsPlace`, given the one
+  room's bounds as a list of one), never the room's display point. A one-speaker
+  room's bounds may keep a zero side (a point or a line) and are kept so, with no
+  padding; such a spark is placed by where its points lie. With no `rooms`, or an
+  empty list, its `extent` is the locked circle, twice `the-town/spark-radius` (60 m),
+  about the maker's `at`. An unknown room is not "no room".
+- **`present`:** the households with a public act at the place in its window (CORE-70
+  call 4), as the Office spells a household.
+- **The circle:** `circle` (a say's act number) needs `circle_path` (its ancestry,
+  top circle first, ending at `circle`) and `rooms` naming its one source room.
+- **Lists** (`rooms`, `circle_path`, `acts`, `present`) are one line of strict JSON, the lane
+  `points` and `timetable` use. **Text** fields are one line: no newline, nothing
+  after a `#` (the reader takes it as a comment), and none opening with `{` or `[`.
+- **`parent_spark`** names one spark, `<by>/<slug>`: the maker's own link, never its
+  place in the tree, which is read from `circle_path`.
+
 ## The body
 
 A present-tense observation, **≤ 150 characters**. It is the mark's face in every

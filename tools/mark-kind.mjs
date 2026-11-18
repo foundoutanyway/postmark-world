@@ -36,11 +36,29 @@
 // Browser-pure: the viewer and the store readers ask through it too.
 
 import { classIndex, classChain } from "./class-properties.mjs";
+import { CLAIMED_AT_FIELD, FOOTPRINTS_FIELD } from "./claim-instant.mjs";
 
 /** The standing words `kind:` wrote before it named the class, and the node kinds. */
 export const STANDING_WORDS = Object.freeze(new Set(["sited", "predicated", "predicate", "naming", "parcel", "class", "property", "post"]));
 
 const NEVER_GROUND = new Set(["predicated", "predicate", "naming", "class", "property", "parcel"]);
+
+// ── A SPARK HAS A PLACE AND IS NOT GROUND (WLD-173; CORE-70, Darko 2026-11-14) ──
+//
+// "a spark is neither sited nor anchored. Its at and extent come from its root
+// conversation's room, frozen when it's made, or … a maker-chosen at with a
+// fixed 60 m circle. It isn't sited, so sited marks in its extent don't contest
+// it." So a spark carries `at`/`extent`, and that place must never make it
+// sited or ground: not here, by the place proxy, and not by its class chain
+// (`standingOf` answers "spark"). It stands in ground like any mark (its
+// containment parent is geometric, marks-fold.mjs § containmentParentOf); it
+// never contains anything. tools/spark.mjs holds the class's own grammar.
+export const SPARK_CLASS = "spark";
+/** A spark: how the record STANDS (`standingOf` below), the one answer every ground and sited
+ *  question reads too, so no record is a spark to the market and sited ground to everything else.
+ *  The old form `kind: sited` + `class: spark` stands sited, so it is no spark here, and the lint
+ *  refuses that spelling (mark-lint.mjs § the spark's kind; review 391 F2). */
+export const isSparkIn = (m, idx = null) => standingOf(m, idx) === SPARK_CLASS;
 
 export function instanceClassOf(m) {
   if (!m || m.kind === "class" || m.kind === "property") return undefined;
@@ -67,7 +85,8 @@ export const isLandform = (m, idx = null) => {
   return !!idx && classChain(idx, k).some((c) => String(c.class) === LANDFORM);
 };
 
-export const isSited = (m) => !!m && !!m.at && !NEVER_GROUND.has(String(m.kind)) && !isLandform(m);
+// neither a spark (WLD-173) nor a landform (WLD-97) is sited by its place: both carry `at` and are no ground
+export const isSited = (m) => !!m && !!m.at && !NEVER_GROUND.has(String(m.kind)) && String(m.kind) !== SPARK_CLASS && !isLandform(m);
 
 export const isGround = (m) => !!m && !!m.at && (m.kind === "parcel" || isSited(m));
 
@@ -120,6 +139,15 @@ export const ownedBy = (m) => {
 
 /** The fields a hand-off moves: where it is, whose hands it is in, or whose it is. Nothing else. */
 const HOLD_FIELDS = new Set(["at", "extent", "points", HELD_BY, OWNED_BY]);
+/**
+ * The facts the office prints into a record from its store, never a resident's
+ * words (WORLD/marks/SCHEMA.md § First-laid facts): when the mark was first laid,
+ * and the footprints it has stood on. A hand-off printed after the office began
+ * printing them carries them where main's copy may not yet (POS-571, Bevel
+ * 2026-11-13 15:47Z). They are not compared, and they never move a hand: a print
+ * that changes only them is no hand-off.
+ */
+const STORE_PRINTED = new Set([CLAIMED_AT_FIELD, FOOTPRINTS_FIELD]);
 
 /**
  * Is `after` the same mark as `before`, moved into or out of hands and nothing
@@ -133,8 +161,27 @@ export function holdOnlyChange(before, after) {
   const owned = ownedBy(before) !== ownedBy(after);
   if (!owned && isHeld(before) === isHeld(after) && heldBy(before) === heldBy(after)
     && JSON.stringify(before.at ?? null) === JSON.stringify(after.at ?? null)) return false; // no hand moved
-  const rest = (r) => JSON.stringify(Object.keys(r).filter((k) => !k.startsWith("_") && !HOLD_FIELDS.has(k)).sort().map((k) => [k, r[k]]));
+  const rest = (r) => JSON.stringify(Object.keys(r).filter((k) => !k.startsWith("_") && !HOLD_FIELDS.has(k) && !STORE_PRINTED.has(k)).sort().map((k) => [k, r[k]]));
   return rest(before) === rest(after) && (isHeld(before) || isHeld(after) || owned);
+}
+
+/**
+ * Is `after` the same mark as `before` with ONLY the hand-off fields moved, and
+ * moved no further than a hand-off moves them? PURE.
+ *
+ * This is the question the town wall asks, and it is narrower than
+ * `holdOnlyChange`: holding a thing is not authoring it, so a hand-off may print
+ * on a mark the town signed, but nothing else about that mark may change. Beyond
+ * `holdOnlyChange` (every other field equal), the place may differ only when the
+ * thing goes into hands (the place leaves) or comes out of them (a fresh place
+ * is printed); a mark that stays on the ground and whose place moves is the
+ * author's move, and an owner stamped on beside a new place is not a hand-off.
+ */
+export function handOffOnly(before, after) {
+  if (!holdOnlyChange(before, after)) return false;
+  const same = (k) => JSON.stringify(before[k] ?? null) === JSON.stringify(after[k] ?? null);
+  if (isHeld(before) !== isHeld(after)) return true; // into or out of hands: the place may leave or return
+  return ["at", "extent", "points"].every(same);      // held to held, or ground to ground: the place stays put
 }
 
 // ── the chain's answer (G12) ─────────────────────────────────────────────────
@@ -170,11 +217,23 @@ export function standingOf(m, idx) {
   // (kind: sited + class: landform) is a landform, never a sited mark (review of #296)
   if (isLandform(m, idx)) return LANDFORM;
   if (STANDING_WORDS.has(kind)) return kind;
+  // a spark answers for itself before its place can (WLD-173): never "sited" from an `at`
+  if (kind === SPARK_CLASS) return SPARK_CLASS;
   const chain = idx ? classChain(idx, kind).map((c) => String(c.class)) : [];
   if (!chain.includes("postmark-node")) return m.at ? "sited" : null;
-  for (const s of ["post", "naming", "predicate", "parcel", "sited"]) if (chain.includes(s)) return s;
+  for (const s of ["post", SPARK_CLASS, "naming", "predicate", "parcel", "sited"]) if (chain.includes(s)) return s;
   return null;
 }
+
+/** A thing, asked of its CLASS CHAIN (WLD-74 E1, Wright 2026-11-05 04:48): the class
+ *  it names is `thing` or extends it, by the class index of the marks in hand
+ *  (kindIndexOf), so a halloween-candy-bowl is a thing wherever its class node is.
+ *  A record that names no class (a plain sited mark, the untyped carriable) is not. */
+export const isThingIn = (m, idx) => {
+  const k = instanceClassOf(m);
+  if (k == null) return false;
+  return k === "thing" || (!!idx && classChain(idx, k).some((c) => String(c.class) === "thing"));
+};
 
 export const isSitedIn = (m, idx) => !!m?.at && standingOf(m, idx) === "sited";
 export const isGroundIn = (m, idx) => {

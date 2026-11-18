@@ -111,9 +111,12 @@
 //                  (the fan-up and `kept`): which way a welcome lends, and to
 //                  whom, is POS-572's;
 //                · the same household's structural +1 and the fan-up tree
-//                  stay on containment;
-//                · an expansion is not yet a newcomer on its new cells: the
-//                  whole mark is dated by its first claim (POS-571).
+//                  stay on containment.
+//
+//              AN EXPANSION IS A NEWCOMER ON ITS NEW CELLS (POS-571): where a
+//              record carries its footprint history, seniority at contact is read
+//              cell by cell on the ground the two marks share (§ seniorAtContact);
+//              without one, the whole mark is dated by its first claim, as before.
 //
 // ── RETURNED, NOT DROPPED ────────────────────────────────────────────────────
 //
@@ -176,15 +179,17 @@
 //              holder's opposition on their own parcel stands whatever the town
 //              declared neutral.
 
-import { isGroundIn, kindIndexOf } from "./mark-kind.mjs"; // what a record is and how it stands, in either form (LOGOS v2 part 2, W2)
-import { claimInstant } from "./claim-instant.mjs";
-import { marksOverlapArea } from "./geometry.mjs";
+import { isGroundIn, isSparkIn, kindIndexOf } from "./mark-kind.mjs"; // what a record is and how it stands, in either form (LOGOS v2 part 2, W2)
+import { claimInstant, footprintsOf } from "./claim-instant.mjs";
+import { marksOverlapArea, coverage, hasNoArea } from "./geometry.mjs";
 
 export const CONSENT_FIELD = "consent";
 export const CONSENT_WORDS = new Set(["opposed", "welcomed"]);
 export const TOWN_WORDS = new Set(["neutral", "opposed"]);
 /** Ruling B (2026-10-09): a stance return takes the opposed mark alone. A reader of an older engine finds this absent. */
 export const STANCE_RETURNS_ALONE = true;
+/** POS-571: seniority at contact reads a record's `footprints` cell by cell. A reader of an older engine finds this absent. */
+export const SENIORITY_PER_CELL = true;
 /** The ground and the grantor a town return names. */
 export const TOWN = "the-town";
 // The consent map as authored, or null. Shared with the lint so both read a
@@ -225,10 +230,56 @@ export function cameAfter(target, parcelMk) {
 // A parcel is neither side: its holder's word is its own law above, and over a
 // parcel the town alone is sovereign. Shared with the lint so both answer the
 // same, each passing the containment edge it has always read.
+//
+// FIRST COVERAGE, CELL BY CELL (POS-571). Where either side carries its footprint
+// history (claim-instant.mjs § footprintsOf), the order is read on the ground the
+// two share: each shared coverage cell is dated, on each side, by the first
+// footprint that covered it. The grantor holds the word if it covered some shared
+// cell strictly first. So an elder amended to cover more ground stays the elder on
+// the cells it always covered, and is a newcomer on the cells its amend added
+// ("an expansion is a newcomer on its new cells"). Where the cells prove nothing
+// (no shared cell, or none with two parsed instants that differ), the whole-mark
+// order below decides, as it always has.
 export function seniorAtContact(grantor, target, { container = null } = {}) {
   if (!grantor || !target || grantor.kind === "parcel" || target.kind === "parcel") return false;
+  const byCell = firstCoverOrder(grantor, target);
+  if (byCell) return byCell.grantorFirst;
   if (!firstLaidOrdered(grantor, target)) return container != null && container === grantor.id;
   return inContact(grantor, target) && cameAfter(target, grantor);
+}
+/**
+ * The first-coverage order on the cells two marks share (§ seniorAtContact):
+ * `{ grantorFirst }`, true when the grantor first covered some shared cell
+ * strictly before the target did; or null when it proves nothing (neither side
+ * carries a history, either has no extent, a shape too large to rasterize, or no
+ * shared cell whose two instants parse and differ). A side with no history dates
+ * every cell by its first-laid instant. A cell no footprint of a history covers
+ * has no date on that side. PURE.
+ */
+export function firstCoverOrder(grantor, target) {
+  const hg = footprintsOf(grantor), ht = footprintsOf(target);
+  if (!hg && !ht) return null;
+  if (!grantor?.at || !target?.at) return null;
+  const cg = coverage(grantor), ct = coverage(target);
+  if (!cg || !ct) return null;
+  const sinceOf = (mk, history) => {
+    if (!history) { const t = Date.parse(String(claimInstant(mk) ?? "")); return () => t; }
+    const laid = history.map((e) => [e.t, coverage(e)]);
+    if (laid.some(([, cells]) => !cells)) return null;
+    return (k) => { for (const [t, cells] of laid) if (cells.has(k)) return t; return NaN; };
+  };
+  const fg = sinceOf(grantor, hg), ft = sinceOf(target, ht);
+  if (!fg || !ft) return null;
+  let grantorFirst = false, targetFirst = false;
+  const [small, big] = cg.size <= ct.size ? [cg, ct] : [ct, cg];
+  for (const k of small) {
+    if (!big.has(k)) continue;
+    const a = fg(k), b = ft(k);
+    if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) continue;
+    if (a < b) grantorFirst = true; else targetFirst = true;
+    if (grantorFirst && targetFirst) break;
+  }
+  return grantorFirst || targetFirst ? { grantorFirst } : null;
 }
 /** Contact alone, the geometric half of § seniorAtContact (the lint tells the two refusals apart). */
 export function inContact(grantor, target) {
@@ -266,6 +317,20 @@ const overlapsRect = (a, b) => {
   const dy = Math.min(a.y + a.h / 2, b.y + b.h / 2) - Math.max(a.y - a.h / 2, b.y - b.h / 2);
   return dx > 0 && dy > 0;
 };
+
+/**
+ * Does a parcel's word have ground under it at `target`'s rect? Any overlap, as
+ * ever. A spark frozen from a one-speaker room may keep a box with no area (a
+ * point, or a line: WLD-173), which overlaps nothing by area; it is reached when
+ * it touches the parcel, edges included, so "Keep the parcel holder's word"
+ * (Darko, 2026-11-14) holds for it too. Shared with the lint's § 8b.
+ */
+export function parcelReaches(parcelRect, target, spark = false) {
+  if (!(spark && hasNoArea(target))) return overlapsRect(parcelRect, target);
+  const dx = Math.min(parcelRect.x + parcelRect.w / 2, target.x + target.w / 2) - Math.max(parcelRect.x - parcelRect.w / 2, target.x - target.w / 2);
+  const dy = Math.min(parcelRect.y + parcelRect.h / 2, target.y + target.h / 2) - Math.max(parcelRect.y - parcelRect.h / 2, target.y - target.h / 2);
+  return dx >= 0 && dy >= 0;
+}
 
 /**
  * resolveConsent({ byId, credOf, parcels, ownStamps, parentOf, placementOf, rectOf })
@@ -313,6 +378,10 @@ export function resolveConsent({ byId, credOf, parcels, ownStamps, parentOf, pla
     }
   }
 
+  // on the fold's own path, so how a record stands is its class chain's answer
+  // (G12): one index over the marks this resolution holds
+  const kidx = kindIndexOf(byId);
+
   // ---- the parcel domain: geometric intersection, owner's word absolute ----
   // Built here rather than at the edges because a parcel's authority does not run
   // along the tree at all: it runs over ground.
@@ -330,7 +399,7 @@ export function resolveConsent({ byId, credOf, parcels, ownStamps, parentOf, pla
       if (townOwnedMark(t)) continue;                       // the town alone is sovereign over the parcel
       if (!cameAfter(t, mk)) continue;                      // a parcel speaks only on what came after it
       const tr = rectOf(t);
-      if (!t.at || !overlapsRect(p._r, tr)) continue;       // a word with no ground under it
+      if (!t.at || !parcelReaches(p._r, tr, isSparkIn(t, kidx))) continue; // a word with no ground under it
       if (word === "welcomed") { kept.add(target); continue; }
       parcelVeto.set(target, { parcel: p.id, grantor: p.household });
     }
@@ -355,6 +424,12 @@ export function resolveConsent({ byId, credOf, parcels, ownStamps, parentOf, pla
     const c = byId.get(child), p = byId.get(parent);
     if (!c || !p) continue;                                 // the lint warns; the fold does not invent a mark
     if (credOfMark(c) === credOfMark(p)) continue;          // structural +1 already; a word here is ignored (the lint warns)
+    // A SPARK IS OUT OF THE MARKET, BOTH WAYS (WLD-173; Darko 2026-11-14 09:37,
+    // "It isn't sited, so sited marks in its extent don't contest it", and 11:1x,
+    // "Keep the parcel holder's word"). Another mark's opposition never reaches
+    // a spark, and a spark's never reaches another mark. The parcel domain above
+    // and the town's word below still do: they are not the market's contest.
+    if (isSparkIn(c, kidx) || isSparkIn(p, kidx)) continue;
     if (townOwnedMark(c)) continue;                         // the town is exempt (WLD-102/a)
     if (parcelInteriorOf(c, { byId, placementOf, parcelIds })) continue; // the parcel's interior is its holder's (WLD-102/b)
     if (!seniorAtContact(p, c, { container: parentOf.get(child) ?? null })) continue; // no contact, or a newcomer's word on what stood there first
@@ -428,9 +503,8 @@ export function resolveConsent({ byId, credOf, parcels, ownStamps, parentOf, pla
   // ---- returns, with the subtree and the escrow guard ----
   const children = new Map();
   for (const [c, p] of parentOf) { if (!children.has(p)) children.set(p, []); children.get(p).push(c); }
-  // on the fold's own path, so ground by the class chain (G12), one index over
-  // the marks this resolution holds
-  const kidx = kindIndexOf(byId);
+  // on the fold's own path, so ground by the class chain (G12), over the one
+  // index built above
   const positioned = (mk) => isGroundIn(mk, kidx);
   // A SUBTREE IS THE OPPOSED HOUSEHOLD'S OWN (POS-477). `parentOf` holds the
   // geometric containment edge (the smallest sited mark around a mark, the edge

@@ -20,7 +20,9 @@ test("[pin] a hovered mark is its outline and a faint fill in its own colour, wi
   assert.match(SOURCE, /\.wv-hl-box\.is-hover\.t-market \{ fill:color-mix\(in srgb, var\(--pm-gold\) 13%, transparent\); \}/, "a faint fill in the mark's own colour");
   assert.match(SOURCE, /\.ov-s\.is-hovering > \.ov-pip, \.ov-s\.is-hovering > \.ov-pip-door, \.ov-s\.is-hovering > \.ov-ic-in \{ opacity:0; \}/,
     "the pip is hidden, not removed — and the icon drawn into it (fix 13) goes with it");
-  assert.match(SOURCE, /<span class="wv-np-dot \$\{markClasses\(full\)\}" aria-hidden="true"><\/span>/, "the plate wears the dot beside the name");
+  // WLD-105 A20: the markup is the exported markNameplateMarkup now, and the closure hands it the mark's tier classes
+  assert.match(SOURCE, /<span class="wv-np-dot \$\{classes\}" aria-hidden="true"><\/span>/, "the plate wears the dot beside the name");
+  assert.match(SOURCE, /classes: markClasses\(full\) \}\)/, "and the dot's classes are the mark's own");
 });
 
 test("[pin] a click on open ground inside a mark selects that ground and still walks to the exact spot", () => {
@@ -40,7 +42,8 @@ test("[pin] a click on open ground inside a mark selects that ground and still w
 
 test("[pin] every mark's column, including the room you are in", () => {
   // play fix 35 put the live creatures' column in the chain, before the marks'
-  assert.match(SOURCE, /const column = parcelColumnView\(selected\) \?\? regionColumnView\(selected\) \?\? (creatureColumnView\(selected\) \?\? )?(residentColumnView\(selected\) \?\? )?markColumnView\(selected\);/);
+  // POS-779 (Darko 2026-11-06) put a conversation's column first in the chain: a `convo:` selection is no mark, so nothing below may claim it
+  assert.match(SOURCE, /const column = convoColumnView\(selected\) \?\? parcelColumnView\(selected\) \?\? regionColumnView\(selected\) \?\? (creatureColumnView\(selected\) \?\? )?(residentColumnView\(selected\) \?\? )?markColumnView\(selected\);/);
   const fn = SOURCE.match(/function markColumnView\(id\) \{[\s\S]*?\n  \}\n/)[0];
   assert.match(fn, /region: id === sceneRoomId \? "you are inside" : where\.detail,/, "the mounted room's plate opens its column, which says where you are");
   // CHANGED by play fix 34 (Darko 18:25): the column opens in both view modes

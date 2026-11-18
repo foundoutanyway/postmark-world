@@ -48,6 +48,8 @@ export const ENGINE_FILES = [
   // engine's heightfield.
   "world-build.mjs",
   "world-engine.mjs",
+  // joined 2026-11-14 (WLD-173): the lint reads a spark's own grammar from spark.mjs
+  "spark.mjs",
 ];
 
 // Fixtures that additionally exercise the gate or the sketchbook wall name the

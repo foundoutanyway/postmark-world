@@ -24,11 +24,11 @@
 // (The header used to document a `stake:mark:<id>` grammar the mint could never
 // produce — a read-side orphan, flagged 2026-07-23, closed by this pass.)
 
-import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, readdirSync, lstatSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, join, basename, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { markStanding } from "./mark-standing.mjs";   // the ONE standing rule (see § what the rank is READ FROM)
-import { instanceClassOf, isPredicate, kindIndexOf, isSitedIn, isGroundIn, HELD_BY, OWNED_BY, ownedBy } from "./mark-kind.mjs"; // what a record is and how it stands, in either form (LOGOS v2 part 2, W2)
+import { instanceClassOf, isPredicate, kindIndexOf, isSitedIn, isGroundIn, isSparkIn, HELD_BY, OWNED_BY, ownedBy } from "./mark-kind.mjs"; // what a record is and how it stands, in either form (LOGOS v2 part 2, W2)
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -391,6 +391,9 @@ export function frameMarks(out) {
 // mark never changes its id (stakes stay attached). Shared with mark-lint.mjs so
 // both read the world from disk the same way. Bad frontmatter is flagged on the
 // record (_error), never thrown, so one bad file can't blind the whole fold/lint.
+// Plain files only (POS-969): folders are read with lstat, so a symbolic link
+// (mode 120000) is never walked into, and a `mark.md` that isn't a plain file
+// is flagged on its record the same way, never read.
 //
 // Every record comes back in WORLD coordinates whatever frame the files are
 // written in (see § the frame above) — `at` is world, `_fileAt` is what the file
@@ -460,7 +463,7 @@ export function loadTreeMarks(dir) {
   if (!existsSync(dir)) return out;
   for (const entry of readdirSync(dir)) {
     const p = join(dir, entry);
-    let st; try { st = statSync(p); } catch { continue; }
+    let st; try { st = lstatSync(p); } catch { continue; }
     if (!st.isDirectory()) continue;
     walkMarks(p, null, out); // v2: no household from the path; `by` comes from each mark's frontmatter
   }
@@ -474,7 +477,9 @@ function walkMarks(nodeDir, parentMarkId, out) {
     const slug = basename(nodeDir);
     let rec;
     try {
-      rec = parseRecord(readFileSync(join(nodeDir, "mark.md"), "utf8"), `${slug}/mark.md`);
+      const file = join(nodeDir, "mark.md");
+      if (!lstatSync(file).isFile()) throw new Error("not a plain file (the world reads plain files only)");
+      rec = parseRecord(readFileSync(file, "utf8"), `${slug}/mark.md`);
     } catch (e) {
       rec = { _error: e.message, body: "" };
     }
@@ -506,7 +511,7 @@ function walkMarks(nodeDir, parentMarkId, out) {
   for (const e of entries) {
     if (e === "mark.md") continue;
     const p = join(nodeDir, e);
-    let s; try { s = statSync(p); } catch { continue; }
+    let s; try { s = lstatSync(p); } catch { continue; }
     if (s.isDirectory()) walkMarks(p, thisId, out);
   }
 }
@@ -549,7 +554,17 @@ function loadStakes() {
 // mark-lint.mjs's `import { … rect, contains } from "./marks-fold.mjs"` is
 // unchanged. rects are centered on at, sized by extent) ----------
 export { rect, overlapArea, contains, marksContain, polygonOf, ringMatchesClaim } from "./geometry.mjs";
-import { rect, overlapArea, contains, marksContain, polygonOf, rectInsideRing } from "./geometry.mjs";
+import { rect, overlapArea, contains, marksContain, polygonOf, rectInsideRing, hasNoArea, pointsInside } from "./geometry.mjs";
+
+// a parcel's rect: its written rect, a missing or zero side filled from the
+// dials' standard parcel (the whole fold, `admitDelta` and `sovereignInResult`
+// all size a parcel this one way)
+function parcelRect(mk, dials) {
+  const r = rect(mk);
+  r.w = r.w || dials.parcel_w;
+  r.h = r.h || dials.parcel_h;
+  return r;
+}
 import { deriveOutsiders, outsidersJson, outsidersMarkdown } from "./region-outsiders.mjs";
 import { carve } from "./determination.mjs";
 import { resolveConsent, consentMap, CONSENT_FIELD } from "./consent.mjs";
@@ -573,12 +588,16 @@ export function placementParent(claim, marks, { worldScaleM = 50000 } = {}) {
   // ground by the class chain (G12): the fold is the record, so it asks the
   // lineage of the marks it holds, never the place as a proxy for it
   const kidx = kindIndexOf(marks);
+  // a spark frozen from a one-speaker room may be a point or a line, which an
+  // area test holds anywhere: ask where its points lie instead (WLD-173)
+  const pointLike = isSparkIn(claim, kidx) && hasNoArea(rect(claim));
   for (const m of marks) {
     if (!isGroundIn(m, kidx)) continue;
     const mr = rect(m), area = mr.w * mr.h;
     if (Math.max(mr.w, mr.h) >= worldScaleM) continue; // the world-root is the frame, never a parent → null means root
     if (area <= claimArea) continue;                    // a parent is strictly larger than its child (the fold's rule)
-    if (marksContain(m, claim) && area < bestArea) { best = m; bestArea = area; }
+    const holds = pointLike ? pointsInside(m, rect(claim)) : marksContain(m, claim);
+    if (holds && area < bestArea) { best = m; bestArea = area; }
   }
   return best ? best.id : null;
 }
@@ -636,7 +655,12 @@ export const worldRootOf = (marks) => marks.find((m) => leafSlugOf(m) === WORLD_
 export function containmentParentOf(mark, marks, root = worldRootOf(marks)) {
   const rootId = root?.id ?? null;
   if (rootId != null && mark.id === rootId) return null;
-  const geometric = isGroundIn(mark, kindIndexOf(marks));
+  // A spark stands in ground by geometry like any mark, so the standing walk
+  // reads its ground (home inside its own house's parcel, market on the
+  // commons) and its money rules are a mark's. It is never ground itself, so
+  // `placementParent` never offers it as anyone's container (WLD-173).
+  const kidx = kindIndexOf(marks);
+  const geometric = isGroundIn(mark, kidx) || (!!mark.at && isSparkIn(mark, kidx));
   // No self-exclusion needed and none paid for: `placementParent` requires a
   // parent to be STRICTLY larger than the claim, so a mark can never be its own
   // container, and neither can a twin sharing its rect. Filtering the array per
@@ -786,6 +810,78 @@ export const ONE_PER_RESIDENT_REFUSAL =
   "this resident already holds a parcel; a household may hold up to three, one per resident "
   + `(${ONE_PER_RESIDENT_LAW}; relocation = replace, not add)`;
 
+// ── PARCELS FROM 11-01 (Darko, 2026-10-22; Linear POS-762) ──────────────────
+//
+//   20:33 EDT "any household that joins before the end of the month, so before
+//             Halloween, gets to register up to 3 parcels. And then after that,
+//             it will just be 1 parcel per household with extra parcels
+//             purchasable with stamps."
+//   20:35 EDT "let's price parcels at 50 stamps per parcel you already have."
+//   20:42 EDT (the picker) settled by Halloween's end; keep one per resident;
+//             pay stamps to the town.
+//
+// Darko ruled the cutoff as "settled by Halloween's end". The fact is the
+// household's DECLARATION day (`since`, in town time), never the day it came
+// ashore: a household whose declaration is dated on or before 2026-10-31 (town
+// time; the cutoff is 2026-11-01 04:00Z) keeps the claim cap of three for good.
+// A household declared later holds ONE parcel,
+// plus one for each room it has bought, and never more than three. One per
+// resident (above) still holds for every household. Darko, 2026-10-23 09:51
+// EDT: room is bought AHEAD (POS-762/e "Buy room ahead": "a household act burns
+// the stamps and adds one parcel of room for good; a claim then costs
+// nothing"), at 50 stamps times the room already bought (POS-762/f "Room
+// bought": "room 1->2 costs 50, 2->3 costs 100, whatever is held"), paid to the
+// town and never returned. The town's ledger records each one as a burn
+// (`for: parcel:<nth>/<household>`, postmark tools/stamp-mint.mjs).
+//
+// THE FACTS ARE THE OFFICE'S, THE RULE IS THIS FILE'S. The fold cannot see the
+// day a household was declared or what it paid, so the office hands both in, per
+// household key (the values of `households`), as `houseFacts`:
+// `{ [key]: { since, bought } }`. `since` is the household's declaration day as
+// the town wrote it (a town-time date string, the registry's `since`), and
+// `bought` is how many parcels it has bought (the office reads its highest
+// parcel burn on the ledger, less one, so a duplicate line never adds room).
+// A household with no facts keeps the cap of three: every household before the office feeds facts, every
+// solo handle, and every house when the office could not read its sources. So
+// this law is dark until the office speaks, and it can only ever LOWER a cap.
+export const PARCEL_SETTLED_BY = "2026-11-01T04:00:00Z";
+/** The last US-Eastern day a household may settle on and keep three: the day before PARCEL_SETTLED_BY's, in the town's own date. */
+export const PARCEL_SETTLED_BY_DAY = "2026-10-31";
+export const NEW_HOUSEHOLD_PARCELS = 1;
+/** Stamps per parcel of room the household already has, for its next room. */
+export const PARCEL_PRICE_STAMPS = 50;
+
+/**
+ * A household's parcel room: how many parcels the claim cap lets it hold.
+ * PARCEL_CLAIM_CAP when it was declared by the cutoff or nothing is known about it;
+ * otherwise NEW_HOUSEHOLD_PARCELS plus the parcels it bought, never past the cap.
+ */
+export function parcelRoomOf(fact) {
+  const since = typeof fact?.since === "string" ? fact.since.slice(0, 10) : "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(since) || since <= PARCEL_SETTLED_BY_DAY) return PARCEL_CLAIM_CAP;
+  const bought = Number.isInteger(fact.bought) && fact.bought > 0 ? fact.bought : 0;
+  return Math.min(PARCEL_CLAIM_CAP, NEW_HOUSEHOLD_PARCELS + bought);
+}
+
+/** What a household's next room costs: 50 × the room it already has, whatever it holds (POS-762/f). */
+export const nextRoomPrice = (room) => PARCEL_PRICE_STAMPS * Math.max(1, room);
+
+/**
+ * The claim cap's refusal, at both of the fold's cap sites. A household whose
+ * room is below the cap hears the November law: its room, the cutoff and the
+ * price. At the cap it hears the 07-30 sentence, unchanged. Both begin
+ * "parcel claim capped", the words the settlement cites the-town/claim-cap by
+ * (postmark-office src/world-settlement.mjs § LIMITS).
+ */
+export function parcelCapRefusal(held, room = PARCEL_CLAIM_CAP) {
+  if (room >= PARCEL_CLAIM_CAP)
+    return `parcel claim capped — this credential household already holds ${held} (cap ${PARCEL_CLAIM_CAP} per household, ruled ${PARCEL_CAP_LAW_DATE}; prior estate stands, new claims wait on the founder's word)`;
+  return `parcel claim capped — this household holds ${held} parcel${held === 1 ? "" : "s"} and has room for ${room}. `
+    + `A household whose declaration is dated after ${PARCEL_SETTLED_BY_DAY} (town time; the cutoff is ${PARCEL_SETTLED_BY}) holds ${NEW_HOUSEHOLD_PARCELS === 1 ? "one parcel" : `${NEW_HOUSEHOLD_PARCELS} parcels`}; `
+    + `it buys room ahead for each further parcel, at ${PARCEL_PRICE_STAMPS} stamps × the room it already has (its next room: ${nextRoomPrice(room)} stamps), `
+    + `paid to the town and never returned, up to ${PARCEL_CLAIM_CAP}, one per resident (${CLAIM_CAP_LAW})`;
+}
+
 // PRIOR ESTATE UNDER ONE PER RESIDENT — a second parcel a resident holds by the
 // founder's word, per parcel (the claim cap's map above answers a different
 // rule). It stands; the household's claim cap still counts it; and it is NEVER
@@ -919,7 +1015,7 @@ export const PARCEL_EXTENT_M = 25;
 // ── THE FIRST CLAIM, NOT THE LATEST DATE: claim-instant.mjs (POS-364 review,
 // 2026-10-08; POS-449). The claim order and the cap's law date read a record's
 // `claimed_at` first, its `date` only when it carries none.
-export { CLAIMED_AT_FIELD, claimInstant } from "./claim-instant.mjs";
+export { CLAIMED_AT_FIELD, claimInstant, FOOTPRINTS_FIELD, footprintsOf } from "./claim-instant.mjs";
 import { claimInstant } from "./claim-instant.mjs";
 
 export function compareClaimOrder(a, b) {
@@ -1039,7 +1135,7 @@ export function householdKeyGrain(households) {
   return "mixed";
 }
 
-export function fold({ marks, terrain, stakes, prev = null, tick = 0, dials = DIALS, households = null, fanup = "legacy", townWords = null, townLaws = null }) {
+export function fold({ marks, terrain, stakes, prev = null, tick = 0, dials = DIALS, households = null, houseFacts = null, fanup = "legacy", townWords = null, townLaws = null }) {
   const errors = [];
   const terrainIds = new Set((terrain?.features ?? []).map(f => "terrain:" + f.id));
   const byId = new Map();
@@ -1052,7 +1148,7 @@ export function fold({ marks, terrain, stakes, prev = null, tick = 0, dials = DI
   // 2026-10-17): one index over the marks this fold holds, asked by every
   // geometric question below, never the place as a proxy for the lineage
   const KIDX = kindIndexOf(marks);
-  const isSited = (m) => isSitedIn(m, KIDX), isGround = (m) => isGroundIn(m, KIDX);
+  const sitedHere = (m) => isSitedIn(m, KIDX), isGround = (m) => isGroundIn(m, KIDX);
 
   // ---------- the household grain (Keemin's rulings, 2026-08-07 + 2026-08-10) ----------
   // A mark's `by:` is a resident HANDLE. A household is the HUMAN behind it:
@@ -1095,12 +1191,14 @@ export function fold({ marks, terrain, stakes, prev = null, tick = 0, dials = DI
   // why the cap's verdict must be a function of the record, and for the two
   // other rules this loop decides that move with it.
   for (const mk of parcelsInClaimOrder(byId)) {
-    const r = rect(mk); r.w = r.w || dials.parcel_w; r.h = r.h || dials.parcel_h;
+    const r = parcelRect(mk, dials);
     if (parcelByHh.has(mk.household) && !ONE_PARCEL_PER_HANDLE_EXCEPTIONS.has(mk.id)) { errors.push({ mark: mk.id, error: ONE_PER_RESIDENT_REFUSAL }); continue; }
     const cred = credHh(mk.household);
     const held = parcelsByCred.get(cred) ?? 0;
-    if (String(claimInstant(mk) ?? "") > PARCEL_CAP_LAW_DATE && held >= PARCEL_CLAIM_CAP && !PARCEL_CAP_EXCEPTIONS.has(mk.id)) {
-      errors.push({ mark: mk.id, error: `parcel claim capped — this credential household already holds ${held} (cap ${PARCEL_CLAIM_CAP} per household, ruled ${PARCEL_CAP_LAW_DATE}; prior estate stands, new claims wait on the founder's word)` });
+    // the household's room: three, or one plus what it bought when it was declared after 10-31 (§ parcels from 11-01)
+    const room = parcelRoomOf(houseFacts?.[cred]);
+    if (String(claimInstant(mk) ?? "") > PARCEL_CAP_LAW_DATE && held >= room && !PARCEL_CAP_EXCEPTIONS.has(mk.id)) {
+      errors.push({ mark: mk.id, error: parcelCapRefusal(held, room) });
       continue;
     }
     const clash = parcels.find(p => overlapArea(p._r, r) > 0);
@@ -1175,7 +1273,7 @@ export function fold({ marks, terrain, stakes, prev = null, tick = 0, dials = DI
   // person with two handles was a stranger on their own ground: their own mark
   // standing in their own parcel folded as a commons mark, exposed to rivalry.
   for (const mk of byId.values()) {
-    if (isSited(mk)) {
+    if (sitedHere(mk)) {
       const held = parcelRectsByCred.get(mk._cred) ?? [];
       mk._sovereign = held.some((pr) => contains(pr, rect(mk)));
     }
@@ -1195,7 +1293,7 @@ export function fold({ marks, terrain, stakes, prev = null, tick = 0, dials = DI
 
   // containment edges (computed, never authored): sited-in-sited by geometry; predicated/naming by parent ref
   const children = new Map(); const parentOf = new Map();
-  const sited = [...byId.values()].filter(mk => isSited(mk));
+  const sited = [...byId.values()].filter(mk => sitedHere(mk));
   for (const a of sited) for (const b of sited) {
     if (a === b) continue;
     const ra = rect(a), rb = rect(b);
@@ -1257,7 +1355,7 @@ export function fold({ marks, terrain, stakes, prev = null, tick = 0, dials = DI
   // parent. A law return's ground is not touched: it took its subtree.
   if (consent.alone?.size) {
     const standing = [...byId.values()].filter((mk) => !gone.has(mk.id));
-    const standingSited = standing.filter((mk) => isSited(mk));
+    const standingSited = standing.filter((mk) => sitedHere(mk));
     const root = worldRootOf([...byId.values()]);
     const smallestSitedAround = (b) => {
       const rb = rect(b);
@@ -1270,11 +1368,11 @@ export function fold({ marks, terrain, stakes, prev = null, tick = 0, dials = DI
       return best ? best.id : null;
     };
     for (const mk of standing) {
-      if (isSited(mk) && consent.alone.has(parentOf.get(mk.id))) {
+      if (sitedHere(mk) && consent.alone.has(parentOf.get(mk.id))) {
         const up = smallestSitedAround(mk);
         if (up) parentOf.set(mk.id, up); else parentOf.delete(mk.id);
       }
-      if (isGround(mk) && consent.alone.has(containedBy.get(mk.id))) {
+      if ((isGround(mk) || (mk.at && isSparkIn(mk, KIDX))) && consent.alone.has(containedBy.get(mk.id))) {
         const up = containmentParentOf(mk, standing, root);
         containedBy.set(mk.id, up);
         mk._containedBy = up ?? null;
@@ -1705,6 +1803,15 @@ export function fold({ marks, terrain, stakes, prev = null, tick = 0, dials = DI
       // them, the way `loot` is: undefined on every mark that wrote none, so a world with no such
       // thing serializes exactly as before.
       holder: mk.holder, capacity: mk.capacity, open: mk.open, portable: mk.portable,
+      // A SPARK'S OWN PARTS (WLD-173; CORE-70 calls 5, 9, 22, 23): the recounting, its time, its rooms,
+      // its circle and the circle's path (the spine its tree is read from), its event, picture, image
+      // prompt, acts, who was there, and the maker's own optional link. Carried as the record says them,
+      // the way `holder` is: undefined on every mark that wrote none, so a world with no sparks
+      // serializes exactly as before. tools/spark.mjs § SPARK_FIELDS is the list; spark.test.mjs holds
+      // this line to it.
+      recounting: mk.recounting, experienced_at: mk.experienced_at, experienced_until: mk.experienced_until,
+      rooms: mk.rooms, circle: mk.circle, circle_path: mk.circle_path, event: mk.event, picture: mk.picture,
+      image_prompt: mk.image_prompt, acts: mk.acts, present: mk.present, parent_spark: mk.parent_spark,
       // WHO HOLDS IT, for a thing printed as held (POS-688): published but unplaced, so it carries
       // no `at` and the record names its holder instead. Undefined on every placed mark.
       [HELD_BY]: mk[HELD_BY],
@@ -2029,7 +2136,7 @@ To read the fold without writing it at all: --no-write --json`);
  * (the PUBLIC shape) rather than from fold's internals, so `fold`'s signature is
  * untouched and this cannot drift with a change to its locals.
  */
-export function admissionBase(state, { households = null, stakes = [] } = {}) {
+export function admissionBase(state, { households = null, houseFacts = null, stakes = [] } = {}) {
   const marks = state?.marks ?? [];
   const byId = new Map(marks.map((mk) => [mk.id, mk]));
   const credOf = (handle) => households?.[handle] ?? `solo:${handle}`;
@@ -2054,7 +2161,9 @@ export function admissionBase(state, { households = null, stakes = [] } = {}) {
   const netByMark = new Map();
   for (const row of stakes ?? []) netByMark.set(row.mark, (netByMark.get(row.mark) ?? 0) + Number(row.n ?? 0));
 
-  return { byId, credOf, parcelRectsByCred, parcelByHh, parcelsByCred, netByMark };
+  // the household's parcel room, from the same facts the whole fold reads (§ parcels from 11-01)
+  const roomOf = (cred) => parcelRoomOf(houseFacts?.[cred]);
+  return { byId, credOf, roomOf, parcelRectsByCred, parcelByHh, parcelsByCred, netByMark };
 }
 
 const sameRect = (a, b) => !!a && !!b && a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
@@ -2066,8 +2175,8 @@ const sameRect = (a, b) => !!a && !!b && a.x === b.x && a.y === b.y && a.w === b
  */
 function deltaView(mk, cred, rectsByCred, world = null) {
   const kidx = kindIndexOf(world ?? [mk]);
-  const isSited = (m) => isSitedIn(m, kidx);
-  const held = isSited(mk) ? (rectsByCred.get(cred) ?? []) : [];
+  const sitedHere = (m) => isSitedIn(m, kidx);
+  const held = sitedHere(mk) ? (rectsByCred.get(cred) ?? []) : [];
   // The containment answer, asked of the WHOLE folded world plus this delta's
   // own candidates — the same question `fold` asks, so a mark's standing does
   // not depend on which of the two paths judged it. Published `placementParent`
@@ -2079,7 +2188,7 @@ function deltaView(mk, cred, rectsByCred, world = null) {
     id: mk.id, kind: mk.kind, by: mk.by ?? mk.household, household: mk.household ?? mk.by,
     declared_household: cred, date: mk.date,
     at: mk.at, extent: mk.extent, parent: mk.parent, slot: mk.slot, value: mk.value,
-    sovereign: isSited(mk) ? held.some((pr) => contains(pr, rect(mk))) : false,
+    sovereign: sitedHere(mk) ? held.some((pr) => contains(pr, rect(mk))) : false,
     body: mk.body,
     // who holds it, for a thing printed as held: the sweep's unpublish verdict reads it off this view (POS-688)
     ...(mk[HELD_BY] !== undefined ? { [HELD_BY]: mk[HELD_BY] } : {}),
@@ -2092,19 +2201,6 @@ function deltaView(mk, cred, rectsByCred, world = null) {
   };
 }
 
-/**
- * ADMIT k CANDIDATES AGAINST AN ALREADY-FOLDED WORLD. Pure: no fs, no git.
- *
- * `candidates` are the delta's own records, parsed at the branch ref — the same
- * shape `loadMarks` yields, so they carry `_parentMarkId` from their path.
- * `_replacing: true` marks a candidate that MODIFIES a mark main already holds:
- * it substitutes rather than collides, which is why the duplicate check below
- * cannot simply ask whether the id exists.
- *
- * Returns `{ views, errors }`. A non-empty `errors` is the quarantine, carrying
- * the fold's own error grammar so the crossing's journal reads the same either
- * way.
- */
 /**
  * SOVEREIGNTY AGAINST A WHOLE RESULT (WLD-51; review-214, D1). `admitDelta`
  * judges each view's `sovereign` against the parcels admitted before it in
@@ -2123,9 +2219,7 @@ export function sovereignInResult(views, world, { dials = DIALS } = {}) {
   const rectsByCred = new Map();
   for (const mk of world.values()) {
     if (mk.kind !== "parcel") continue;
-    const r = rect(mk);
-    r.w = r.w || dials.parcel_w;
-    r.h = r.h || dials.parcel_h;
+    const r = parcelRect(mk, dials);
     const cred = mk.declared_household ?? mk.household;
     if (!rectsByCred.has(cred)) rectsByCred.set(cred, []);
     rectsByCred.get(cred).push(r);
@@ -2137,6 +2231,19 @@ export function sovereignInResult(views, world, { dials = DIALS } = {}) {
   }
 }
 
+/**
+ * ADMIT k CANDIDATES AGAINST AN ALREADY-FOLDED WORLD. Pure: no fs, no git.
+ *
+ * `candidates` are the delta's own records, parsed at the branch ref — the same
+ * shape `loadMarks` yields, so they carry `_parentMarkId` from their path.
+ * `_replacing: true` marks a candidate that MODIFIES a mark main already holds:
+ * it substitutes rather than collides, which is why the duplicate check below
+ * cannot simply ask whether the id exists.
+ *
+ * Returns `{ views, errors }`. A non-empty `errors` is the quarantine, carrying
+ * the fold's own error grammar so the crossing's journal reads the same either
+ * way.
+ */
 export function admitDelta(candidates, base, { dials = DIALS } = {}) {
   const errors = [];
   const views = new Map();
@@ -2180,9 +2287,7 @@ export function admitDelta(candidates, base, { dials = DIALS } = {}) {
     const handle = mk.household ?? mk.by;
     const cred = base.credOf(handle);
     if (mk.kind === "parcel") {
-      const r = rect(mk);
-      r.w = r.w || dials.parcel_w;
-      r.h = r.h || dials.parcel_h;
+      const r = parcelRect(mk, dials);
       // one parcel per RESIDENT, by written law (the-town/one-per-resident,
       // 2026-10-04) — the one rule that stays at resident grain while everything downstream counts
       // households. Replacing the household's own parcel is a relocation, not a
@@ -2192,8 +2297,10 @@ export function admitDelta(candidates, base, { dials = DIALS } = {}) {
         continue;
       }
       const held = countByCred.get(cred) ?? 0;
-      if (!mk._replacing && String(claimInstant(mk) ?? "") > PARCEL_CAP_LAW_DATE && held >= PARCEL_CLAIM_CAP && !PARCEL_CAP_EXCEPTIONS.has(mk.id)) {
-        errors.push({ mark: mk.id, error: `parcel claim capped — this credential household already holds ${held} (cap ${PARCEL_CLAIM_CAP} per household, ruled ${PARCEL_CAP_LAW_DATE}; prior estate stands, new claims wait on the founder's word)` });
+      // a base built before the room existed has no roomOf, and every household keeps three
+      const room = typeof base.roomOf === "function" ? base.roomOf(cred) : PARCEL_CLAIM_CAP;
+      if (!mk._replacing && String(claimInstant(mk) ?? "") > PARCEL_CAP_LAW_DATE && held >= room && !PARCEL_CAP_EXCEPTIONS.has(mk.id)) {
+        errors.push({ mark: mk.id, error: parcelCapRefusal(held, room) });
         continue;
       }
       const prior = mk._replacing ? rect(base.byId.get(mk.id) ?? {}) : null;

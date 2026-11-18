@@ -34,12 +34,13 @@ import {
   containmentParents, lossyValues, lossyMessage,
 } from "./marks-fold.mjs";
 import { markStanding } from "./mark-standing.mjs";
-import { consentMap, CONSENT_WORDS, CONSENT_FIELD, townOwnedMark, cameAfter, inContact, seniorAtContact, parcelInteriorOf } from "./consent.mjs";
+import { consentMap, CONSENT_WORDS, CONSENT_FIELD, townOwnedMark, cameAfter, inContact, seniorAtContact, parcelInteriorOf, parcelReaches } from "./consent.mjs";
 import { crossHouseholdRiders, householdResolver } from "./household-frames.mjs";
-import { portalFindings, applyPortalExceptions, PORTAL_RULES } from "./portals.mjs";
-import { classIndex, classChain, ownProperties, propertiesOf, propertyAt, propertyNames, propertyValue } from "./class-properties.mjs";
+import { portalFindings } from "./portals.mjs";
+import { classIndex, classChain, ownProperties, propertyAt, propertyNames, propertyValue } from "./class-properties.mjs";
 import { instanceClassOf, isSited, isPredicate, HELD_BY, heldBy, OWNED_BY, ownedBy } from "./mark-kind.mjs";
 import { regionAnchors, groundStands } from "./world-build.mjs"; // WLD-97: the ground_m rule the heightfield honors
+import { SPARK_CLASS, SPARK_LINK, sparkProblems, sparkRadiusM } from "./spark.mjs"; // WLD-173: the spark's own grammar
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -73,7 +74,9 @@ const JSON_OUT = args.includes("--json");
 
 // `property` joins with LOGOS v2 part 2 (ruled 2026-10-16): a class's property
 // is a node of its own (§ Property and predicate). The instances' `kind:` still
-// names how a mark stands until the kind migration (W2) folds `class:` into it.
+// names how a mark stands in the old form; since the kind migration (W2) a `kind:`
+// names the class itself, and the standing words are still read (§1 warns the
+// old form's `class:` to fold into `kind:`).
 // (Posts are not world records: they live in the office's post machine, and
 // the 61 idea and bounty marks move there in a later lane; settled WLD-73 G7.)
 // `predicate` joins with W2's G10 (settled 2026-10-17): a claim's kind names its
@@ -92,9 +95,6 @@ const PROPERTY_TIERS = new Set(["constitution", "sovereign"]);
 // their readers already use (a dial's key, a predicate's slot).
 const PROPERTY_NAME_RE = /^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$/;
 const TOWN = "the-town"; // the town-tier author; only it may claim constitution
-// The world root, kept as a name rather than as a check: the freeze repealed the
-// containment question this gate used to ask of the tree (§6), so nothing here
-// reads placementParent any more. The fold answers containment now.
 const BODY_MAX = 150; // chars (07-22 ruling)
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -161,6 +161,8 @@ const CLASS_ROSTER = new Set(marks.filter(isClassDeclaration).map((m) => String(
 // and a later lane moves them there (settled 2026-10-17, WLD-73 G7), so a
 // `kind:` naming a post class is refused.
 const CLASS_IDX = classIndex(marks.filter((m) => !m._error));
+// a standalone spark's locked radius, read off the class (null where the works are not in hand)
+const SPARK_RADIUS_M = sparkRadiusM(CLASS_IDX);
 const chainOf = (name) => classChain(CLASS_IDX, String(name)).map((c) => String(c.class));
 const isPostClass = (name) => name !== undefined && chainOf(name).includes("post");
 const standingOfRecord = (rec) => {
@@ -171,6 +173,8 @@ const standingOfRecord = (rec) => {
   if (KINDS.has(rec.kind)) return rec.kind === "predicate" ? "predicated" : rec.kind; // one standing, two spellings
   if (rec.kind == null || !CLASS_ROSTER.has(String(rec.kind)) || isPostClass(rec.kind)) return null;
   const chain = chainOf(rec.kind);
+  // a spark has a place and is not ground (WLD-173): its own standing, before its place is read as sited
+  if (chain.includes(SPARK_CLASS)) return SPARK_CLASS;
   if (chain.includes("naming")) return "naming";
   if (chain.includes("predicate")) return "predicated";
   if (chain.includes("parcel")) return "parcel";
@@ -209,12 +213,6 @@ const standingOf = (m) => markStanding(m, standingIndex);
 // filed at its id. Same function the fold and WORLD/containment.json use.
 const { parent: containedBy } = containmentParents(marks);
 
-const slugsByHousehold = new Map();
-const childCount = new Map();
-for (const m of marks) {
-  if (m._parentMarkId) childCount.set(m._parentMarkId, (childCount.get(m._parentMarkId) ?? 0) + 1);
-}
-
 for (const rec of marks) {
   // 0. unreadable frontmatter — nothing else can be trusted
   if (rec._error) { err(rec, `unreadable mark.md: ${rec._error}`); continue; }
@@ -236,8 +234,15 @@ for (const rec of marks) {
   // about it. The old spelling is refused, not folded, so it can never land.
   const landformClass = rec.class !== undefined && rec.kind !== "class" && rec.kind !== "property"
     && (String(rec.class) === "landform" || (CLASS_ROSTER.has(String(rec.class)) && chainOf(rec.class).includes("landform")));
+  // THE SPARK'S KIND (WLD-173; review 391 F2): a spark is written in the new form only. The old form,
+  // `kind: sited` + `class: spark`, stands sited (mark-kind.mjs § standingOf), so it would be ground
+  // and a container while naming a class that is neither; the spark class has no old-form instances
+  // to keep, so the spelling is refused rather than read two ways.
+  const namesSpark = rec.class !== undefined && rec.kind !== "class" && rec.kind !== "property" && chainOf(rec.class).includes(SPARK_CLASS);
   if (landformClass)
     err(rec, `class: ${rec.class} is a landform, and a landform is written kind: ${rec.class}, never with a class: line: write kind: ${rec.class} and drop the class: line (the office reads the old spelling as ${rec.kind}; WLD-97)`);
+  else if (namesSpark && String(rec.kind) !== String(rec.class))
+    err(rec, `class: ${rec.class} is a spark, and a spark is written kind: ${rec.class} with no class: line — kind: ${JSON.stringify(rec.kind)} would make it stand as ${standing ?? "nothing"}, ground the spark is not (WLD-173: a spark is neither sited nor anchored)`);
   else if (rec.class !== undefined && rec.kind !== "class" && rec.kind !== "property" && !isPostClass(rec.class))
     warn(rec, `class: ${rec.class} folds into kind: write kind: ${rec.class} and drop the class: line (ruled 2026-10-16: "The \`class:\` field folds into \`kind\`")`);
   if (rec.by == null) err(rec, `by: <author> is required — in the spatial tree (v2) authorship is frontmatter, not the path${cite("the-town/the-own-hand")}`);
@@ -426,7 +431,7 @@ for (const rec of marks) {
     if (rec.at !== undefined || rec.extent !== undefined || rec.points !== undefined)
       err(rec, `a held thing carries no at/extent — it is published but unplaced, and shows as ${holderOf}'s contents until it is set down (POS-688)`);
   }
-  // 4b. ITS OWNER, when not its maker (POS-688, Darko 2026-10-19): a resident's
+  // 4a'. ITS OWNER, when not its maker (POS-688, Darko 2026-10-19): a resident's
   // handle, never the maker's own (the maker owns it unprinted), and only a thing.
   const ownerOf = ownedBy(rec);
   if (rec[OWNED_BY] !== undefined && (ownerOf == null || ownerOf.includes("/")))
@@ -461,6 +466,18 @@ for (const rec of marks) {
     if (rec.points !== undefined) {
       if (!polygonOf(rec)) err(rec, `points: must be a ring of ≥3 vertices ([[x,y],…] or "x1,y1 x2,y2 …")`);
       else if (!ringMatchesClaim(rec)) err(rec, `the points: ring's bounding box must equal the landform's at/extent claim`);
+    }
+  } else if (standing === SPARK_CLASS) {
+    // 4c. A SPARK (WLD-173; CORE-70 calls 5, 9, 22, 23; Darko 2026-11-14 09:37,
+    // 10:46 and 11:1x). It has a place and is not sited or anchored: its parts are
+    // checked by its own grammar (tools/spark.mjs), and nothing may anchor it.
+    for (const problem of sparkProblems(rec, { radiusM: SPARK_RADIUS_M, isDate: isValidMarkDate })) err(rec, problem);
+    if (rec.slot !== undefined || rec.value !== undefined) err(rec, `a spark carries no slot/value — it is a mark with a place, not a predicate`);
+    if (rec._explicitParent !== undefined || rec._parentMarkId != null)
+      err(rec, `a spark is never anchored: it writes no parent: and files at its id (parent: is the predicate edge; the maker's own link is ${SPARK_LINK}:)`);
+    if (rec.points !== undefined) {
+      if (!polygonOf(rec)) err(rec, `points: must be a ring of ≥3 vertices ([[x,y],…] or "x1,y1 x2,y2 …")`);
+      else if (!ringMatchesClaim(rec)) err(rec, `the points: ring's bounding box must equal the mark's at/extent claim — the claim IS the ring's bbox (SCHEMA v2)`);
     }
   } else if (standing === "predicated" || standing === "naming") {
     if (rec.at !== undefined || rec.extent !== undefined) err(rec, `${rec.kind} marks carry no at/extent — they take their locus from their parent${cite("the-town/the-continuation")}`);
@@ -653,9 +670,10 @@ for (const rec of marks) {
     const chain = classChain(CLASS_IDX, klass).map((c) => String(c.class));
     if (!chain.includes("postmark-node")) continue;
     // a landform carries its own place and outline as its own properties (WLD-97,
-    // ruled 2026-10-22 21:04): placed, and never sited
-    if (!chain.includes("sited") && !chain.includes("post") && !chain.includes("landform"))
-      err(rec, `a ${klass} stands at a place, but ${klass} is not under sited (its chain: ${chain.join(" → ")}) — at and extent are sited's properties; a place is lawful only on an instance of a class under sited, under post, or a landform (G13, settled 2026-10-17; WLD-97)`);
+    // ruled 2026-10-22 21:04): placed, and never sited; and a spark's place is its
+    // own class's property (WLD-173, CORE-70 call 22): it has a place and is not sited
+    if (!chain.includes("sited") && !chain.includes("post") && !chain.includes("landform") && !chain.includes(SPARK_CLASS))
+      err(rec, `a ${klass} stands at a place, but ${klass} is not under sited (its chain: ${chain.join(" → ")}) — at and extent are sited's properties; a place is lawful only on an instance of a class under sited, under post, a landform or a spark's (G13, settled 2026-10-17; WLD-97, WLD-173)`);
   }
 }
 
@@ -670,7 +688,7 @@ for (const rec of marks) {
 {
   // `held_by` is the record grammar's, like placementParent: where a held thing is instead of a place (POS-688)
   const RESERVED = new Set(["id", "by", "date", "household", "declared_household", "parent", "placementParent", "stamps", "weight", "sovereign", "kind", "class", "tier", "body", "slug", HELD_BY, OWNED_BY]);
-  // how a mark stands names its class until W2 folds `class:` into `kind:`
+  // a standing word (the old form of `kind:`) names its class; since W2 a `kind:` names the class directly
   const STANDING_CLASS = { sited: "sited", parcel: "parcel", predicated: "predicate", naming: "naming" };
   const STANDING_FIELDS = { sited: ["at", "extent"], parcel: ["at", "extent"], predicated: ["slot", "value"], naming: ["slot", "value"] };
   const undeclared = new Map(); // `${class}\u0000${field}` -> { first, count }
@@ -736,11 +754,14 @@ for (const rec of marks) {
 // written inside it — that is arithmetic about a file, not a claim about the
 // world — and the fossil is exactly what keeps it stable: nothing moves, so no
 // mark's frame is ever re-derived out from under its digits again.
+// The world's root mark: the frame every other mark's file numbers hang from.
+// It is looked up by name for the frame law only; containment is the fold's (§6).
 const ROOT_MARK = marks.find((m) => m.slug === WORLD_ROOT_SLUG);
 const WORLD_CENTRE = ROOT_MARK?.at ? { x: ROOT_MARK.at.x, y: ROOT_MARK.at.y } : { x: 0, y: 0 };
 // The centre `rec`'s file numbers would be written against if it were filed
 // directly inside `start` — the nearest positioned ancestor from `start` up
-// (start itself included) whose tier ranks at or above rec's own.
+// (start itself included) whose frame rank (rankOf: constitution over market over
+// draft) is at or above rec's own.
 const frameOriginFrom = (rec, start) => {
   const continued = isPredicate(rec) || rec.kind === "naming";
   const rank = rankOf(rec);
@@ -905,7 +926,8 @@ const parentOf = (rec) => (rec._parentMarkId ? byId.get(rec._parentMarkId) : nul
 // 6b. the loader and the law agree — a check on the MACHINERY, not on any
 // resident. Everything above trusts `loadMarks` to have composed each mark's
 // world position correctly; this is the one place that trust is tested. Same
-// walk §6 uses, run over the directory chain each record actually has.
+// frame law above (frameOriginFrom), run over the directory chain each record
+// actually has.
 if (declaredCoords(marks) === COORDS_RELATIVE) {
   for (const rec of marks) {
     if (rec._error || !rec._fileAt || rec === ROOT_MARK) continue; // the root IS the frame
@@ -1093,6 +1115,13 @@ const TOP_LEVEL_MD = new Set(["SCHEMA.md", "README.md"]);
       const container = containedBy.get(t.id) ?? null;
       const opposes = word === "opposed";
       const parcelIgnored = `${CONSENT_FIELD}: "${target}" is a parcel — ignored. A parcel answers its holder and the town, never the market`;
+      // A SPARK IS OUT OF THE MARKET, BOTH WAYS (WLD-173; consent.mjs § IN THE
+      // MARKET): only the parcel holder's word and the town's reach a spark, and a
+      // spark's own word reaches no one. A parcel's word on a spark goes on below.
+      if (!isParcel && (standingOfRecord(rec) === SPARK_CLASS || standingOfRecord(t) === SPARK_CLASS)) {
+        warn(rec, `${CONSENT_FIELD}: "${target}" — ignored. ${standingOfRecord(rec) === SPARK_CLASS ? "This is a spark, and a spark speaks no word on another mark" : `"${target}" is a spark, and only its parcel holder's word and the town's reach a spark`}: sited marks do not contest a spark, and it does not contest them (CORE-70, 2026-11-14)`);
+        continue;
+      }
       // An opposition on a parcel is told that first: whether it touches yours
       // or not, the market's word does not reach a parcel.
       if (!isParcel && opposes && t.kind === "parcel") {
@@ -1145,7 +1174,8 @@ const TOP_LEVEL_MD = new Set(["SCHEMA.md", "README.md"]);
       }
       if (isParcel) {
         const pr = rect(rec); pr.w = pr.w || 25; pr.h = pr.h || 25;
-        if (!t.at || overlapArea(pr, rect(t)) <= 0)
+        // the fold's own test (consent.mjs § parcelReaches): a spark with no area is reached where it touches
+        if (!t.at || !parcelReaches(pr, rect(t), standingOfRecord(t) === SPARK_CLASS))
           warn(rec, `${CONSENT_FIELD}: "${target}" does not touch this parcel — a word without ground under it. It does nothing`);
       }
     }
@@ -1260,49 +1290,25 @@ const TOP_LEVEL_MD = new Set(["SCHEMA.md", "README.md"]);
 // `into` names a mark; every string `lands_at` names a mark; every landing
 // stands within LANDING_REACH_M of its `into`; an exit out of a dungeon is never
 // opposed; every room of a dungeon has a path of unlocked portals out (ADVISORY
-// since Darko's 21:13 change: a whole-dungeon exit is always offered); no two
-// marks with the same parent inside a dungeon overlap (Darko, 20:31: siblings only).
+// since Darko's 21:13 change: a whole-dungeon exit is always offered); and the
+// rooms a dungeon DECLARES (its `rooms` list) never overlap (Darko, 2026-11-01
+// 07:58: "Yeah rooms only"; 07:59, two messages: "i'm thinking maybe just have the
+// dungeon represented by some kind of class in code that has a list of dungeon rooms
+// which the no overlap thing checks" and "Everything should be allowed to overlap like normal").
 //
 // AN ERROR, AND IT REFUSES THE CROSSING. The settlement's harm gate runs this
 // lint as its first check (tools/harm-gate.mjs § 1), and Darko ruled the rules
 // airtight ("no exceptions in the rule"): a portal that strands whoever takes it
-// is harm to residents. The one way through is NAMED, never coded: an entry in
-// WORLD/portal-lint-exceptions.json ({ mark, rule, by, why }), appended by
-// whoever answers for it. An excepted finding prints as a warning that names
-// the exception, so every receipt shows the portal was let through and by whom,
-// and an exception that excuses nothing is said too.
-//
-// JURISDICTION, as the freeze's: this repository's own tree reads its own file;
-// a fixture tree reads one only when it passes --portal-exceptions.
+// is harm to residents. THERE IS NO WAY AROUND IT BY NAME. The named-exception
+// door (WORLD/portal-lint-exceptions.json) is retired: Darko, 2026-11-01 07:58,
+// "if we're hardcoding enumerated exceptions as slugs that's no good". A finding
+// that is wrong is fixed in the rule (portals.mjs), never listed around.
 {
-  const PORTAL_EXC_REL = "WORLD/portal-lint-exceptions.json";
-  const excPath = opt("--portal-exceptions", OWN_TREE ? join(REPO, PORTAL_EXC_REL) : null);
-  const excFile = (msg) => findings.push({ sev: "ERROR", file: PORTAL_EXC_REL, msg });
-  let exceptions = [];
-  // A MISSING list is an empty one: the strict direction, since absence can only
-  // let fewer portals through, never more. An unreadable one is an error.
-  if (excPath && existsSync(excPath)) {
-    let parsed = null;
-    try { parsed = JSON.parse(readFileSync(excPath, "utf8")); }
-    catch (e) { excFile(`could not be read as JSON (${String(e?.message ?? e).slice(0, 120)}) — the exception list is part of the gate, and a gate that cannot read its own list does not guess`); }
-    if (parsed) {
-      if (!Array.isArray(parsed.exceptions)) excFile("carries no `exceptions` array");
-      else for (const e of parsed.exceptions) {
-        if (!e || typeof e.mark !== "string" || !PORTAL_RULES.includes(e.rule) || !e.by || !e.why)
-          excFile(`an entry must name { mark, rule, by, why } with rule one of ${PORTAL_RULES.join(", ")} — got ${JSON.stringify(e)}`);
-        else exceptions.push(e);
-      }
-    }
-  }
-  const { findings: portal, stale } = applyPortalExceptions(portalFindings(marks), exceptions);
-  for (const f of portal) {
+  for (const f of portalFindings(marks)) {
     const rec = standingIndex.get(f.mark) ?? { id: f.mark };
-    if (f.excepted) warn(rec, `[${f.rule}] EXCEPTED by ${PORTAL_EXC_REL} (${f.excepted.by}: ${f.excepted.why}) — ${f.msg}`);
-    else if (f.sev === "WARN") warn(rec, `[${f.rule}] ${f.msg}`);
+    if (f.sev === "WARN") warn(rec, `[${f.rule}] ${f.msg}`);
     else err(rec, `[${f.rule}] ${f.msg}`);
   }
-  for (const e of stale)
-    findings.push({ sev: "WARN", file: PORTAL_EXC_REL, msg: `the exception for ${e.mark} (${e.rule}) matches no finding — it excuses nothing; remove it` });
 }
 
 // ---- the creature law, read whole as the tick reads it (POS-672) ----
