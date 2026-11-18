@@ -20,7 +20,9 @@ test("[pin] a hovered mark is its outline and a faint fill in its own colour, wi
   assert.match(SOURCE, /\.wv-hl-box\.is-hover\.t-market \{ fill:color-mix\(in srgb, var\(--pm-gold\) 13%, transparent\); \}/, "a faint fill in the mark's own colour");
   assert.match(SOURCE, /\.ov-s\.is-hovering > \.ov-pip, \.ov-s\.is-hovering > \.ov-pip-door, \.ov-s\.is-hovering > \.ov-ic-in \{ opacity:0; \}/,
     "the pip is hidden, not removed — and the icon drawn into it (fix 13) goes with it");
-  assert.match(SOURCE, /<span class="wv-np-dot \$\{markClasses\(full\)\}" aria-hidden="true"><\/span>/, "the plate wears the dot beside the name");
+  // WLD-105 A20: the markup is the exported markNameplateMarkup now, and the closure hands it the mark's tier classes
+  assert.match(SOURCE, /<span class="wv-np-dot \$\{classes\}" aria-hidden="true"><\/span>/, "the plate wears the dot beside the name");
+  assert.match(SOURCE, /classes: markClasses\(full\) \}\)/, "and the dot's classes are the mark's own");
 });
 
 test("[pin] a click on open ground inside a mark selects that ground and still walks to the exact spot", () => {

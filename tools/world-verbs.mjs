@@ -119,7 +119,7 @@ export function sightFrameOf(world, entered, standpoint = null) {
 // `actor` is the handle of the resident the eyes belong to (WLD-9): their home,
 // as tools/where-is.mjs § homeOf resolves it, is carried beyond the budget when
 // it is in view. No actor, or a home that resolves to nowhere, changes nothing.
-export function openYourEyes(state, world, { crossing = 0, budget = DIALS.context_budget, dials = DIALS, actor = null, entered = null } = {}) {
+export function openYourEyes(state, world, { crossing = 0, budget = DIALS.context_budget, dials = DIALS, actor = null, entered = null, explain = false } = {}) {
   const home = actor ? homeOf(actor, world) : null;
   // AT YOUR FEET (WLD-74 E3/E4, Wright 2026-11-05 04:48): a thing whose footprint holds
   // the standpoint and that `entered` does not hold is not where you are; it is an
@@ -128,7 +128,7 @@ export function openYourEyes(state, world, { crossing = 0, budget = DIALS.contex
   const ent = new Set(entered ?? []);
   const atFeet = new Set(world.marks.filter((m) => m.at && !ent.has(m.id) && isThingIn(m, idx) && pointWithinMark(state, m)).map((m) => m.id));
   const fov = fieldOfView(state, world, { crossing, budget, dials, keep: home?.placed ? home.mark_id : null,
-    shelter: shelterOf(world, entered, state), frame: sightFrameOf(world, entered, state), atFeet });
+    shelter: shelterOf(world, entered, state), frame: sightFrameOf(world, entered, state), atFeet, explain });
   const radial = radialSerialize(fov);
   radial.within = containmentChain(state, world.marks.filter((m) => ent.has(m.id) || !isThingIn(m, idx))); // the spine: root → inward, parents first; a thing only once entered (E3, as orient)
   fov.within = radial.within;

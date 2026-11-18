@@ -179,9 +179,9 @@
 //              holder's opposition on their own parcel stands whatever the town
 //              declared neutral.
 
-import { isGroundIn, kindIndexOf } from "./mark-kind.mjs"; // what a record is and how it stands, in either form (LOGOS v2 part 2, W2)
+import { isGroundIn, isSparkIn, kindIndexOf } from "./mark-kind.mjs"; // what a record is and how it stands, in either form (LOGOS v2 part 2, W2)
 import { claimInstant, footprintsOf } from "./claim-instant.mjs";
-import { marksOverlapArea, coverage } from "./geometry.mjs";
+import { marksOverlapArea, coverage, hasNoArea } from "./geometry.mjs";
 
 export const CONSENT_FIELD = "consent";
 export const CONSENT_WORDS = new Set(["opposed", "welcomed"]);
@@ -319,6 +319,20 @@ const overlapsRect = (a, b) => {
 };
 
 /**
+ * Does a parcel's word have ground under it at `target`'s rect? Any overlap, as
+ * ever. A spark frozen from a one-speaker room may keep a box with no area (a
+ * point, or a line: WLD-173), which overlaps nothing by area; it is reached when
+ * it touches the parcel, edges included, so "Keep the parcel holder's word"
+ * (Darko, 2026-11-14) holds for it too. Shared with the lint's § 8b.
+ */
+export function parcelReaches(parcelRect, target, spark = false) {
+  if (!(spark && hasNoArea(target))) return overlapsRect(parcelRect, target);
+  const dx = Math.min(parcelRect.x + parcelRect.w / 2, target.x + target.w / 2) - Math.max(parcelRect.x - parcelRect.w / 2, target.x - target.w / 2);
+  const dy = Math.min(parcelRect.y + parcelRect.h / 2, target.y + target.h / 2) - Math.max(parcelRect.y - parcelRect.h / 2, target.y - target.h / 2);
+  return dx >= 0 && dy >= 0;
+}
+
+/**
  * resolveConsent({ byId, credOf, parcels, ownStamps, parentOf, placementOf, rectOf })
  *
  *   byId      Map(id -> mark record)
@@ -364,6 +378,10 @@ export function resolveConsent({ byId, credOf, parcels, ownStamps, parentOf, pla
     }
   }
 
+  // on the fold's own path, so how a record stands is its class chain's answer
+  // (G12): one index over the marks this resolution holds
+  const kidx = kindIndexOf(byId);
+
   // ---- the parcel domain: geometric intersection, owner's word absolute ----
   // Built here rather than at the edges because a parcel's authority does not run
   // along the tree at all: it runs over ground.
@@ -381,7 +399,7 @@ export function resolveConsent({ byId, credOf, parcels, ownStamps, parentOf, pla
       if (townOwnedMark(t)) continue;                       // the town alone is sovereign over the parcel
       if (!cameAfter(t, mk)) continue;                      // a parcel speaks only on what came after it
       const tr = rectOf(t);
-      if (!t.at || !overlapsRect(p._r, tr)) continue;       // a word with no ground under it
+      if (!t.at || !parcelReaches(p._r, tr, isSparkIn(t, kidx))) continue; // a word with no ground under it
       if (word === "welcomed") { kept.add(target); continue; }
       parcelVeto.set(target, { parcel: p.id, grantor: p.household });
     }
@@ -406,6 +424,12 @@ export function resolveConsent({ byId, credOf, parcels, ownStamps, parentOf, pla
     const c = byId.get(child), p = byId.get(parent);
     if (!c || !p) continue;                                 // the lint warns; the fold does not invent a mark
     if (credOfMark(c) === credOfMark(p)) continue;          // structural +1 already; a word here is ignored (the lint warns)
+    // A SPARK IS OUT OF THE MARKET, BOTH WAYS (WLD-173; Darko 2026-11-14 09:37,
+    // "It isn't sited, so sited marks in its extent don't contest it", and 11:1x,
+    // "Keep the parcel holder's word"). Another mark's opposition never reaches
+    // a spark, and a spark's never reaches another mark. The parcel domain above
+    // and the town's word below still do: they are not the market's contest.
+    if (isSparkIn(c, kidx) || isSparkIn(p, kidx)) continue;
     if (townOwnedMark(c)) continue;                         // the town is exempt (WLD-102/a)
     if (parcelInteriorOf(c, { byId, placementOf, parcelIds })) continue; // the parcel's interior is its holder's (WLD-102/b)
     if (!seniorAtContact(p, c, { container: parentOf.get(child) ?? null })) continue; // no contact, or a newcomer's word on what stood there first
@@ -479,9 +503,8 @@ export function resolveConsent({ byId, credOf, parcels, ownStamps, parentOf, pla
   // ---- returns, with the subtree and the escrow guard ----
   const children = new Map();
   for (const [c, p] of parentOf) { if (!children.has(p)) children.set(p, []); children.get(p).push(c); }
-  // on the fold's own path, so ground by the class chain (G12), one index over
-  // the marks this resolution holds
-  const kidx = kindIndexOf(byId);
+  // on the fold's own path, so ground by the class chain (G12), over the one
+  // index built above
   const positioned = (mk) => isGroundIn(mk, kidx);
   // A SUBTREE IS THE OPPOSED HOUSEHOLD'S OWN (POS-477). `parentOf` holds the
   // geometric containment edge (the smallest sited mark around a mark, the edge

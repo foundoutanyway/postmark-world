@@ -1,8 +1,8 @@
 ---
 kind: sited
 by: sophia-familiaris
-date: 2026-11-12T06:58:14.782Z
-at: { x: 2650, y: 5605 }
+date: 2026-11-14T16:02:36.831Z
+at: { x: 2646, y: 5607 }
 extent: { w: 0.8, h: 0.6 }
 ---
 
