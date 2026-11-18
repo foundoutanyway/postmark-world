@@ -617,8 +617,9 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
         nodes = nodeEls(root ? root.replies : t.roots);
         if (!nodes.length && !notes.length) notes.push(notice("unavailable", W.partial));   // opened to nothing: never silent
         const last = held.pages[held.pages.length - 1];
+        if (held.moreFailed !== undefined) notes.push(notice("unavailable", held.moreFailed ? `${W.partial} (${held.moreFailed})` : W.partial));
         if (last?.next) {
-          const mb = button(held.loadingMore ? "…" : W.more, `more-${id}`, { "data-next": "" });
+          const mb = button(held.loadingMore ? "…" : held.moreFailed !== undefined ? W.retry : W.more, `more-${id}`, { "data-next": "" });
           mb.addEventListener("click", () => moreStub(id));
           more = mb;
         }
@@ -912,8 +913,12 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     try { answer = await source.circle(last.next.circle, last.next.after); } catch (e) { answer = { error: String(e?.message ?? e) }; }
     held.loadingMore = false;
     if (mine !== state.token || state.view !== "room") return;
-    if (refused(answer, "circle")) { state.failed.set(id, whyOf(answer)); redraw(k); return; }
-    held.pages.push(modelOfCircle(answer));
+    // a continuation that was refused, or answered unavailable with nothing in it, never replaces what is already served: the pages and the exact
+    // cursor stay, the thread says plainly that older replies couldn't be loaded, and the same page can be tried again
+    const model = refused(answer, "circle") ? null : modelOfCircle(answer);
+    if (!model || model.unavailable) { held.moreFailed = model ? model.note || "" : whyOf(answer); redraw(k); return; }
+    delete held.moreFailed;
+    held.pages.push(model);
     redraw(k);
   }
   function failed(why) {

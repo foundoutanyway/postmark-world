@@ -406,6 +406,34 @@ test("WLD-178 · ROOM view: an opened top statement over an unavailable, folded 
   assert.doesNotMatch(text(r.stub), /unavailable|folded|complete|strand|branch/i, "plain words only");
 });
 
+test("WLD-178 · ROOM view Show more: a refused or unavailable-empty continuation keeps the served replies AND the exact cursor, says so, and the same page can be tried again; recovery loses and doubles nothing", async () => {
+  const page1 = () => { const a = circle50101(); a.find.circle_read.lines = a.find.circle_read.lines.slice(0, 5); a.find.circle_read.complete = false; a.find.circle_read.next = { circle: 50101, after: 50105 }; return a; };
+  const page2 = () => { const a = circle50101(); a.find.circle_read.lines = a.find.circle_read.lines.slice(5); a.find.circle_read.next = null; return a; };
+  const emptyUnavailable = (complete) => () => { const a = circle50101({ history: "unavailable" }); a.find.circle_read.lines = []; a.find.circle_read.next = null; a.find.circle_read.complete = complete; return a; };
+  for (const [name, bad] of [["refused", () => ({ error: "boom" })], ["unavailable empty", emptyUnavailable(false)], ["unavailable empty complete:true", emptyUnavailable(true)]]) {
+    let second = bad;
+    const h = harness({ circles: { "50101|": page1, "50101|50105": () => second() } });
+    await h.reader.showRoom(); await tick();
+    const stub = () => byAttr(h.root, "data-circle", 50101)[0];
+    byAttr(stub(), "data-thread-view")[0].click(); await tick(); await tick();
+    const before = byAttr(stub(), "data-say").map((n) => n.attrs["data-say"]);
+    assert.ok(before.length > 1 && byAttr(stub(), "data-next").length === 1, `${name}: first page and its More`);
+    byAttr(stub(), "data-next")[0].click(); await tick(); await tick();
+    assert.deepEqual(byAttr(stub(), "data-say").map((n) => n.attrs["data-say"]), before, `${name}: the served replies stay visible`);
+    assert.match(text(stub()), /Some older replies couldn't be loaded/, `${name}: said plainly`);
+    assert.equal(byAttr(stub(), "data-next").length, 1, `${name}: the cursor survives, so the same page can be tried again`);
+    const asked = h.calls.filter((c) => c[0] === "circle").map((c) => `${c[1]}|${c[2] ?? ""}`);
+    assert.equal(asked.filter((x) => x === "50101|").length, 1, `${name}: page 1 was not read again`);
+    second = page2;
+    byAttr(stub(), "data-next")[0].click(); await tick(); await tick();
+    const after = byAttr(stub(), "data-say").map((n) => n.attrs["data-say"]);
+    assert.equal(new Set(after).size, after.length, `${name}: no duplicates on recovery`);
+    assert.ok(after.length > before.length && before.every((x) => after.includes(x)), `${name}: nothing lost, the rest arrived`);
+    assert.equal(byAttr(stub(), "data-next").length, 0);
+    assert.doesNotMatch(text(stub()), /couldn't be loaded/, `${name}: the sentence goes once it loads`);
+  }
+});
+
 test("WLD-178 · the thread line and circle are drawn in the reader's own foreground, never the host's faint --cr-rule/--line (the World column's border colour)", async () => {
   const strokes = READER_CSS.split("\n").filter((l) => /\.cr-thread > \.cr-(line::before|dot) \{|currentColor 0, currentColor/.test(l)).join("\n");
   assert.ok(strokes.includes("currentColor"), "the stroke follows the text colour");
