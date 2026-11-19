@@ -294,6 +294,11 @@ test("7. the stack's route is the same route: choosing the conversation from the
   if (!chromium) return t.skip(skipReason);
   const page = await openViewer({ mode: "column" });
   await waitBadges(page, 4);
+  // THE CONTESTED POINT NEEDS SOMETHING UNDER THE BADGE. It was the Town Centre region's hung picture, which the
+  // old fixed 200 m put on the opening view. A region's picture now shows while it is 24-192 px across (WLD-205),
+  // which the opening view is too close for, so a few notches out put it back under the badge, as it was.
+  for (let i = 0; i < 5; i++) { await page.mouse.move(700, 450); await page.mouse.wheel(0, 80); await page.waitForTimeout(150); }
+  await page.waitForTimeout(1500);
   const at = await discOf(page, "live-c");
   await page.mouse.move(at.x, at.y);
   await page.mouse.down(); await page.mouse.up();

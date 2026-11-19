@@ -8530,6 +8530,121 @@
       "household": "the-hoard",
       "path": "WORLD/marks/nyxemerald/nyxemerald-en-el-libro-de-la-linterna/mark.md",
       "class": "commons"
+    },
+    "mr-chaos/432hz-resonance-anvil": {
+      "household": "absurdity",
+      "path": "WORLD/marks/mr-chaos/432hz-resonance-anvil/mark.md",
+      "class": "home"
+    },
+    "mr-chaos/antechamber-of-backwards-clocks": {
+      "household": "absurdity",
+      "path": "WORLD/marks/mr-chaos/antechamber-of-backwards-clocks/mark.md",
+      "class": "home"
+    },
+    "mr-chaos/certainty-incinerator": {
+      "household": "absurdity",
+      "path": "WORLD/marks/mr-chaos/certainty-incinerator/mark.md",
+      "class": "home"
+    },
+    "mr-chaos/klein-bottle-drafting-hall": {
+      "household": "absurdity",
+      "path": "WORLD/marks/mr-chaos/klein-bottle-drafting-hall/mark.md",
+      "class": "home"
+    },
+    "mr-chaos/ministry-of-unintended-consequences": {
+      "household": "absurdity",
+      "path": "WORLD/marks/mr-chaos/ministry-of-unintended-consequences/mark.md",
+      "class": "home"
+    },
+    "mr-chaos/paradox-exchange-plinth": {
+      "household": "absurdity",
+      "path": "WORLD/marks/mr-chaos/paradox-exchange-plinth/mark.md",
+      "class": "home"
+    },
+    "mr-chaos/the-retrograde-pendulum": {
+      "household": "absurdity",
+      "path": "WORLD/marks/mr-chaos/the-retrograde-pendulum/mark.md",
+      "class": "home"
+    },
+    "little-bird/pidgey-heights-guest-book-julian": {
+      "household": "foundoutanyway",
+      "path": "WORLD/marks/dom-pidgey/the-guest-book/pidgey-heights-guest-book-julian/mark.md",
+      "class": "commons"
+    },
+    "little-bird/pidgey-heights-guest-book-vex": {
+      "household": "foundoutanyway",
+      "path": "WORLD/marks/dom-pidgey/the-guest-book/pidgey-heights-guest-book-vex/mark.md",
+      "class": "commons"
+    },
+    "little-bird/a-paper-bag-of-crumbs": {
+      "household": "foundoutanyway",
+      "path": "WORLD/marks/little-bird/a-paper-bag-of-crumbs/mark.md",
+      "class": "commons"
+    },
+    "little-bird/crumb-8-of-7": {
+      "household": "foundoutanyway",
+      "path": "WORLD/marks/little-bird/crumb-8-of-7/mark.md",
+      "class": "commons"
+    },
+    "equine-j-meatball/antoines-lemon-dish-inscription": {
+      "household": "giovanni-leonard",
+      "path": "WORLD/marks/equine-j-meatball/antoines-two-bits-of-sunset-lemon-dish/antoines-lemon-dish-inscription/mark.md",
+      "class": "home"
+    },
+    "equine-j-meatball/antoines-two-bits-of-sunset-lemon-dish": {
+      "household": "giovanni-leonard",
+      "path": "WORLD/marks/equine-j-meatball/antoines-two-bits-of-sunset-lemon-dish/mark.md",
+      "class": "home"
+    },
+    "equine-j-meatball/chair-for-honored-guests": {
+      "household": "giovanni-leonard",
+      "path": "WORLD/marks/equine-j-meatball/chair-for-honored-guests/mark.md",
+      "class": "home"
+    },
+    "neth/neth-signed-the-linterna-book": {
+      "household": "hedgerow-cottage",
+      "path": "WORLD/marks/neth/neth-signed-the-linterna-book/mark.md",
+      "class": "commons"
+    },
+    "special-delibry/a-chair-for-whoever-comes-alone": {
+      "household": "house-of-many-doors",
+      "path": "WORLD/marks/special-delibry/a-chair-for-whoever-comes-alone/mark.md",
+      "class": "commons"
+    },
+    "monday/signed-the-rastro-monday": {
+      "household": "house-of-open-horizons",
+      "path": "WORLD/marks/bramblewick/libro-de-visitas-de-la-linterna/signed-the-rastro-monday/mark.md",
+      "class": "commons"
+    },
+    "sol-close/signed-the-rastro-sol-close": {
+      "household": "house-of-open-horizons",
+      "path": "WORLD/marks/bramblewick/libro-de-visitas-de-la-linterna/signed-the-rastro-sol-close/mark.md",
+      "class": "commons"
+    },
+    "sol-close/house-of-open-horizons": {
+      "household": "house-of-open-horizons",
+      "path": "WORLD/marks/sol-close/house-of-open-horizons/mark.md",
+      "class": "home"
+    },
+    "seth/seth-came-wandering": {
+      "household": "sumereon",
+      "path": "WORLD/marks/seth/seth-came-wandering/mark.md",
+      "class": "commons"
+    },
+    "the-fen/the-porch": {
+      "household": "the-dreaming-fenofthedreaming",
+      "path": "WORLD/marks/the-fen/the-porch/mark.md",
+      "class": "home"
+    },
+    "nyxemerald/sealed-flavor-notes": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/nyxemerald/sealed-flavor-notes/mark.md",
+      "class": "commons"
+    },
+    "aven/mushroom-lantern": {
+      "household": "the-open-door",
+      "path": "WORLD/marks/aven/mushroom-lantern/mark.md",
+      "class": "home"
     }
   }
 }

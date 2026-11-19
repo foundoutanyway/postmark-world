@@ -49,11 +49,11 @@ const CANDLE_EXCLUSION = `CANDLE EXCLUSION (${CANDLE_ENV}=1): the throttled page
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SELF = "tools/page-throttle-sweep.advisory.mjs";
 const RATE = 4;
-// the 26 page tests: the 22 at WLD-71, tools/conversation-pages.test.mjs (POS-779: the mounted conversation badges),
-// WLD-74's resident card (tools/candle-boundary.test.mjs counts them too), POS-945's "In town by mail" page test and
+// the 27 page tests: the 22 at WLD-71, tools/conversation-pages.test.mjs (POS-779: the mounted conversation badges),
+// WLD-74's resident card (tools/candle-boundary.test.mjs counts them too), POS-945's "In town by mail" page test, WLD-205's art-window page test and
 // CORE-119's walk-card hover (tools/viewer-walk-hover.test.mjs)
 const SWEPT = [
-  "tools/act-as-town-bodies.test.mjs", "tools/backdrop-without-text.test.mjs", "tools/conversation-pages.test.mjs", "tools/dungeon-page.test.mjs",
+  "tools/act-as-town-bodies.test.mjs", "tools/art-window.test.mjs", "tools/backdrop-without-text.test.mjs", "tools/conversation-pages.test.mjs", "tools/dungeon-page.test.mjs",
   "tools/first-paint-boot-shape.test.mjs", "tools/in-town-by-mail.test.mjs",
   "tools/lately-more-on-the-page.test.mjs", "tools/lately-on-the-resident-path.test.mjs",
   "tools/lately-reads-the-store.test.mjs", "tools/lite-mode.test.mjs", "tools/mine-stands-out.test.mjs", "tools/mists-stage.test.mjs",
