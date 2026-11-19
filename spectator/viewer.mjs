@@ -988,17 +988,32 @@ const admittedCount = (times, at) => {
   while (lo < hi) { const mid = (lo + hi) >> 1; if (times[mid] <= at) lo = mid + 1; else hi = mid; }
   return lo;
 };
+// THE WORLD-ROOT IS NEVER A ROOM (CORE-118, town#4773). Everyone already stands within `the-town/let-there-be-light`: the main world IS that scene
+// ("always-entered", SCENES.md § The model), and being inside it is being outdoors (WORLD_ROOT_ID above). The law's fold takes an `enters` of any
+// mark with an inside, the root's included, so a ledger can hold one; read as an interior it mounts the root as a SLATE ROOM, and the town's ground,
+// its painting and its people go with it (Darko: "the background and much else are gone"). The page's occupancy is therefore the law's own fold
+// (tools/enter-exit.mjs occupancyAt, unchanged) minus that one id, by its canonical id and never by its name: a walker who entered only the root has
+// entered nothing the page draws; one who went on into a house is inside the house. The record is not edited, only not drawn as a room.
+export function viewerOccupancyAt(acts, at = Infinity) {
+  const occupancy = occupancyAt(acts, at);
+  for (const [handle, stack] of occupancy) {
+    if (!stack.includes(WORLD_ROOT_ID)) continue;
+    const kept = stack.filter((m) => m !== WORLD_ROOT_ID);
+    if (kept.length) occupancy.set(handle, kept); else occupancy.delete(handle);
+  }
+  return occupancy;
+}
 function foldedOccupancy(acts, at) {
   const list = Array.isArray(acts) ? acts : [...(acts ?? [])];
   let fold = occupancyFolds.get(list);
   if (!fold) occupancyFolds.set(list, fold = { times: sortedStamps(list), n: -1 });
   if (!fold.times) {
-    const occupancy = occupancyAt(list, at);
+    const occupancy = viewerOccupancyAt(list, at);
     return { occupancy, manifest: occupantsOf(occupancy) };
   }
   const n = admittedCount(fold.times, at);
   if (fold.n === n) return fold;
-  const occupancy = occupancyAt(list, at);
+  const occupancy = viewerOccupancyAt(list, at);
   fold = { times: fold.times, n, occupancy, manifest: occupantsOf(occupancy) };
   occupancyFolds.set(list, fold);
   return fold;
@@ -5298,6 +5313,9 @@ export function enterAffordance({ mark = null, palette = [], actingAs = null, in
     .some((entry) => String(entry?.action ?? "").trim() === "enter");
   if (!granted) return { show: false, why: "this standpoint is not granted the crossing" };
   if (!enterableMark(mark)) return { show: false, why: "a point has no inside" };
+  // THE TOWN ITSELF (CORE-118): the world-root is the ground every resident already stands within, so its door is a no-op, never offered (the page also
+  // draws no entry of it as a room: viewerOccupancyAt). By the root's canonical id, not its name.
+  if (mark.id === WORLD_ROOT_ID) return { show: false, why: "you are already within the town: it is the ground you stand in" };
   if (insideOf && mark.id === insideOf) return { show: false, why: "you are already inside it" };
   return { show: true, why: null };
 }
@@ -8860,7 +8878,7 @@ export function mountViewer(appEl) {
   // clock. The Spectator has entered nothing, so every dungeon draws as its own
   // mark alone. There is no second implementation here, on purpose.
   const sightOf = (w) => standpointSight(w, {
-    occupancy: occupancyAt(enterExitLedger.acts, occupancyClock()),
+    occupancy: viewerOccupancyAt(enterExitLedger.acts, occupancyClock()),
     handle: isSpectating() ? null : (state.handle || null),
   });
 
@@ -9486,7 +9504,7 @@ export function mountViewer(appEl) {
   //
   // The live occupancy Map (not the readout) is what investigate wants, because
   // its manifest is how the entity children get on the list at all.
-  const liveOccupancy = () => occupancyAt(enterExitLedger.acts, occupancyClock());
+  const liveOccupancy = () => viewerOccupancyAt(enterExitLedger.acts, occupancyClock());
   // PER STANDPOINT, never one shared "am I indoors" flag. composeTelling also
   // runs for residents the reader is not looking at, and one of them being in a
   // room must not put the reader's own panel on a floor — the same reason
@@ -9793,6 +9811,7 @@ export function mountViewer(appEl) {
   async function crossInto(markId, { accept = false, into = null, button = null } = {}) {
     const room = markId && byId.get(markId);
     if (!room) return;
+    if (markId === WORLD_ROOT_ID) return;   // the town you already stand within: no act is sent (enterAffordance never offers it either)
     // the sheet (terms, or a refusal) lands where the button lives: the little
     // card on the street, or the parcel column since its enter button (2026-09-11)
     const clicked = button?.closest?.(".wv-card, .wv-homecol") ?? null;
@@ -9868,6 +9887,7 @@ export function mountViewer(appEl) {
   // terms; the same sheet renders them, and accept resends the walk with the
   // walker's word.
   async function walkThereAndEnter(markId, { accept = false, into = null, button = null } = {}) {
+    if (markId === WORLD_ROOT_ID) return;   // the town: nothing to walk to and enter (see crossInto)
     const sheet = button?.closest?.(".wv-cross-sheet");
     const clicked = button?.closest?.(".wv-card, .wv-homecol") ?? null;
     const liveCard = () => liveMarkCard(root, markId, clicked);   // see crossInto
