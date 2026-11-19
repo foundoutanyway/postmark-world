@@ -3053,8 +3053,12 @@ export const SPECTATOR_DRAW_DEFAULTS = Object.freeze({
   // of the view, and the smaller picture under it comes up. No mark is made
   // bigger to qualify. These three are the starting numbers, dials until the
   // far / mid / near pictures say otherwise.
+  //
+  // THE UPPER EDGE DOUBLED (WLD-214, Darko 2026-11-19: "double the size threshold … so that you can be
+  // twice as close before images are no longer drawn"; Wright verified 22:33): 192 → 384. Only this
+  // number moved; the lower edge, the fade, the algorithm and every admission rule are as ruled.
   art_window_min_px: 24,  // a picture appears once its mark's longest side is this many CSS px on screen
-  art_window_max_px: 192, // …and is gone once that side is more than this many
+  art_window_max_px: 384, // …and is gone once that side is more than this many
   art_window_fade_px: 8,  // picture and outline cross over this many px inside each edge; no hard hand-off
 });
 

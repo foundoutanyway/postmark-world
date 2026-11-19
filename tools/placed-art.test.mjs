@@ -471,7 +471,10 @@ test("THE PAGE — zoomed in to near, the large mark's picture is gone because i
   }
   assert.equal(near.hungOnScreen, true,
     "the 1,800 m mark is STILL ON SCREEN at near — so a zero below is the gate, not the cull");
-  assert.equal(near.count, 0, "an 1,800 m mark filling the pane is over the window: its picture has gone");
+  // its OWN picture is what must be gone, not every hanging: since WLD-214 (window edge 192 -> 384 CSS px) the
+  // planted 150 m yard is ~300 px here and rightly wears its picture
+  assert.ok(!near.labels.some((l) => /broad common/i.test(String(l))),
+    `an 1,800 m mark filling the pane is over the window: its picture has gone (labels: ${near.labels.join(", ")})`);
   // (the converse — a SMALL mark's picture coming up at near — is tools/art-window.test.mjs's)
 });
 

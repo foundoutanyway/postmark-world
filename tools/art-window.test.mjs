@@ -6,7 +6,9 @@
 // zoom range, in which the image shows, and like if you zoom in like the larger marks images go away
 // while smaller marks images form." Ruled "Go, as proposed": a picture shows while the mark's longest
 // projected side is 24–192 CSS px, one eligible picture deep, picture and outline crossing over 8 px
-// at each edge; the three numbers are dials.
+// at each edge; the three numbers are dials. WLD-214 (Darko, 2026-11-19: "double the size threshold … so
+// that you can be twice as close before images are no longer drawn") moved the upper edge to 384 and
+// nothing else: 24 / 384 / 8.
 //
 // THE PURE HALF is the window itself (artWindowAlpha) and its dials. THE PAGE HALF drives a mounted
 // page on a fixture world of INVENTED marks (this repo's WORLD copy, every live picture stripped, a few
@@ -32,9 +34,9 @@ const SOURCE = readFileSync(join(ROOT, "spectator/viewer.mjs"), "utf8");
 
 // ── the window, pure ────────────────────────────────────────────────────────
 
-test("the starting numbers are the ruled ones: 24 to 192 CSS px, faded over 8", () => {
+test("the starting numbers are the ruled ones: 24 to 384 CSS px (the upper edge doubled, WLD-214), faded over 8", () => {
   assert.equal(SPECTATOR_DRAW_DEFAULTS.art_window_min_px, 24);
-  assert.equal(SPECTATOR_DRAW_DEFAULTS.art_window_max_px, 192);
+  assert.equal(SPECTATOR_DRAW_DEFAULTS.art_window_max_px, 384);
   assert.equal(SPECTATOR_DRAW_DEFAULTS.art_window_fade_px, 8);
 });
 
@@ -49,9 +51,14 @@ test("the window: nothing outside it, the whole picture across its middle, a str
   assert.equal(a(0), 0); assert.equal(a(10), 0); assert.equal(a(24), 0, "at the lower edge it has not come up yet");
   assert.equal(a(28), 0.5, "half up halfway through the 8 px");
   assert.equal(a(32), 1, "whole at 24 + 8");
-  assert.equal(a(100), 1); assert.equal(a(184), 1, "whole until 192 - 8");
-  assert.equal(a(188), 0.5, "half gone halfway through the upper ramp");
-  assert.equal(a(192), 0, "gone at the upper edge");
+  assert.equal(a(100), 1); assert.equal(a(184), 1, "whole where the old default began to fade");
+  // THE DOUBLED EDGE (WLD-214): what 192 used to take away stays whole, and the same 8 px ramp now ends at 384
+  assert.equal(a(188), 1, "the old halfway point of the ramp is now whole");
+  assert.equal(a(192), 1, "the old upper edge is inside the window — the old default (192) fails here");
+  assert.equal(a(300), 1);
+  assert.equal(a(376), 1, "whole until 384 - 8");
+  assert.equal(a(380), 0.5, "half gone halfway through the upper ramp");
+  assert.equal(a(384), 0, "gone at the upper edge");
   assert.equal(a(500), 0); assert.equal(a(5000), 0);
   // an unreadable size is no picture: the outline is the safe answer
   for (const bad of [NaN, undefined, null, -3, Infinity]) assert.equal(a(bad), 0, `unreadable ${String(bad)} shows nothing`);
@@ -61,7 +68,8 @@ test("the window is dials: a non-default window, and a fade that cannot overlap 
   const d = { art_window_min_px: 40, art_window_max_px: 100, art_window_fade_px: 10 };
   assert.equal(artWindowAlpha(40, d), 0); assert.equal(artWindowAlpha(45, d), 0.5); assert.equal(artWindowAlpha(50, d), 1);
   assert.equal(artWindowAlpha(95, d), 0.5); assert.equal(artWindowAlpha(100, d), 0);
-  assert.equal(artWindowAlpha(30, d), 0, "below the moved edge — which 24 / 192 would have shown");
+  assert.equal(artWindowAlpha(30, d), 0, "below the moved edge — which the default 24 / 384 would have shown");
+  assert.equal(artWindowAlpha(250, d), 0, "and over the moved upper edge — which the default would have shown whole");
   // no fade: a hard window, all or nothing
   const hard = { ...d, art_window_fade_px: 0 };
   assert.equal(artWindowAlpha(41, hard), 1); assert.equal(artWindowAlpha(99, hard), 1); assert.equal(artWindowAlpha(40, hard), 0);
@@ -72,7 +80,7 @@ test("the window is dials: a non-default window, and a fade that cannot overlap 
   // a backwards window shows nothing rather than everything
   assert.equal(artWindowAlpha(50, { art_window_min_px: 80, art_window_max_px: 40, art_window_fade_px: 8 }), 0);
   // the outline is the complement, so a crossfade is never short of one: the two shares add to 1
-  for (const px of [25, 27, 30, 100, 186, 190]) assert.equal(artWindowAlpha(px) + (1 - artWindowAlpha(px)), 1);
+  for (const px of [25, 27, 30, 100, 190, 378, 382]) assert.equal(artWindowAlpha(px) + (1 - artWindowAlpha(px)), 1);
 });
 
 test("a fade is drawn and tracked in quarter steps — a zoom is a rebuild only when a picture has really moved", () => {
@@ -152,7 +160,8 @@ function fixtureWorld({ variant = null } = {}) {
   const root = "the-town/let-there-be-light";
   if (variant === "far-only") {
     // THE REFRESH WITNESS'S WORLD: the only picture on the record is one 40 km from any view the test takes
-    w.marks.push({ id: FARMARK, kind: "sited", tier: "market", by: "fixture", at: { x: at.x + 40000, y: at.y }, extent: { w: 1500, h: 1000 }, image, placementParent: root });
+    // 215 m: 34 px at the opening view (whole) and 27 px two ticks out, across a quarter-step of the LOWER edge
+    w.marks.push({ id: FARMARK, kind: "sited", tier: "market", by: "fixture", at: { x: at.x + 40000, y: at.y }, extent: { w: 215, h: 150 }, image, placementParent: root });
     writeFileSync(join(dir, "world-state.json"), JSON.stringify(w));
     return dir;
   }
@@ -309,15 +318,24 @@ test("THE PAGE — one unchanged mark wears its outline, then its picture, then 
   if (!chromium) { t.skip(NO_PW); return; }
   const h = await openPage();
   const seen = [];
-  await sweep(h, SMALL, -80, 60, (r, ppm) => {
-    const px = SMALL_SPAN * ppm;
-    seen.push({ px, tier: r.tier, pic: r.arts[SMALL]?.[0] ?? 0, outline: r.outlines[SMALL]?.[0] ?? 0, pictured: r.pictured.includes(SMALL), ppm });
-    return px > 230;
-  }, { centre: true });
+  // THE 400 m GARDEN, not the small yard: the doubled window (WLD-214) ends at 384 px, which a 30 m mark cannot reach
+  // on any screen (the page zooms to 9.5 px per metre = 285 px), while the garden crosses 24 px at far and 384 px at mid.
+  // The same unchanged mark, out to under 20 px and then in past 430.
+  const visit = (r, ppm) => {
+    const px = 400 * ppm;
+    seen.push({ px, tier: r.tier, pic: r.arts[MEDIUM]?.[0] ?? 0, outline: r.outlines[MEDIUM]?.[0] ?? 0, pictured: r.pictured.includes(MEDIUM), ppm });
+    return false;
+  };
+  await sweep(h, MEDIUM, +80, 14, (r, ppm) => { visit(r, ppm); return 400 * ppm < 14; });
+  await sweep(h, MEDIUM, -80, 60, (r, ppm) => { visit(r, ppm); return 400 * ppm > 430; });
   assert.deepEqual(h.errors, [], "the page survived the zoom");
   assert.ok(seen.length > 8, `enough readings to cross the window (${seen.length})`);
-  const above = seen.filter((s) => s.px > 196), below = seen.filter((s) => s.px < 20), inside = seen.filter((s) => s.px >= 33 && s.px <= 183);
+  const above = seen.filter((s) => s.px > 392), below = seen.filter((s) => s.px < 20), inside = seen.filter((s) => s.px >= 33 && s.px <= 367);
   assert.ok(below.length && inside.length && above.length, `the sweep crossed both edges (below ${below.length}, in ${inside.length}, above ${above.length})`);
+  // THE BAND THE DOUBLING KEEPS: between the old edge and the new one the picture is still whole
+  const kept = seen.filter((s) => s.px >= 200 && s.px <= 367);
+  assert.ok(kept.length >= 1, "a reading between the old 192 px edge and the new 384 px one was reached");
+  for (const s of kept) assert.equal(s.pic, 1, `the picture is still whole at ${s.px.toFixed(1)} px (it was gone above 192 before WLD-214)`);
   // the same record the whole way: only the zoom moved
   for (const s of below) assert.equal(s.pic, 0, `no picture at ${s.px.toFixed(1)} px, under the window`);
   for (const s of above) assert.equal(s.pic, 0, `no picture at ${s.px.toFixed(1)} px, over the window`);
@@ -325,8 +343,6 @@ test("THE PAGE — one unchanged mark wears its outline, then its picture, then 
   for (const s of inside) assert.ok(!(s.outline > 0), `…and no outline laid over a whole picture at ${s.px.toFixed(1)} px`);
   // outside the window it is its outline, whole
   for (const s of [...below, ...above].filter((s) => s.tier !== "far")) assert.equal(s.outline, 1, `the outline stands at ${s.px.toFixed(1)} px`);
-  // a 26 m mark: it gets its picture a long way under the old 200 m — and not by growing
-  assert.ok(SMALL_SPAN < 200, "a 26 m mark is far under the old fixed gate");
   // the crossing the camera must notice is INSIDE a tier: the mark's picture came up with the tier unchanged
   const edges = seen.slice(1).map((s, i) => [seen[i], s]).filter(([a, b]) => (a.pic === 0) !== (b.pic === 0) && a.tier === b.tier);
   assert.ok(edges.length >= 1, "a picture came up or went within one tier — the settle pass saw the window, not just the tier");
@@ -354,19 +370,20 @@ test("THE PAGE — a large mark hands its picture down: a smaller one comes up a
   if (!chromium) { t.skip(NO_PW); return; }
   const h = await openPage();
   const seen = [];
-  // the district is 1,700 m and the child 800 m inside it. The opening view has the district too big
-  // (it is gone) and the child in its window; zooming OUT brings the district into its window over it.
-  await sweep(h, COVER, +80, 40, (r, ppm) => {
+  // the district is 1,700 m and the child 800 m inside it. With the window to 384 px the opening view (0.158 px/m:
+  // the district 268 px, the child 126) has the district WEARING its picture over the child; zooming IN carries the
+  // district past its upper edge (384 px = 0.226 px/m) while the child is still inside its window, and it comes up.
+  await sweep(h, COVER, -80, 40, (r, ppm) => {
     seen.push({ cover: 1700 * ppm, child: 800 * ppm, c: r.arts[COVER]?.[0] ?? 0, k: r.arts[CHILD]?.[0] ?? 0, tier: r.tier });
-    return 800 * ppm < 20;
+    return 1700 * ppm > 440;
   });
   assert.deepEqual(h.errors, [], "no throw");
   // while the district is in the middle of its window, the child under it is down (one picture deep)
-  const covered = seen.filter((s) => s.cover >= 40 && s.cover <= 180 && s.child >= 30);
+  const covered = seen.filter((s) => s.cover >= 40 && s.cover <= 367 && s.child >= 30);
   assert.ok(covered.length >= 1, "a view where both are in their windows was reached");
   for (const s of covered) { assert.equal(s.c, 1, "the district wears its picture"); assert.equal(s.k, 0, "and the smaller one inside it does not: one picture deep"); }
   // once the district has left, the child comes up on its own
-  const handed = seen.filter((s) => s.cover > 200 && s.child >= 33 && s.child <= 183);
+  const handed = seen.filter((s) => s.cover > 392 && s.child >= 33 && s.child <= 367);
   assert.ok(handed.length >= 1, "a view where the district is gone and the child is in its window was reached");
   for (const s of handed) { assert.equal(s.c, 0, "the large picture is gone"); assert.equal(s.k, 1, "the smaller one has come up"); }
   // …and across the hand-off the two shares never stack beyond one picture
@@ -379,9 +396,9 @@ test("THE PAGE — a large mark with no picture (or none showing) covers nothing
   const seen = [];
   await sweep(h, BARE_CHILD, -80, 70, (r, ppm) => {
     seen.push({ child: 900 * ppm, k: r.arts[BARE_CHILD]?.[0] ?? 0, bare: r.arts[BARE] ?? [] });
-    return 900 * ppm > 260;
+    return 900 * ppm > 440;
   });
-  const inWindow = seen.filter((s) => s.child >= 33 && s.child <= 183);
+  const inWindow = seen.filter((s) => s.child >= 33 && s.child <= 367);
   assert.ok(inWindow.length >= 1, "the child was brought into its window");
   for (const s of inWindow) assert.equal(s.k, 1, "the picture-less parent above it blocks nothing");
   for (const s of seen) assert.deepEqual(s.bare, [], "and the parent, having no picture, hangs none");
@@ -397,7 +414,7 @@ test("THE PAGE — a mark's picture is painted once: no second copy in the furni
     const up = (r.arts[MEDIUM]?.[0] ?? 0) >= 0.5;
     if (r.pictured.includes(MEDIUM) !== up) bad.push(`the dot is ${r.pictured.includes(MEDIUM) ? "down" : "up"} with the picture ${up ? "up" : "down"} at ${(400 * ppm).toFixed(0)} px`);
     if (r.sceneArt) bad.push(`${r.sceneArt} scene pictures in the overlay at ${ppm.toFixed(3)} ppm (${r.tier})`);
-    return 400 * ppm > 400;
+    return 400 * ppm > 440;
   });
   assert.deepEqual(bad, [], "one picture per mark, from one pass");
 });
@@ -406,14 +423,16 @@ test("THE PAGE — a region's hanging obeys the same window, at far; the region'
   if (!chromium) { t.skip(NO_PW); return; }
   const h = await openPage();
   const seen = [];
-  // the region is 2,353 m on its longest side: 24 px needs ppm 0.0102, 192 px needs 0.0816
-  await sweep(h, SMALL, +80, 40, (r, ppm) => {
+  // the region is 2,353 m on its longest side: 24 px needs ppm 0.0102, 384 px needs 0.163 — the opening view (0.158) is
+  // INSIDE its window now, so a few notches in carry it over the upper edge, and the long way out takes it under the lower
+  const regionRead = (r, ppm) => {
     const px = 2353 * ppm;
     seen.push({ px, tier: r.tier, pic: (r.arts["Evermoon"] ?? r.arts["evermoon"] ?? Object.entries(r.arts).find(([k]) => /evermoon/i.test(k))?.[1] ?? [0])[0], hits: r.hits.filter((x) => x === REGION).length });
-    return px < 20;
-  });
-  const inside = seen.filter((s) => s.px >= 33 && s.px <= 183);
-  const over = seen.filter((s) => s.px > 196);
+  };
+  await sweep(h, SMALL, -80, 6, (r, ppm) => { regionRead(r, ppm); return 2353 * ppm > 470; });
+  await sweep(h, SMALL, +80, 40, (r, ppm) => { regionRead(r, ppm); return 2353 * ppm < 20; });
+  const inside = seen.filter((s) => s.px >= 33 && s.px <= 367);
+  const over = seen.filter((s) => s.px > 392);
   assert.ok(inside.length >= 1 && over.length >= 1, `the sweep crossed the region's window (${inside.length} in, ${over.length} over)`);
   for (const s of inside) assert.equal(s.pic, 1, `the region's picture hangs at ${s.px.toFixed(0)} px (${s.tier})`);
   for (const s of over) assert.equal(s.pic ?? 0, 0, `…and is gone at ${s.px.toFixed(0)} px, whatever the tier (${s.tier})`);
@@ -425,10 +444,10 @@ test("THE PAGE — a region's hanging obeys the same window, at far; the region'
 test("THE PAGE — a non-default window moves the edges, with no reload", async (t) => {
   if (!chromium) { t.skip(NO_PW); return; }
   const h = await openPage();
-  // MEDIUM, 400 m, at the opening zoom is ~63 px — inside 24–192
+  // MEDIUM, 400 m, at the opening zoom is ~63 px — inside 24–384
   let r = await h.settle();
   assert.ok((r.arts[MEDIUM] ?? [0])[0] === 1, `the medium garden wears its picture at the default window (px ${(400 * h.ppm(r)).toFixed(0)})`);
-  // the panel's own input, as a hand would move it: open the dev pane, then the window goes 120..192 across
+  // the panel's own input, as a hand would move it: open the dev pane, then the window goes 120..384 across
   await h.page.evaluate(() => { if (!document.querySelector('[data-draw-dial="art_window_min_px"]')) document.querySelector(".wv-dev-toggle")?.click(); });
   await h.page.waitForSelector('[data-draw-dial="art_window_min_px"]', { state: "attached", timeout: 10_000 });
   await h.page.evaluate(() => {
@@ -480,7 +499,7 @@ test("THE PAGE — F1: a pictured ancestor nobody is shown covers nothing: the a
   if (!chromium) { t.skip(NO_PW); return; }
   const h = await openPage();
   const seen = [];
-  // the annex is 150 m and in nobody's drawn set; its child is a 300 m place by placementParent. At ppm 0.21-0.61 both are inside their windows.
+  // the annex is 150 m and in nobody's drawn set; its child is a 300 m place by placementParent. At ppm 0.21-1.25 both are inside their windows.
   await sweep(h, ANNEX_CHILD, -80, 40, (r, ppm) => {
     seen.push({ ppm, annex: r.arts[ANNEX]?.[0] ?? 0, child: r.arts[ANNEX_CHILD]?.[0] ?? 0 });
     return ppm > 0.58;
@@ -503,9 +522,12 @@ test("THE PAGE — F2: the outline is the picture's complement through BOTH edge
     if (o === undefined) bad.push(`${key}: NO outline at ${px.toFixed(0)} px, picture ${a} (${r.tier})`);
     else if (Math.abs(o + a - 1) > 1e-9) bad.push(`${key}: outline ${o} + picture ${a} is not 1 at ${px.toFixed(0)} px (${r.tier})`);
   };
-  // out to the far lower edge of the 400 m garden (24 px = ppm 0.06), then all the way in past its upper edge (192 px = 0.48)
-  await sweep(h, MEDIUM, +80, 14, (r, ppm) => { check(MEDIUM, "MEDIUM", r, 400 * ppm); check(COVER, "COVER", r, 1700 * ppm); return 400 * ppm < 14; });
-  await sweep(h, MEDIUM, -80, 60, (r, ppm) => { check(MEDIUM, "MEDIUM", r, 400 * ppm); check(COVER, "COVER", r, 1700 * ppm); return 400 * ppm > 260; });
+  // out to the far lower edge of the 400 m garden (24 px = ppm 0.06), then all the way in past its upper edge (384 px = 0.96)
+  // (the district is 2,100 m west of the garden, so it is only a candidate — in the drawn box — while it is no more than a
+  // few hundred px away: its checks stop at 800 px across, where the zoom has carried it out of the box and it is rightly culled)
+  const both = (r, ppm) => { check(MEDIUM, "MEDIUM", r, 400 * ppm); if (1700 * ppm <= 800) check(COVER, "COVER", r, 1700 * ppm); };
+  await sweep(h, MEDIUM, +80, 14, (r, ppm) => { both(r, ppm); return 400 * ppm < 14; });
+  await sweep(h, MEDIUM, -80, 60, (r, ppm) => { both(r, ppm); return 400 * ppm > 440; });
   assert.ok(seen.MEDIUM > 20 && seen.COVER > 20, `enough readings (${JSON.stringify(seen)})`);
   assert.ok(tiers.has("far") && tiers.has("mid"), `the sweep covered far and mid (${[...tiers]})`);
   assert.deepEqual(bad, [], "never a picture leaving its window for nothing");
@@ -513,7 +535,7 @@ test("THE PAGE — F2: the outline is the picture's complement through BOTH edge
 
 test("THE PAGE — N2: a pictured mark nobody is shown crossing an edge of its window rebuilds nothing", async (t) => {
   if (!chromium) { t.skip(NO_PW); return; }
-  // the only picture on this record is 40 km from any view: a 1,500 m mark, 237 px at the opening view and 186 px two ticks out
+  // the only picture on this record is 40 km from any view: a 215 m mark, 34 px at the opening view and 27 px two ticks out
   const page = await machinePage(browser, { viewport: { width: 1400, height: 900 } });
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message.slice(0, 200)));
@@ -541,7 +563,7 @@ test("THE PAGE — N2: a pictured mark nobody is shown crossing an edge of its w
   const ppm1 = (c1.cw / c1.vbw) * 0.2;
   assert.equal(c1.tier, c0.tier, "the two ticks stay inside one tier");
   assert.ok(ppm1 < ppm0 * 0.85, `the camera really moved (${ppm0.toFixed(3)} -> ${ppm1.toFixed(3)} px/m)`);
-  assert.notEqual(artWindowAlpha(1500 * ppm0), artWindowAlpha(1500 * ppm1), "…and it carried the far mark across a step of its window");
+  assert.notEqual(quantizeArtAlpha(artWindowAlpha(215 * ppm0)), quantizeArtAlpha(artWindowAlpha(215 * ppm1)), "…and it carried the far mark across a step of its window");
   assert.equal(await page.evaluate(() => window.__rebuilds), 0, "yet nothing was rebuilt: an unrelated picture is not a candidate");
   assert.deepEqual(errors, []);
   await page.close();
