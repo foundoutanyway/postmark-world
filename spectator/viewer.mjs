@@ -591,10 +591,15 @@ export function worldSayAnswer(answer = {}) {
   const heard = listeners.length
     ? `${listeners.length} in earshot: ${listeners.join(", ")}`
     : "nobody else is in earshot right now — it stands on the record either way";
+  // THE RECEIPT'S OWN WORDS (CORE-82): `said { id, reply_to?, linked?, note?, id_note? }`. The office decides whether a reply was linked by
+  // name and says so in `note`; the browser shows that sentence as served and never works the link out itself.
+  const said = answer.said && typeof answer.said === "object" ? answer.said : null;
+  const notes = [said?.note, said?.id_note].filter((n) => typeof n === "string" && n.trim()).map((n) => n.trim());
   return {
     kind: "success",
     text: `said${where ? ` at ${where}` : ""} · ${heard}`,
     voices, listeners, where,
+    said, notes,
   };
 }
 
@@ -13140,6 +13145,21 @@ export function mountViewer(appEl) {
   // live. Put an 'all conversations' link at the bottom." The thread is the one the map already holds (`convoState`, the body of
   // `/world/conversations`); nothing is read for it. What residents said is CONTENT: it goes in as plain-data blocks, never parsed as
   // markdown, and the column writes it with textContent like every other string.
+  // THE READER'S SOURCE: the office's keyless reads, by the keys POS-1035 serves (`?room=<thread id>`, `?circle=<id>[&after=<id>]`). A read the
+  // office refused (422) answers its own body, so the reader can show the defect; a network failure or a non-JSON answer rejects, and the
+  // reader says it could not read the room (never "empty"). Nothing here picks a circle, a page or a cursor: the reader follows served ones.
+  const convoReaderRead = async (path) => {
+    const r = await fetch(officeUrl(path), { credentials: "same-origin" });
+    let body = null;
+    try { body = await r.json(); } catch { /* not JSON: refused below */ }
+    if (r.ok && body && !body.error) return body;
+    if (body && body.error) return body;
+    throw new Error(`the office answered ${r.status}`);
+  };
+  const convoReaderSource = {
+    room: (roomId) => convoReaderRead(`/world/conversations?room=${encodeURIComponent(roomId)}`),
+    circle: (circleId, after) => convoReaderRead(`/world/conversations?circle=${encodeURIComponent(circleId)}${after !== undefined && after !== null ? `&after=${encodeURIComponent(after)}` : ""}`),
+  };
   const convoWhen = (iso) => { const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(String(iso ?? "")); return m ? `${m[1]} ${m[2]}Z` : ""; };
   function convoColumnView(id) {
     if (!isConvoChoiceId(id)) return null;
@@ -13159,7 +13179,15 @@ export function mountViewer(appEl) {
       ] });
     }
     return {
-      key: [id, t.latest, n, live ? "live" : "quiet"].join("|"),
+      // THE KEY DOES NOT MOVE WITH THE TALK (CORE-82): the column repaints when the key changes, and a repaint would rebuild the circle reader
+      // under the reader's cursor. The reader refreshes itself in place (homeColumn.refreshReader), keeping scroll, focus and open circles.
+      key: [id, "circles"].join("|"),
+      // the shared circle reader (spectator/circle-reader.mjs) draws the room's circles where the flat statements stood; `door.blocks`
+      // below are the words the map already holds, shown only if the reader could not read the room
+      // READING-ONLY ON A PHONE (Wright 2026-11-14 23:59Z): the phone World page keeps its reading-only mode, so the reader there carries no Reply
+      // buttons (the SAY sheet lives in the rail that page does not show); the circle's link to the conversations page, where the speaking box is, stays.
+      // The host option, not a stylesheet hide: it is re-read on every render, so a resize or rotation reaches the open reader in place.
+      reader: { roomId: tid, source: convoReaderSource, canReply: canAct() && !onPhone(), onReply: (target) => setReplyTarget(target), hrefForCircle: (c) => `/conversations/#circle-${encodeURIComponent(c)}` },
       handle: "the-town", residentLink: false,
       kicker: live ? "a conversation · live" : "a conversation · gone quiet",
       title: String(t.place ?? "somewhere"),
@@ -17807,10 +17835,44 @@ export function mountViewer(appEl) {
     const { dials: sayDials } = dialOf({ dials: currentReadDials(), marks: byId }, SAY_CLASS_ID);
     return sayCardNote({ dials: sayDials, conversations: convoMeta });
   }
+  // ── THE REPLY TARGET (CORE-82, CORE-70 call 3) ─────────────────────────────────────────────────────────
+  //
+  // A reader who can act presses Reply on a line in a circle (spectator/circle-reader.mjs hands back { id, handle, said }); the SAY sheet shows
+  // "replying to <handle>: …" with a Clear button and sends `reply_to: <id>` additively with the words. The id is the one the OFFICE served on that
+  // line: the browser never resolves a reply link, never works out that a say was "linked by name", and shows the receipt's own `note`.
+  let sayReplyTo = null;               // { id, handle, said } or null
+  function renderReplyTarget(sheet) {
+    const row = $(sheet, ".wv-say-reply");
+    if (!row) return;
+    while (row.firstChild) row.removeChild(row.firstChild);
+    row.hidden = !sayReplyTo;
+    if (!sayReplyTo) return;
+    const words = document.createElement("span");
+    words.className = "wv-say-reply-text";
+    const said = String(sayReplyTo.said ?? "");
+    words.textContent = `replying to ${sayReplyTo.handle}: ${[...said].length > 80 ? `${[...said].slice(0, 80).join("")}…` : said}`;   // their words: text, never markup
+    const clearBtn = document.createElement("button");
+    clearBtn.type = "button";
+    clearBtn.className = "wv-say-reply-clear";
+    clearBtn.setAttribute("aria-label", "stop replying to this say");
+    clearBtn.textContent = "Clear";
+    clearBtn.addEventListener("click", () => { sayReplyTo = null; renderReplyTarget(sheet); $(sheet, ".wv-say-text")?.focus(); });
+    row.appendChild(words);
+    row.appendChild(clearBtn);
+  }
+  /** a Reply pressed in a circle: open the SAY sheet (or reuse the open one) with that say as the target */
+  function setReplyTarget(target) {
+    if (!target || target.id === undefined || target.id === null) return;
+    let sheet = root.querySelector(".wv-say-sheet");
+    if (!sheet) { openSayBox(); sheet = root.querySelector(".wv-say-sheet"); }     // a fresh sheet starts with no target; the one chosen is set below
+    sayReplyTo = { id: target.id, handle: String(target.handle ?? ""), said: String(target.said ?? "") };
+    if (sheet) { renderReplyTarget(sheet); sheet.scrollIntoView?.({ behavior: "smooth", block: "nearest" }); $(sheet, ".wv-say-text")?.focus(); }
+  }
   function openSayBox() {
     const host = $(root, ".wv-actions-host");
     if (!host) return;
     root.querySelectorAll(".wv-act-sheet").forEach((sheet) => sheet.remove());
+    sayReplyTo = null;                 // a sheet that is opened is empty, and so is its target: a reply is carried only by an explicit Reply (setReplyTarget)
     const sheet = document.createElement("div");
     sheet.className = "wv-act-sheet wv-say-sheet";
     sheet.dataset.mode = "say";
@@ -17827,12 +17889,14 @@ export function mountViewer(appEl) {
       // THE NUMBERS ARE THE OFFICE'S (POS-678): the say class's dials (dialOf, the
       // /world/dials table first), else the conversations read's; never the page's own
       + `<p class="wv-act-note wv-say-note">${esc(sayNote())}</p>`
+      + `<div class="wv-act-row wv-say-reply" hidden></div>`
       + `<div class="wv-act-row"><textarea class="wv-say-text" rows="3" maxlength="500" placeholder="say something where you stand…"></textarea></div>`
       + `<div class="wv-act-row"><span class="wv-say-count wv-quiet">0 / 500</span>`
       + `<button type="button" class="wv-say-send" disabled>say it</button></div>`
       + `<p class="wv-act-answer" hidden></p>`
       + `<div class="wv-say-heard" hidden></div>`;
     host.appendChild(sheet);
+    renderReplyTarget(sheet);          // hidden: the new sheet has no target
     // the numbers not yet in hand are asked of the office now, and the note says them when they land
     if (!convoMeta) loadConversations().then(() => {
       const note = sheet.isConnected ? $(sheet, ".wv-say-note") : null;
@@ -17862,7 +17926,8 @@ export function mountViewer(appEl) {
     answer.textContent = "carrying it…";
     let rendered;
     try {
-      const response = await apexAct("say", { text });
+      // reply_to is ADDITIVE: absent unless a Reply was chosen, and exactly the id the office served on that line
+      const response = await apexAct("say", { text, ...(sayReplyTo ? { reply_to: sayReplyTo.id } : {}) });
       rendered = worldSayAnswer(response.body);
     } catch (error) {
       rendered = { kind: "refusal", text: `the say door could not be reached — ${error.message}`, voices: [], listeners: [] };
@@ -17870,9 +17935,21 @@ export function mountViewer(appEl) {
     if (!sheet.isConnected) return;
     answer.className = `wv-act-answer ${rendered.kind}`;
     answer.textContent = rendered.text;
+    // the office's own words about how the reply was linked ("linked by name", or why there is no act number), shown as served
+    const linkedNote = $(sheet, ".wv-say-note-linked");
+    if (linkedNote) linkedNote.remove();
+    if (rendered.kind === "success" && rendered.notes?.length) {
+      const p = document.createElement("p");
+      p.className = "wv-say-note-linked";
+      p.textContent = rendered.notes.join(" ");
+      answer.insertAdjacentElement("afterend", p);
+    }
     if (rendered.kind === "success") {
       field.value = "";
+      sayReplyTo = null;                 // a reply is answered once; the next say starts clean
+      renderReplyTarget(sheet);
       syncSayBox(sheet);
+      homeColumn.refreshReader?.();     // the circle the reader had open takes the new say (offered, not pulled in)
       // THE LANE IT LANDED IN, shown rather than asserted. The conversations
       // layer is the same record the town's page serves; re-reading it is the
       // cheapest honest proof that the voice is in it.
@@ -18403,7 +18480,7 @@ export function mountViewer(appEl) {
     // the talk moves faster than the record: every other tick (~60 s), gentler
     // than the conversations page's own 7 s poll — this is a map, not a feed,
     // and a hidden layer costs the office nothing
-    if (convoVisible && tick % 2 === 0) loadConversations().then(drawConversations);
+    if (convoVisible && tick % 2 === 0) loadConversations().then(drawConversations).then(() => homeColumn.refreshReader?.());
     // ⚑ THE AMBIENT RE-DOWNLOAD ONLY RUNS WHERE THERE IS A FOLD. It re-fetched
     // the WHOLE town every ~60 s to notice the record had moved. On the
     // resident path there is no fold to refresh and the reads are keyed by
