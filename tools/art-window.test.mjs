@@ -98,8 +98,18 @@ test("[pin] one window for both ground passes, a shared signature for the camera
   const fn = SOURCE.slice(SOURCE.indexOf("function drawPlacedArt("));
   const body = fn.slice(0, fn.indexOf("\n  }\n"));
   assert.doesNotMatch(body, /if \(tier === "near"\) \{ mapCtx\.placedArtLayer\.innerHTML = ""/, "near no longer clears the town's pictures");
-  assert.match(SOURCE, /if \(sceneRoomId && tier === "near"\) \{ mapCtx\.placedArtLayer\.innerHTML = ""; return new Map\(\); \}/,
+  assert.match(SOURCE, /if \(sceneRoomId && tier === "near"\) \{ mapCtx\.placedArtLayer\.innerHTML = ""; return \{ shown: new Map\(\), subjects: \[\], spans: \[\] \}; \}/,
     "only a room's own scene keeps the old near behaviour");
+  // a room keeps its old rule WHOLE: the region-at-mid exclusion and the painting-width ceiling are the room's
+  assert.match(body, /if \(sceneRoomId\) \{[\s\S]*?if \(tier === "mid" && isRegionMark\(m\)\) return false;/, "a room still stands a region down at mid");
+  assert.match(SOURCE, /if \(Number\.isFinite\(ceiling\) && span > ceiling\) return 0;/, "…and still refuses a mark wider than the whole painting");
+  // F1: only an admitted ancestor covers
+  assert.match(body, /free \*= 1 - \(sceneRoomId \|\| admit\(up\) \? ownAlpha\(up\) : 0\);/, "a pictured ancestor nobody is shown covers nothing");
+  // F2: the outline is owed to every admitted picture subject, laid where the furnishing pass did not
+  assert.match(SOURCE, /const owed = pictureSubjects\s*\.filter\(\(m\) => !outlined\.has\(m\.id\)/, "the subjects the furnishing pass did not outline get theirs");
+  // N2: the camera watches the candidates the last draw retained, not the record
+  assert.match(SOURCE, /mapCtx\.artSpans = artSpans;/, "the signature's spans are the draw's own retained candidates");
+  assert.doesNotMatch(SOURCE, /artSpansNow/, "no walk of the whole record for pictures");
   assert.match(SOURCE, /quantizeArtAlpha\(artWindowAlpha\(placedArtSpanM\(m\) \* ppm, state\.drawDials\)\)/,
     "the longest side of the whole extent, times px per metre of the camera — never a clipped fragment, never a DPR px");
   assert.match(SOURCE, /\|\| artSignature\(\) !== drawnAt\.art/, "a crossing inside one tier is stale: the camera redraws");
@@ -129,7 +139,10 @@ const CHILD = "fixture/the-covered-child";     //  800 x  600 m
 const BARE = "fixture/the-bare-parent";        // 1700 x 1200 m, NO picture
 const BARE_CHILD = "fixture/the-bare-child";   //  900 x  700 m, pictured: nothing is above it
 const REGION = "caelum/evermoon";              // a real region, a real ring: 1528 x 2353 m on the record
-function fixtureWorld() {
+const ANNEX = "fixture/the-hidden-annex";      //  150 x 150 m, pictured, NOT a place and in nobody's drawn set: a pictured ancestor the reader is not shown
+const ANNEX_CHILD = "fixture/the-annex-child"; //  300 x 300 m, a pictured place inside it by the record's placementParent
+const FARMARK = "fixture/the-far-mark";        // 1,500 m, pictured, 40 km east: nowhere near any view (the refresh witness's world only)
+function fixtureWorld({ variant = null } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "art-window-"));
   cpSync(join(ROOT, "WORLD"), dir, { recursive: true });
   const w = JSON.parse(readFileSync(join(dir, "world-state.json"), "utf8"));
@@ -137,7 +150,16 @@ function fixtureWorld() {
   for (const m of w.marks) delete m.image;            // the fixture owns its pictures
   const at = w.marks.find((m) => m.id === "the-town/the-town-centre")?.at ?? { x: 0, y: 0 };
   const root = "the-town/let-there-be-light";
+  if (variant === "far-only") {
+    // THE REFRESH WITNESS'S WORLD: the only picture on the record is one 40 km from any view the test takes
+    w.marks.push({ id: FARMARK, kind: "sited", tier: "market", by: "fixture", at: { x: at.x + 40000, y: at.y }, extent: { w: 1500, h: 1000 }, image, placementParent: root });
+    writeFileSync(join(dir, "world-state.json"), JSON.stringify(w));
+    return dir;
+  }
   w.marks.push(
+    // a pictured ANCESTOR nobody is shown (a 150 m thing in nobody's drawn set) over a pictured PLACE that is admitted
+    { id: ANNEX, kind: "sited", tier: "market", by: "fixture", at: { x: at.x - 900, y: at.y + 500 }, extent: { w: 150, h: 150 }, image, placementParent: root },
+    { id: ANNEX_CHILD, kind: "sited", tier: "market", by: "fixture", at: { x: at.x - 900, y: at.y + 500 }, extent: { w: 300, h: 300 }, image, placementParent: ANNEX },
     { id: MEDIUM, kind: "sited", tier: "market", by: "fixture", at: { x: at.x + 300, y: at.y }, extent: { w: 400, h: 300 }, image },
     { id: COVER, kind: "sited", tier: "market", by: "fixture", at: { x: at.x - 1800, y: at.y }, extent: { w: 1700, h: 1200 }, image, placementParent: root },
     { id: CHILD, kind: "sited", tier: "market", by: "fixture", at: { x: at.x - 1800, y: at.y }, extent: { w: 800, h: 600 }, image, placementParent: COVER },
@@ -153,20 +175,25 @@ function fixtureWorld() {
 
 const CLEANUP = [];
 after(() => { for (const stop of CLEANUP.reverse()) { try { stop(); } catch { /* already gone */ } } });
-let chromium = null, port = null, browser = null;
-before(async () => {
-  chromium = await loadChromium();
-  if (!chromium) return;
-  port = await freePort();
+let chromium = null, port = null, farPort = null, browser = null;
+async function bootRig(variant) {
+  const p = await freePort();
   const proc = spawn(process.execPath, [join(ROOT, "spectator", "server.mjs")], {
-    cwd: ROOT, env: { ...process.env, PORT: String(port), WORLD_DIR: fixtureWorld() }, stdio: ["ignore", "pipe", "pipe"],
+    cwd: ROOT, env: { ...process.env, PORT: String(p), WORLD_DIR: fixtureWorld({ variant }) }, stdio: ["ignore", "pipe", "pipe"],
   });
   CLEANUP.push(() => proc.kill());
   await new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error("the rig did not announce itself in 30s")), 30_000);
-    proc.stdout.on("data", (b) => { if (String(b).includes(`localhost:${port}`)) { clearTimeout(timer); resolve(); } });
+    proc.stdout.on("data", (b) => { if (String(b).includes(`localhost:${p}`)) { clearTimeout(timer); resolve(); } });
     proc.on("exit", (c) => { clearTimeout(timer); reject(new Error(`the rig exited ${c} before serving`)); });
   });
+  return p;
+}
+before(async () => {
+  chromium = await loadChromium();
+  if (!chromium) return;
+  port = await bootRig(null);
+  farPort = await bootRig("far-only");
   browser = await chromium.launch();
   CLEANUP.push(() => browser.close());
 });
@@ -210,7 +237,7 @@ async function openPage(viewport = { width: 1400, height: 900 }) {
       sceneArt: ov.querySelectorAll(".wv-scene-mark-art").length,
       children: ov.childElementCount,
     };
-  }, { MEDIUM, IDS: [SMALL, MEDIUM, COVER, CHILD, BARE, BARE_CHILD, REGION] });
+  }, { MEDIUM, IDS: [SMALL, MEDIUM, COVER, CHILD, BARE, BARE_CHILD, REGION, ANNEX, ANNEX_CHILD] });
   // units per metre is the world's constant (mPerPx): read it once, off the width of MEDIUM's picture
   // (painting units for a 400 m extent), which is hung at the opening view
   let first = await readNow();
@@ -235,8 +262,8 @@ async function openPage(viewport = { width: 1400, height: 900 }) {
 }
 
 // where each planted mark stands, in metres east of MEDIUM (they share a latitude)
-const EAST_OF_MEDIUM = { [SMALL]: -255, [MEDIUM]: 0, [COVER]: -2100, [CHILD]: -2100, [BARE]: 1500, [BARE_CHILD]: 1500 };
-const SOUTH_OF_MEDIUM = { [SMALL]: 115 };
+const EAST_OF_MEDIUM = { [SMALL]: -255, [MEDIUM]: 0, [COVER]: -2100, [CHILD]: -2100, [BARE]: 1500, [BARE_CHILD]: 1500, [ANNEX]: -1200, [ANNEX_CHILD]: -1200 };
+const SOUTH_OF_MEDIUM = { [SMALL]: 115, [ANNEX]: 500, [ANNEX_CHILD]: 500 };
 
 /** wheel the camera in (-) or out (+) one notch at a time, the cursor held on `anchorId`'s centre
  *  (a wheel zooms about the cursor, so that point stays put), and hand each SETTLED reading to
@@ -424,4 +451,77 @@ test("THE PAGE — a pan inside the margin rebuilds nothing; the window does not
   await h.page.waitForTimeout(900);
   const n = await h.page.evaluate(() => window.__rebuilds);
   assert.equal(n, 0, "no overlay or picture-layer rebuild for a pan inside the margin");
+});
+
+// ── the review's batch (WLD-205 FIX): F1, F2, N2 ────────────────────────────
+
+test("THE PAGE — F1: a pictured ancestor nobody is shown covers nothing: the admitted child under it keeps its picture", async (t) => {
+  if (!chromium) { t.skip(NO_PW); return; }
+  const h = await openPage();
+  const seen = [];
+  // the annex is 150 m and in nobody's drawn set; its child is a 300 m place by placementParent. At ppm 0.21-0.61 both are inside their windows.
+  await sweep(h, ANNEX_CHILD, -80, 40, (r, ppm) => {
+    seen.push({ ppm, annex: r.arts[ANNEX]?.[0] ?? 0, child: r.arts[ANNEX_CHILD]?.[0] ?? 0 });
+    return ppm > 0.58;
+  });
+  const both = seen.filter((s) => s.ppm >= 0.26 && s.ppm <= 0.56);   // annex 39-84 px, child 78-168 px: both whole
+  assert.ok(both.length >= 2, `readings where both are in their windows (${both.length})`);
+  for (const s of seen) assert.equal(s.annex, 0, `the annex draws no picture of its own at ${s.ppm.toFixed(2)} ppm (it is not admitted)`);
+  for (const s of both) assert.equal(s.child, 1, `…so it hides none of its child's at ${s.ppm.toFixed(2)} ppm`);
+  assert.deepEqual(h.errors, []);
+});
+
+test("THE PAGE — F2: the outline is the picture's complement through BOTH edges and at EVERY tier, for a place outside the drawn set as much as a thing in it", async (t) => {
+  if (!chromium) { t.skip(NO_PW); return; }
+  const h = await openPage();
+  const bad = [], tiers = new Set(), seen = { MEDIUM: 0, COVER: 0 };
+  const check = (id, key, r, px) => {
+    const a = r.arts[id]?.[0] ?? 0, o = r.outlines[id]?.[0];
+    tiers.add(r.tier); seen[key] += 1;
+    if (a >= 1) { if (o !== undefined) bad.push(`${key}: an outline lies under a whole picture at ${px.toFixed(0)} px (${r.tier})`); return; }
+    if (o === undefined) bad.push(`${key}: NO outline at ${px.toFixed(0)} px, picture ${a} (${r.tier})`);
+    else if (Math.abs(o + a - 1) > 1e-9) bad.push(`${key}: outline ${o} + picture ${a} is not 1 at ${px.toFixed(0)} px (${r.tier})`);
+  };
+  // out to the far lower edge of the 400 m garden (24 px = ppm 0.06), then all the way in past its upper edge (192 px = 0.48)
+  await sweep(h, MEDIUM, +80, 14, (r, ppm) => { check(MEDIUM, "MEDIUM", r, 400 * ppm); check(COVER, "COVER", r, 1700 * ppm); return 400 * ppm < 14; });
+  await sweep(h, MEDIUM, -80, 60, (r, ppm) => { check(MEDIUM, "MEDIUM", r, 400 * ppm); check(COVER, "COVER", r, 1700 * ppm); return 400 * ppm > 260; });
+  assert.ok(seen.MEDIUM > 20 && seen.COVER > 20, `enough readings (${JSON.stringify(seen)})`);
+  assert.ok(tiers.has("far") && tiers.has("mid"), `the sweep covered far and mid (${[...tiers]})`);
+  assert.deepEqual(bad, [], "never a picture leaving its window for nothing");
+});
+
+test("THE PAGE — N2: a pictured mark nobody is shown crossing an edge of its window rebuilds nothing", async (t) => {
+  if (!chromium) { t.skip(NO_PW); return; }
+  // the only picture on this record is 40 km from any view: a 1,500 m mark, 237 px at the opening view and 186 px two ticks out
+  const page = await machinePage(browser, { viewport: { width: 1400, height: 900 } });
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message.slice(0, 200)));
+  await page.goto(`http://localhost:${farPort}/`, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await page.waitForSelector(".wv-telling-pane", { state: "attached", timeout: 90_000 });
+  await page.evaluate(() => { const el = document.querySelector(".wv-tour-skip"); if (el && el.offsetParent) el.click(); });
+  await page.waitForFunction(() => document.querySelectorAll("#wv-overlay [data-id]").length > 0, null, { timeout: 60_000 }).catch(() => {});
+  await page.waitForTimeout(3500);
+  const cam = () => page.evaluate(() => {
+    const svg = document.querySelector(".wv-minimap > svg");
+    return { vbw: Number(svg.getAttribute("viewBox").split(" ")[2]), cw: svg.getBoundingClientRect().width, tier: document.getElementById("wv-overlay")?.getAttribute("data-tier") };
+  });
+  const c0 = await cam();
+  const ppm0 = (c0.cw / c0.vbw) * 0.2;                     // 5 m per painting unit on this world
+  await page.evaluate(() => {
+    window.__rebuilds = 0;
+    new MutationObserver((m) => { window.__rebuilds += m.filter((x) => x.type === "childList").length; })
+      .observe(document.getElementById("wv-overlay"), { childList: true });
+    new MutationObserver((m) => { window.__rebuilds += m.length; })
+      .observe(document.getElementById("wv-placed-art-layer"), { childList: true });
+  });
+  for (let i = 0; i < 2; i++) { await page.mouse.move(700, 450); await page.mouse.wheel(0, 80); await page.waitForTimeout(700); }
+  await page.waitForTimeout(900);
+  const c1 = await cam();
+  const ppm1 = (c1.cw / c1.vbw) * 0.2;
+  assert.equal(c1.tier, c0.tier, "the two ticks stay inside one tier");
+  assert.ok(ppm1 < ppm0 * 0.85, `the camera really moved (${ppm0.toFixed(3)} -> ${ppm1.toFixed(3)} px/m)`);
+  assert.notEqual(artWindowAlpha(1500 * ppm0), artWindowAlpha(1500 * ppm1), "…and it carried the far mark across a step of its window");
+  assert.equal(await page.evaluate(() => window.__rebuilds), 0, "yet nothing was rebuilt: an unrelated picture is not a candidate");
+  assert.deepEqual(errors, []);
+  await page.close();
 });

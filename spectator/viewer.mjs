@@ -12258,7 +12258,7 @@ export function mountViewer(appEl) {
     // inside a parcel the reader is not in, and no mark outside the reader's view
     // gains a picture for being the right size.
     const drawnIds = new Set(drawn.map((m) => m.id));
-    const hungArt = drawPlacedArt(bounds, tier, (m) => !hiddenInsideParcel(byId.get(m.id) ?? m, byId, underfoot, townChain)
+    const { shown: hungArt, subjects: pictureSubjects, spans: artSpans } = drawPlacedArt(bounds, tier, (m) => !hiddenInsideParcel(byId.get(m.id) ?? m, byId, underfoot, townChain)
       && (isPlace(m) || (drawnIds.has(m.id) && isEmbodiedMark(m) && !(mapCtx.groundMarkIds ?? new Set()).has(m.id))));
     // A MARK WEARING ITS PICTURE NEEDS NO DOT (Keemin, 2026-09-18: "remove the
     // center dot on marks with images? it often blocks them and makes them look
@@ -12283,6 +12283,7 @@ export function mountViewer(appEl) {
     // not drawn at all, because at eleven metres to the pixel a chair is a
     // smear and 11,961 of them are a fog. `null` (the resident path) draws it
     // exactly as it drew yesterday.
+    const outlined = new Set();   // the town's picture subjects whose outline the furnishing pass below has laid
     if (mapCtx?.placeholderExtents && tier !== "far") {
       // THE FULL MARK BY ID, not the radial's own entry — the same reason
       // `tierOf` looks a tier up rather than reading `m.tier` fifteen lines
@@ -12327,8 +12328,9 @@ export function mountViewer(appEl) {
         // carried a .wv-ph-extent. Two rules disagreeing about one piece of
         // ground. The picture wins where there is one; every chair keeps its
         // tinted shape exactly as before.
-        // (in a room's scene only: the town's window lays the outline UNDER a
-        // fading picture, so a hung mark stays in this pass — see below)
+        // (in a room's scene only: the town's window lays the outline OVER the
+        // fading picture — the overlay is above the picture layer — so a hung
+        // mark stays in this pass; see below)
         .filter((m) => !sceneRoomId ? true : !hungArt.has(m.id))
         .sort((a, b) => ((b.extent?.w ?? 0) * (b.extent?.h ?? 0)) - ((a.extent?.w ?? 0) * (a.extent?.h ?? 0)));
       for (const m of furnishable) {
@@ -12338,6 +12340,7 @@ export function mountViewer(appEl) {
         // none once the picture is full (it wins where there is one, as before).
         // A mark's picture is never painted twice: sceneArtSVG is the room's.
         if (!sceneRoomId) {
+          outlined.add(m.id);
           const a = hungArt.get(m.id) ?? 0;
           if (a >= 1) continue;
           const ph = placeholderExtentSVG(m, px, { ignoreArt: true });
@@ -12348,6 +12351,26 @@ export function mountViewer(appEl) {
         const art = markImagePath(m) ? sceneArtSVG(m, px) : "";
         if (art) { s += art; pictured.add(m.id); }
         else s += placeholderExtentSVG(m, px);
+      }
+    }
+    // THE OUTLINE IS OWED TO EVERY ADMITTED PICTURE SUBJECT (WLD-205 review F2: "picture and outline crossfade"),
+    // at every tier and for a place hung from the whole record as much as for a thing in the drawn set. The
+    // furnishing pass above lays it for what it furnishes (mid and near, the drawn set); this lays the rest —
+    // the far tier, where that pass does not run, and a place nobody's drawn set holds — for the SAME subjects
+    // the picture pass admitted and no others: nothing is admitted here to solve it. Same outline, same
+    // complement (`1 - share`), none under a full picture. The ground's own marks (a region's wash is its
+    // floor and stays), a mark that cannot be outlined (not embodied) and a region at mid (the old tint rule)
+    // keep what they had. Without this a picture leaving its window faded to nothing: no outline, no dot.
+    if (!sceneRoomId && mapCtx?.placeholderExtents) {
+      const onTheGround = mapCtx.groundMarkIds ?? new Set();
+      const owed = pictureSubjects
+        .filter((m) => !outlined.has(m.id) && isEmbodiedMark(m) && !onTheGround.has(m.id) && !(tier === "mid" && isRegionMark(m)))
+        .sort((a, b) => placedArtSpanM(b) - placedArtSpanM(a));
+      for (const m of owed) {
+        const a = hungArt.get(m.id) ?? 0;
+        if (a >= 1) continue;
+        const ph = placeholderExtentSVG(m, px, { ignoreArt: true });
+        s += a > 0 && ph ? `<g class="wv-art-fade" opacity="${1 - a}">${ph}</g>` : ph;
       }
     }
     // THE LABELS BY TIER (2026-09-11). `far` draws none: at town width a name
@@ -12502,7 +12525,7 @@ export function mountViewer(appEl) {
     // exactly as a Spectator's does (noticeTheCameraSettling reads this)
     // …and which pictures were up: the window crossing INSIDE one tier (a mark's
     // picture coming up as the reader zooms) is stale exactly when this changes
-    mapCtx.artSpans = artSpansNow();
+    mapCtx.artSpans = artSpans;
     mapCtx.drawnAt = { bounds, tier, thumbs: thumbClassKey(), art: artSignature(mapCtx.artSpans) };
     mapCtx.glyphIds = glyphIds;
     mapCtx.syncWithin?.(radial);
@@ -13070,21 +13093,25 @@ export function mountViewer(appEl) {
   const artAlphaOf = (m, ppm = artPxPerMetre(), tier = null) => {
     if (!m?.at || !m.extent || !markImagePath(m)) return 0;
     if (sceneRoomId) {
-      if (tier === "near" || tier == null) return 0;
-      return placedArtSpanM(m) >= PLACE_M ? 1 : 0;
+      // A ROOM KEEPS ITS OLD RULE EXACTLY (the brief leaves room behaviour alone): nothing hung at near, a
+      // place (>= PLACE_M) hung whole at any other tier, and nothing wider than the whole painting — the
+      // 320 km root is the edge of the map, not a place. (The region-at-mid exclusion is the hang filter's.)
+      if (tier === "near") return 0;
+      const span = placedArtSpanM(m);
+      const ceiling = paintingWidthM();
+      if (!(span >= PLACE_M)) return 0;
+      if (Number.isFinite(ceiling) && span > ceiling) return 0;
+      return 1;
     }
     if (m.kind === "parcel") return 0;       // a parcel's picture is its card
     return quantizeArtAlpha(artWindowAlpha(placedArtSpanM(m) * ppm, state.drawDials));
   };
-  /** The marks that could ever wear a ground picture in the town, as spans in
-   *  metres — what the camera checks a window crossing against without walking
-   *  the record every frame. Rebuilt with every draw. */
-  const artSpansNow = () => (sceneRoomId ? [] : allMarks()
-    .filter((m) => m?.at && m.extent && m.kind !== "parcel" && markImagePath(m))
-    .map(placedArtSpanM).filter((s) => s > 0));
-  /** a number that changes exactly when some picture's quarter-step changes.
-   *  Cheap (a few hundred multiplies), and it is the whole reason a zoom INSIDE a
-   *  tier can bring a picture up or take one away without a rebuild loop on a pan. */
+  /** a number that changes exactly when some RETAINED picture candidate's quarter-step changes. The
+   *  candidates are the marks the last draw admitted and had in its box (drawPlacedArt's `spans`), at alpha 0
+   *  too — so a picture coming up inside one tier refreshes — and nothing else: a pictured mark off the
+   *  screen, or one the reader is not shown, crossing an edge changes nothing here and so rebuilds nothing.
+   *  Cheap (a handful of multiplies), and it is the whole reason a zoom INSIDE a tier can bring a picture up
+   *  or take one away without a rebuild loop on a pan. */
   function artSignature(spans = mapCtx?.artSpans) {
     if (!spans?.length) return 0;
     const ppm = artPxPerMetre();
@@ -13100,8 +13127,8 @@ export function mountViewer(appEl) {
    *  place), as against one that must also be in the reader's drawn set (a thing)? */
   const isPlace = (m) => placedArtSpanM(m) >= PLACE_M;
   function drawPlacedArt(bounds, tier, admit = () => true) {
-    if (!mapCtx?.placedArtLayer) return new Map();
-    if (sceneRoomId && tier === "near") { mapCtx.placedArtLayer.innerHTML = ""; return new Map(); }
+    if (!mapCtx?.placedArtLayer) return { shown: new Map(), subjects: [], spans: [] };
+    if (sceneRoomId && tier === "near") { mapCtx.placedArtLayer.innerHTML = ""; return { shown: new Map(), subjects: [], spans: [] }; }
     const px = (p) => ({ x: mapCtx.originPx.x + p.x / mapCtx.mPerPx, y: mapCtx.originPx.y + p.y / mapCtx.mPerPx });
     const ppm = artPxPerMetre();
     // ── ONE PICTURE DEEP (Keemin, 2026-09-12: the mark must be a direct child
@@ -13155,18 +13182,33 @@ export function mountViewer(appEl) {
       for (let up = stepUp(m), steps = 0; up && steps < 12; up = stepUp(up), steps++) {
         if (seen.has(up.id)) break;          // the record disagrees with itself; draw rather than hang
         if (from && up.id === from) break;   // reached the ground underfoot
-        free *= 1 - ownAlpha(up);
+        // ONLY AN ADMITTED ANCESTOR COVERS (WLD-205 review F1): the same eligibility as the picture pass
+        // itself. A pictured ancestor the reader is not shown — in their `within` but in nobody's drawn set —
+        // draws nothing of its own, so it must hide nothing of a visible child's.
+        free *= 1 - (sceneRoomId || admit(up) ? ownAlpha(up) : 0);
         seen.add(up.id);
       }
       return free;
     };
     const shown = new Map();                  // id -> the picture's final quarter-step share
+    const subjects = [];                      // the town's admitted picture subjects in the box, at alpha 0 too: the outline's
+    const spans = [];                         // …and their spans in metres: what artSignature retains
     const hung = allMarks().filter((m) => {
       if (!m?.at || !m.extent) return false;
       if (from && m.id === from) return false;   // your own ground is not a hanging
-      if (!(ownAlpha(m) > 0)) return false;
-      if (!sceneRoomId && !admit(m)) return false;
-      if (!markInDrawnBounds(m, bounds)) return false;
+      if (sceneRoomId) {
+        // a ROOM's old rule, whole: a region does not hang at mid (its picture is a far thing; the ground's own
+        // wash stays), and a mark wider than the painting is the edge of the map (artAlphaOf)
+        if (tier === "mid" && isRegionMark(m)) return false;
+        if (!(ownAlpha(m) > 0)) return false;
+      } else {
+        if (m.kind === "parcel" || !markImagePath(m)) return false;
+        if (!admit(m)) return false;
+        if (!markInDrawnBounds(m, bounds)) return false;
+        subjects.push(m); spans.push(placedArtSpanM(m));
+        if (!(ownAlpha(m) > 0)) return false;
+      }
+      if (sceneRoomId && !markInDrawnBounds(m, bounds)) return false;
       const a = quantizeArtAlpha(ownAlpha(m) * uncovered(m));
       if (!(a > 0)) return false;
       shown.set(m.id, a);
@@ -13195,10 +13237,13 @@ export function mountViewer(appEl) {
       s += art && a < 1 ? `<g class="wv-art-fade" opacity="${a}">${art}</g>` : art;
     }
     mapCtx.placedArtLayer.innerHTML = s;
-    // THE SHARES, not just the ids: the furnishing pass below has to know which
+    // THE SHARES, not just the ids: the outline pass below has to know which
     // marks are wearing a picture and how much of one, so it can lay the outline
-    // under it at the complement and paint no tint over a full picture.
-    return shown;
+    // at the complement and paint none over a full picture. The subjects and
+    // their spans go with them: the outline is owed to every admitted picture
+    // subject, whatever its share, and the camera's refresh watches those and
+    // no others.
+    return { shown, subjects, spans };
   }
 
   // ── conversations on the map: ONE BADGE PER THREAD ───────────────────────────

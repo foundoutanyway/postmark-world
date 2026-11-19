@@ -353,11 +353,13 @@ async function bootStubAtlas() {
   return { port };
 }
 // THIS PAGE IS SERVED A WORLD WITH NO PICTURES (WLD-205). A mark's picture now comes up and goes by its size
-// on screen, so a wheel tick that carries some pictured mark across a quarter-step of its window is a settle
-// redraw BY DESIGN — the same rebuild a tier crossing is, and it re-culls the walkers with the new box. The
-// subject here is the other tick: one with nothing to cross, which must touch no walker DOM. The live record
-// carries hundreds of pictures, so it would put an edge under almost any tick; stripped of them, the only
-// thing that can redraw this page is the data. (The window's own crossings: tools/art-window.test.mjs.)
+// on screen, so a wheel tick that carries a pictured mark THE READER IS SHOWN (admitted, in the drawn box)
+// across a quarter-step of its window is a settle redraw BY DESIGN — the same rebuild a tier crossing is, and
+// it re-culls the walkers with the new box. The live centre of town carries a few dozen such marks, so two
+// ticks of -120 cross one of them. The subject here is the other tick: one with nothing visible to cross,
+// which must touch no walker DOM; stripped of pictures, the only thing that can redraw this page is the
+// data. That a picture nobody is shown rebuilds NOTHING is pinned on its own, not hidden by this fixture:
+// tools/art-window.test.mjs, "N2" (and the window's own crossings, there too).
 function picturelessWorld() {
   const dir = mkdtempSync(join(tmpdir(), "walk-layer-"));
   cpSync(join(ROOT, "WORLD"), dir, { recursive: true });
