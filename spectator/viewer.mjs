@@ -13915,6 +13915,7 @@ export function mountViewer(appEl) {
     const preview = selectedWalkPreview();
     if (!preview) {
       layer.innerHTML = "";
+      mapCtx.walkPreviewMarkup = "";
       return;
     }
     const k = markerScale(mapCtx.zoomK);
@@ -13968,9 +13969,17 @@ export function mountViewer(appEl) {
         + `<circle cx="${x + w}" cy="${y}" r="${7.5 * unit}"/>`
         + `<text x="${x + w}" y="${y + 3.6 * unit}" font-size="${10 * unit}" text-anchor="middle">✕</text></g>`
       : `<g class="wv-walk-chip-go is-still">${shape}${text}${walker}</g>`;
-    layer.innerHTML = `<line x1="${from.x}" y1="${from.y}" x2="${toward.x}" y2="${toward.y}" class="wv-walk-preview-leg"/>`
+    const markup = `<line x1="${from.x}" y1="${from.y}" x2="${toward.x}" y2="${toward.y}" class="wv-walk-preview-leg"/>`
       + `<circle cx="${toward.x}" cy="${toward.y}" r="${6 / k}" class="wv-walk-preview-dest"/>`
       + `<g class="wv-walk-preview-label wv-walk-chip">${card}</g>`;
+    // A REDRAW THAT SAYS WHAT IS ALREADY DRAWN WRITES NOTHING (CORE-119, postmark#4774: "While the pointer rests on that card, its hover state
+    // flashes on and off repeatedly instead of staying on"). This layer used to be rebuilt on every redraw (a moving body's animation frame, a
+    // walkers answer, a zoom): a stationary pointer then sat over a brand-new card, and the browser gives a replaced element its :hover a frame
+    // late, so under redraws at animation cadence the ✓ treatment was never painted, and at a slower cadence it dropped for a frame at every
+    // redraw. The card's markup is a function of the preview alone, so an unchanged string leaves the same elements standing, still hovered.
+    if (markup === mapCtx.walkPreviewMarkup) return;
+    mapCtx.walkPreviewMarkup = markup;
+    layer.innerHTML = markup;
   }
 
   // ONE DRAW PER ANSWER THAT MOVED SOMEBODY (#2912 (4)). An answer that
