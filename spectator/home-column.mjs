@@ -640,6 +640,7 @@ export function renderHomeColumn(doc, host, model, { imagePath = null } = {}) {
     const reader = createCircleReader({
       doc, host: mount, source: model.reader.source, roomId: model.reader.roomId,
       canReply: !!model.reader.canReply, onReply: model.reader.onReply ?? null, hrefForCircle: model.reader.hrefForCircle ?? null,
+      faceForSpeaker: model.reader.faceForSpeaker ?? null,    // WLD-213: only a host that hands one in; the World page's own view (viewer.mjs) hands none
       onState: (st) => { const flat = st === "unavailable" && model.blocks.length > 0; body.hidden = !flat; note.hidden = !flat; },
     });
     host.__circleReader = reader;
