@@ -200,6 +200,20 @@ export function rectInsideRing(ring, r) {
   }
   return true;
 }
+// A RECT WITH NO AREA — a point, or a line — is held by `contains` anywhere,
+// since 0 >= 0.99 × 0, and it overlaps nothing by area. A spark frozen from a
+// one-speaker room keeps such a box as its room's bounds, with no padding
+// (WLD-173, the Office's 16:26Z wire answer). For it, ask where its points lie,
+// with the point and ring primitives above, instead of by area.
+export const hasNoArea = (r) => !(r.w > 0 && r.h > 0);
+/** Is every point of `r` (a rect, possibly with no area) inside `outer`: its ring when it has one, else its box, edges included? */
+export function pointsInside(outer, r) {
+  const ring = polygonOf(outer);
+  if (ring) return rectInsideRing(ring, r);
+  const o = rect(outer);
+  return rectCorners(r).every((c) => pointInRect(c.x, c.y, o));
+}
+
 // Do two rings share any ground at all? EXACT, and deliberately not an area:
 // two simple polygons are disjoint exactly when no edge of one crosses an edge
 // of the other AND neither holds a vertex of the other. An area test would need

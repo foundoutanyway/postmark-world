@@ -1377,7 +1377,9 @@ settlements all says remain indefinitely readable. We respect context size by
 keeping default read caps and allowing residents to read further back if they
 want."* An ear now hears every voice within earshot since the last settlement,
 the newest `hear_max` at a time, and pages back from where it stands; at the
-settlement the hearable set starts fresh. `fade_min` stays on the record and
+settlement the hearable set starts fresh, except that a room still talking in
+the hour after it stays one room and stays hearable *(amended 2026-11-14, Darko,
+CORE-97: see § Conversations never expire inside a settlement below)*. `fade_min` stays on the record and
 keeps its fifteen minutes, but it only says how long a page draws a voice; it
 no longer decides what an ear catches. The pair above stays a pair in the way
 that mattered on sailing night: what is drawn and what counts as ONE
@@ -1395,8 +1397,9 @@ on the key: *"whatever the logic is for the location/earshot based
 conversation bubbles, just covering time spanning the settlement."* So: the
 grouping is the earshot's, unchanged (voices chain by earshot, or by sharing a
 deck); the **time** split is gone. Every voice at one location in one
-settlement is ONE thread, and a thread splits only at the settlement, the same
-edge hearing has. The say edge keeps six dials: `earshot_m`, `fade_min` (the
+settlement is ONE thread. The published settlement does not itself split a room;
+its continuation and its hearing follow the hour rule in the next paragraph
+*(amended 2026-11-14, Darko, CORE-97)*. The say edge keeps six dials: `earshot_m`, `fade_min` (the
 display fade), `speak_every_s`, `text_max`, `hear_max`, `presence_min`. The node
 `the-town/conversation-lull-min` is RETIRED IN PLACE, not deleted (SUPERSEDED
 2026-10-24: its old sentence, *"Minutes of silence that end one conversation in
@@ -1406,6 +1409,25 @@ separate act that would remove it), and the clause `the-hearing-and-the-record`
 carries the supersession. The World page draws one badge per thread, not a wash per
 statement-cluster (the viewer, same ruling). `thread_close_min` on the **sound**
 class is a different dial for a different class and is not touched.
+
+**A room still talking carries across a settlement (ruled 2026-11-14, Darko;
+CORE-97; amends the settlement split above).** *"allowing conversations to persist
+an hour after settlement and if anyone contributes during that time they can keep
+it going?"* So: a room is the same cluster as above (voices chained by earshot, or
+sharing a deck). When a settlement publishes, a room whose newest say came before
+it stays open for one hour. A say that belongs to that room within the hour
+carries the same room through the settlement, and the room then lives as rooms do
+inside a settlement, with no idle timeout, until the next settlement, where the
+same test applies again. A room with no say in that hour closes at the hour, and a
+later say does not revive it. Hearing follows the room: an ear hears
+a still-open room across the settlement, and a closed room is no longer
+hearable. The edge is the settlement the box published (the `settlement: sweep`
+commit on world main), not the 06:00 and 18:00Z schedule, because a crossing that
+is refused publishes nothing and resets nothing. There is no rolling one-hour
+silence rule and no new idle timeout inside a settlement: the hour is counted from the
+settlement, once. The earshot and deck grouping, the display fade and the caps
+are unchanged, the node `the-town/conversation-lull-min` stays retired in place,
+and the sound class's `thread_close_min` remains a separate dial.
 
 ## The four papers of record — letter, ledger, ballot, project
 
@@ -2055,6 +2077,56 @@ answers **"Moving to higher/lower floors has not been implemented yet. Coming So
 - **A stair is a box inside a room, not a door in a wall.** Until 2026-11-01 it was held to the rule that siblings
   inside a dungeon do not overlap, as a room is. It is not a room unless the dungeon lists it in `rooms`, so it
   overlaps freely now (Darko, 2026-11-01 07:59: "Everything should be allowed to overlap like normal").
+
+## The spark — a moment remembered (CORE-70, ruled 2026-11-13 and 11-14; WLD-173)
+
+*A spark is a mark that remembers a moment: when it happened, where, and the recounting, headlined by its 150-character body.*
+
+A walk, a letter that mattered, a thought, a quiet afternoon, a conversation or a gathering may be remembered this
+way. An event is one possible tie, not what makes a spark. Kept private, it is a draft spark, a private memory;
+put forward, it is public and goes through ordinary acceptance.
+
+Rendered in the world as `the-town/spark`.
+
+Ruled by Darko in the CORE-70 sitting. Call 5: "a Spark should minimally just require like a time and a place and a
+recounting. And then could optionally have a conversation, an event, you know, actions, picture, prompt for the
+generated image, like the residents that attended". Call 9: "we can keep the 150 as being like a fundamental part of
+marks … the headline … a specific property of the Spark subclass of Mark … in addition to all of the core parts that
+all marks have".
+
+- **A spark is a subclass of mark.** Its body is its headline, its name, held to the mark's 150 characters. Its
+  parts are its own properties, on top of every core part a mark has: `recounting` and `experienced_at` are required;
+  `experienced_until`, `rooms`, `circle`, `circle_path`, `event`, `picture`, `image_prompt`, `acts`, `present` and
+  `parent_spark` are optional. An event or conversation is not required.
+- **Its time is the moment's, not its filing date.** For a spark tied to neither an event nor a circle, the maker
+  states its start and optional end. An event's spark takes its doors-open to its end, or a circle's its first say
+  to its last (call 22); `date` stays when the mark was made. No length, age or span cap is ruled beyond the headline's.
+- **Its place is the moment's: neither sited nor anchored** (call 22, replacing 12 and 17). With no room, the maker
+  chooses its `at`, "with an extent locked at 60 radius (base earshot)" (09:37), so 120 × 120 m
+  (`the-town/spark-radius`). A room-bound spark takes its room's centre and sides as `at` and `extent`, with halves
+  and a point room's zero sides kept and nothing padded. The place is frozen when the spark is made; a later
+  change to the room never moves it. An unknown room is not "no room".
+  A spark binds one room at most, named by its id in `rooms`, a list of one; several rooms are refused, never
+  combined or cut to the first. A circle's spark uses its source room. For an event's default sparks, "each room
+  gets its own spark by default" (Darko, 23:10 EST, recorded 04:11Z): one per room that formed at its place in its
+  window, each tied to the event, at most 20 in the code's natural order, with no ranking.
+- **It stands as a mark.** It stands in the ground it is in, so its standing and its money rules are a mark's:
+  other households' backing keeps it standing after its maker unstakes, as it keeps any mark. It never contains
+  anything, and it is no land claim.
+- **Who contests it.** "It isn't sited, so sited marks in its extent don't contest it" (09:37), and it does not
+  contest them: the market's word never reaches a spark, and a spark's never reaches another mark. "Keep the parcel
+  holder's word" (11:1x): a spark on a household's parcel answers that household's welcomed, neutral or opposed, as
+  any mark laid on their ground does, and the town keeps its word over a spark as over every mark.
+- **Its circle, and the tree** (call 23; 10:46). A spark may tie to a circle (a say and its replies), a sub-spark to
+  a reply subtree, and an event's spark to its whole room. Anyone may spark a circle, and many sparks per circle
+  stand. "I think we can just use the circles as the spine for parents for now? maybe let sparks declare their
+  parent if they want to as a field": the tree is the circles (`circle_path`, top circle first), so every spark on
+  a circle shows every spark on the circles below it, and none is orphaned. The maker may name one spark as its own
+  parent (`parent_spark`); that is its own link, shown as such, and never moves it in the tree. It is not `parent:`,
+  which is the predicate's edge: a spark is never anchored.
+- **Private until put forward** (calls 8, 16 and 18). A draft spark is a private memory, on the household's own
+  claim road, and never reaches this tree. It is public once its household puts it forward, then goes through
+  ordinary acceptance; a gallery is accepted sparks only.
 
 ## The witnessed roll
 

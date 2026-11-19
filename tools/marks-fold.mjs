@@ -28,7 +28,7 @@ import { readFileSync, writeFileSync, readdirSync, lstatSync, existsSync, mkdirS
 import { dirname, join, basename, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { markStanding } from "./mark-standing.mjs";   // the ONE standing rule (see § what the rank is READ FROM)
-import { instanceClassOf, isPredicate, kindIndexOf, isSitedIn, isGroundIn, HELD_BY, OWNED_BY, ownedBy } from "./mark-kind.mjs"; // what a record is and how it stands, in either form (LOGOS v2 part 2, W2)
+import { instanceClassOf, isPredicate, kindIndexOf, isSitedIn, isGroundIn, isSparkIn, HELD_BY, OWNED_BY, ownedBy } from "./mark-kind.mjs"; // what a record is and how it stands, in either form (LOGOS v2 part 2, W2)
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -554,7 +554,7 @@ function loadStakes() {
 // mark-lint.mjs's `import { … rect, contains } from "./marks-fold.mjs"` is
 // unchanged. rects are centered on at, sized by extent) ----------
 export { rect, overlapArea, contains, marksContain, polygonOf, ringMatchesClaim } from "./geometry.mjs";
-import { rect, overlapArea, contains, marksContain, polygonOf, rectInsideRing } from "./geometry.mjs";
+import { rect, overlapArea, contains, marksContain, polygonOf, rectInsideRing, hasNoArea, pointsInside } from "./geometry.mjs";
 
 // a parcel's rect: its written rect, a missing or zero side filled from the
 // dials' standard parcel (the whole fold, `admitDelta` and `sovereignInResult`
@@ -588,12 +588,16 @@ export function placementParent(claim, marks, { worldScaleM = 50000 } = {}) {
   // ground by the class chain (G12): the fold is the record, so it asks the
   // lineage of the marks it holds, never the place as a proxy for it
   const kidx = kindIndexOf(marks);
+  // a spark frozen from a one-speaker room may be a point or a line, which an
+  // area test holds anywhere: ask where its points lie instead (WLD-173)
+  const pointLike = isSparkIn(claim, kidx) && hasNoArea(rect(claim));
   for (const m of marks) {
     if (!isGroundIn(m, kidx)) continue;
     const mr = rect(m), area = mr.w * mr.h;
     if (Math.max(mr.w, mr.h) >= worldScaleM) continue; // the world-root is the frame, never a parent → null means root
     if (area <= claimArea) continue;                    // a parent is strictly larger than its child (the fold's rule)
-    if (marksContain(m, claim) && area < bestArea) { best = m; bestArea = area; }
+    const holds = pointLike ? pointsInside(m, rect(claim)) : marksContain(m, claim);
+    if (holds && area < bestArea) { best = m; bestArea = area; }
   }
   return best ? best.id : null;
 }
@@ -651,7 +655,12 @@ export const worldRootOf = (marks) => marks.find((m) => leafSlugOf(m) === WORLD_
 export function containmentParentOf(mark, marks, root = worldRootOf(marks)) {
   const rootId = root?.id ?? null;
   if (rootId != null && mark.id === rootId) return null;
-  const geometric = isGroundIn(mark, kindIndexOf(marks));
+  // A spark stands in ground by geometry like any mark, so the standing walk
+  // reads its ground (home inside its own house's parcel, market on the
+  // commons) and its money rules are a mark's. It is never ground itself, so
+  // `placementParent` never offers it as anyone's container (WLD-173).
+  const kidx = kindIndexOf(marks);
+  const geometric = isGroundIn(mark, kidx) || (!!mark.at && isSparkIn(mark, kidx));
   // No self-exclusion needed and none paid for: `placementParent` requires a
   // parent to be STRICTLY larger than the claim, so a mark can never be its own
   // container, and neither can a twin sharing its rect. Filtering the array per
@@ -1363,7 +1372,7 @@ export function fold({ marks, terrain, stakes, prev = null, tick = 0, dials = DI
         const up = smallestSitedAround(mk);
         if (up) parentOf.set(mk.id, up); else parentOf.delete(mk.id);
       }
-      if (isGround(mk) && consent.alone.has(containedBy.get(mk.id))) {
+      if ((isGround(mk) || (mk.at && isSparkIn(mk, KIDX))) && consent.alone.has(containedBy.get(mk.id))) {
         const up = containmentParentOf(mk, standing, root);
         containedBy.set(mk.id, up);
         mk._containedBy = up ?? null;
@@ -1790,6 +1799,15 @@ export function fold({ marks, terrain, stakes, prev = null, tick = 0, dials = DI
       // them, the way `loot` is: undefined on every mark that wrote none, so a world with no such
       // thing serializes exactly as before.
       holder: mk.holder, capacity: mk.capacity, open: mk.open, portable: mk.portable,
+      // A SPARK'S OWN PARTS (WLD-173; CORE-70 calls 5, 9, 22, 23): the recounting, its time, its rooms,
+      // its circle and the circle's path (the spine its tree is read from), its event, picture, image
+      // prompt, acts, who was there, and the maker's own optional link. Carried as the record says them,
+      // the way `holder` is: undefined on every mark that wrote none, so a world with no sparks
+      // serializes exactly as before. tools/spark.mjs § SPARK_FIELDS is the list; spark.test.mjs holds
+      // this line to it.
+      recounting: mk.recounting, experienced_at: mk.experienced_at, experienced_until: mk.experienced_until,
+      rooms: mk.rooms, circle: mk.circle, circle_path: mk.circle_path, event: mk.event, picture: mk.picture,
+      image_prompt: mk.image_prompt, acts: mk.acts, present: mk.present, parent_spark: mk.parent_spark,
       // WHO HOLDS IT, for a thing printed as held (POS-688): published but unplaced, so it carries
       // no `at` and the record names its holder instead. Undefined on every placed mark.
       [HELD_BY]: mk[HELD_BY],

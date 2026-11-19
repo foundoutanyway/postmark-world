@@ -28,6 +28,8 @@ import {
   residentProfileView, residentHref, residentFace, walkerHoverId, walkerHandleFromHoverId, walkingLabel, vesselHandles,
   isRegionMark, isCreatureId, creatureColumnFacts, creatureIcon, chooserIdsFrom, isAmbientMark, enterAffordance,
   standpointOccupancy, effectiveWeight, kickerOf, markByline, WORLD_ROOT_ID,
+  // the shared view builders the closures call since WLD-105 A14 (they stay real in every run below)
+  markColumnParts, regionColumnFields, creatureColumnFields, residentColumnParts,
 } from "../spectator/viewer.mjs";
 
 // ── the stand-in ────────────────────────────────────────────────────────────
@@ -619,7 +621,7 @@ function residentViewFor(card, handle = "rig-ash") {
     faceOf: (h) => residentFace(h, { name: h === "rig-ash" ? "Rig Ash" : h, household: "rig-house" }),
     walkerPlace: () => "in the Town Centre", residentCloseLook: () => null, residentCard: () => card,
     worldEpoch: 1, state: { handle: "someone-else" }, onResidentPath: () => false, allMarks: () => FOLD,
-    holdingFacts: () => [], closeLooks: new Map(), asWho: () => "", markIdentity: (m) => m.id, byId: new Map(),
+    residentColumnParts, closeLooks: new Map(), asWho: () => "", markIdentity: (m) => m.id, byId: new Map(),
   });
   vm.runInContext(bodyOf("residentColumnView"), context);
   const made = context.residentColumnView(walkerHoverId(handle));
@@ -653,7 +655,9 @@ test("[pin] a mark's column and a creature's column still turn the resident link
   // text pins, because those two builders are closures far too wide to run here; the behaviour they
   // switch is the controller's, tested above. WLD-125 decides, link by link, which of them gain one.
   assert.match(bodyOf("markColumnView"), /residentLink: false,/, "a mark's handle is the household that made it");
-  assert.match(bodyOf("creatureColumnView"), /residentLink: false,/, "a creature's handle is the town's");
+  // since WLD-105 A14 the creature's fields are the shared creatureColumnFields': the view takes its switch from them
+  assert.match(bodyOf("creatureColumnView"), /residentLink: fields\.residentLink,/, "a creature's view carries the shared fields' switch");
+  assert.equal(creatureColumnFields("creature:x-1-1", { id: "creature:x-1-1", name: "x" }, null).residentLink, false, "a creature's handle is the town's");
   // ⚑ THE FLIP: delete either line → its assertion reds, and not the other
 });
 
@@ -857,7 +861,7 @@ const withoutTheSwitch = (v) => { const { residentLink, ...rest } = v; return re
 /** regionColumnView's own body, run against stand-ins for the page's state; the door is never answered. */
 function regionViewFor(mark) {
   const context = vm.createContext({
-    isRegionMark, markImagePath: () => null, byId: new Map([[mark.id, mark]]), allMarks: () => [mark],
+    isRegionMark, regionColumnFields, markImagePath: () => null, byId: new Map([[mark.id, mark]]), allMarks: () => [mark],
     regionDoors: new Map(), readRegionDoor: () => {}, markIdentity: (m) => m.name ?? m.id, iconsOf: () => [],
   });
   vm.runInContext(bodyOf("regionColumnView"), context);
@@ -870,7 +874,7 @@ function regionViewFor(mark) {
 function creatureViewFor(row) {
   const context = vm.createContext({
     isCreatureId, liveCreatures: new Map([[row.id, row]]), creatureReads: new Map(), loadCreatureReading: () => {},
-    creatureColumnFacts, creatureIcon, sceneRoomId: null, byId: new Map(), pointInRect: () => false, rect: () => null,
+    creatureColumnFields, sceneRoomId: null, byId: new Map(), pointInRect: () => false, rect: () => null,
     markIdentity: (m) => m.id, isSpectating: () => true, walkState: { walkers: [] }, state: { cam: { x: 0, y: 0 }, handle: null },
   });
   vm.runInContext(bodyOf("creatureColumnView"), context);
@@ -893,7 +897,7 @@ function markViewFor(mark) {
     occupantsOf: () => new Map(), liveOccupancy: () => ({}), faceOf: (h) => ({ name: h }), entryLawOf: () => null,
     markCloseLook: () => null, noteThingKind: () => {}, holderLines: () => null, heldBy: () => null, heldLine: () => null,
     isThingId: () => false, iconsOf: () => [], instanceClassOf: () => null, ownedBy: () => null, hands: { for: null },
-    holdingFacts: () => [], polygonOf: () => null, polygonBBox: () => null, liveCreatures: new Map(), pointInsideMark: () => false,
+    markColumnParts, liveCreatures: new Map(), pointInsideMark: () => false,
     silhouetteURL: () => "", bubbleTrail: [], worldEpoch: 1, enterExitEpoch: 1, sceneRoomId: null, canAct: () => false, loadAgentRead: () => null,
   });
   vm.runInContext(bodyOf("markColumnView"), context);

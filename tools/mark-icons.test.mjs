@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import {
   MARK_ICONS, markWhat, markStates, markIcons, creatureClassesOf, thingClassesOf, iconSVG, iconsHTML, MARK_ICON_CSS,
 } from "../spectator/mark-icons.mjs";
-import { overlayPipSVG, iconPillSVG } from "../spectator/viewer.mjs";
+import { overlayPipSVG, iconPillSVG, TOUR_SLIDES } from "../spectator/viewer.mjs";
 import { instanceClassOf } from "./mark-kind.mjs"; // either form (LOGOS v2 W2)
 
 const sited = (extra = {}) => ({ id: "h/m", kind: "sited", at: { x: 0, y: 0 }, extent: { w: 4, h: 4 }, ...extra });
@@ -73,7 +73,26 @@ test("the state badges, in their fixed order, and the stairs' promise is not a l
   const icons = markIcons(sited({ class: "vehicle", entry: { word: "welcomed", edge: "aboard" } }), { cls: "vehicle", weight: 3, inside: 1 });
   assert.deepEqual(icons.map((i) => i.key), ["vehicle", "consent", "staked", "inside"], "what first, then the states");
   assert.equal(icons.find((i) => i.key === "staked").meaning, "Staked: ✦ 3 behind it.", "a count is said in the meaning");
-  assert.equal(icons.find((i) => i.key === "inside").meaning, "People inside: 1 person is inside it now.");
+  assert.equal(icons.find((i) => i.key === "inside").meaning, "Residents inside: 1 resident is inside it now.");
+});
+
+test("residents inside: the state, its fallback, one and many all say resident, never people (WLD-174)", () => {
+  const meaning = (inside) => markIcons(sited(), { inside }).find((i) => i.key === "inside");
+  assert.equal(meaning(1).meaning, "Residents inside: 1 resident is inside it now.", "one");
+  assert.equal(meaning(26).meaning, "Residents inside: 26 residents are inside it now.", "many");
+  assert.equal(MARK_ICONS.inside.label, "residents inside", "the state's label");
+  assert.equal(MARK_ICONS.inside.meaning, "Residents inside: a resident is inside it now.", "the uncounted fallback");
+  for (const text of [MARK_ICONS.inside.label, MARK_ICONS.inside.meaning, meaning(1).meaning, meaning(26).meaning, meaning(26).label])
+    assert.doesNotMatch(text, /\b(people|person|someone)\b/i, text);
+});
+
+test("the tour calls a resident a resident, not someone (WLD-174)", () => {
+  const bodies = TOUR_SLIDES.map((s) => `${s.title ?? ""} ${s.body ?? ""}`);
+  const all = bodies.join("\n");
+  assert.match(all, /A resident writes <em>the lamp is always lit<\/em>/, "the welcome slide");
+  assert.match(all, /<b class="tour-green">a resident's own ground<\/b>/, "the green claim");
+  assert.match(all, /<b>a resident backs it<\/b>/, "the commons");
+  assert.doesNotMatch(all.replace(/<[^>]*>/g, ""), /\b(someone|somebody|people|person)\b/i, "no resident is called someone, people or a person");
 });
 
 test("the real record: the Spire, its doors and stairs, and the Post Office", () => {
@@ -123,10 +142,14 @@ test("on the map: the glyph is cut into the dot, replacing the doorway; states r
 
 test("[pin] the plate wears what the mark is before its name and its states after; a mark with no icon keeps the dot", () => {
   const SOURCE = readFileSync(new URL("../spectator/viewer.mjs", import.meta.url), "utf8");
-  const fn = SOURCE.match(/function markNameplateHTML\(id\) \{[\s\S]*?\n  \}\n/)[0];
+  // WLD-105 A20: the plate's markup was hoisted out of the closure into the exported markNameplateMarkup (the 3D view
+  // imports it); the closure only gathers the three reads and passes the tier classes
+  const fn = SOURCE.match(/export function markNameplateMarkup\([^)]*\) \{[\s\S]*?\n\}\n/)[0];
   assert.ok(fn.indexOf("wv-np-what") < fn.indexOf("wv-np-name") && fn.indexOf("wv-np-name") < fn.indexOf("wv-np-icons"),
     "icon, name, states");
-  assert.match(fn, /: `<span class="wv-np-dot \$\{markClasses\(full\)\}" aria-hidden="true"><\/span>`/, "the dot when there is no icon");
+  assert.match(fn, /: `<span class="wv-np-dot \$\{classes\}" aria-hidden="true"><\/span>`/, "the dot when there is no icon");
+  const closure = SOURCE.match(/function markNameplateHTML\(id\) \{[\s\S]*?\n  \}\n/)[0];
+  assert.match(closure, /markNameplateMarkup\(full, \{ identity: markName\(full\), icons: iconsOf\(full\), classes: markClasses\(full\) \}\)/, "the plate is that markup, the mark's own tier classes on the dot");
 });
 
 test("one resident icon: the walker's token, in sovereign green; a creature is a red diamond (WLD-82); never the stamps' purple (play fix 43)", () => {
