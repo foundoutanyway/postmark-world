@@ -389,8 +389,13 @@ let READER_UID = 0;
  * @param {(circleId) => string|null} [o.hrefForCircle]   a permalink for a circle (the page's anchor); drawn as a plain link when given
  * @param {Element} [o.scroller]         the element that scrolls the reader (its position is kept across a refresh); default: the nearest scrolling ancestor
  * @param {object} [o.labels]            word overrides (READER_WORDS keys)
+ * @param {(handle: string) => (Node|null)} [o.faceForSpeaker]   WLD-213: an OPTIONAL host hook. Called with a speaker's handle each time a line (a room's opening
+ *   statement, a conversation's full, context or old-talk line) is drawn; the FRESH decorative DOM node it returns is placed inline before the name, and null (or
+ *   nothing) places nothing. The host owns what a face is (a picture, a monogram…) and how it is made safely: the reader knows no avatar source, household, photo,
+ *   URL or office field, fetches nothing and looks nothing up. A string, a node that already has a parent (a reused one would be MOVED off an earlier line) or a
+ *   throw is treated as null. Absent, the DOM and layout are exactly what they were. Further options may be added beside it; none is resolved here.
  */
-export function createCircleReader({ doc, host, source, roomId = null, canReply = false, onReply = null, onState = null, onNavigate = null, hrefForCircle = null, labels = null, scroller = null } = {}) {
+export function createCircleReader({ doc, host, source, roomId = null, canReply = false, onReply = null, onState = null, onNavigate = null, hrefForCircle = null, labels = null, scroller = null, faceForSpeaker = null } = {}) {
   if (!doc || !host || !source) throw new Error("createCircleReader needs a document, a host and a source");
   const W = { ...READER_WORDS, ...(labels ?? {}) };
   const uid = ++READER_UID;
@@ -475,6 +480,16 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
 
   // ── the thread ──
 
+  /** the host's optional face for a speaker (WLD-213): a fresh, unplaced element made decorative, or null. Never cached, so a repeated handle gets its own node. */
+  const faceOf = (handle) => {
+    if (typeof faceForSpeaker !== "function" || typeof handle !== "string" || handle === "") return null;
+    let node = null;
+    try { node = faceForSpeaker(handle); } catch { return null; }
+    if (!node || typeof node !== "object" || node.nodeType !== 1 || node.parentNode) return null;
+    if (node.getAttribute?.("aria-hidden") === null || node.getAttribute?.("aria-hidden") === undefined) attr(node, "aria-hidden", "true");   // decorative: the name beside it is the label
+    return node;
+  };
+
   /** one statement: who, when, what, a Reply; its replies (the `thread` element) are appended by the caller */
   const sayLine = (l, { context = false } = {}) => {
     const li = build(doc, "li", "cr-say");
@@ -485,6 +500,8 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     const head = build(doc, "span", "cr-head-line");
     const who = build(doc, "span", "cr-who", l.handle);
     const when = build(doc, "span", "cr-time", ` ${dateTimeOf(l.at) || whenOf(l.at) || s(l.ago)}`);
+    const face = faceOf(l.handle);
+    if (face) head.appendChild(face);
     head.appendChild(who); head.appendChild(when);
     li.appendChild(head);
     li.appendChild(build(doc, "span", "cr-said", l.said));       // content: textContent, never markup
@@ -586,6 +603,8 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     attr(li, "data-circle-stub", "");
     attr(li, "data-circle", st.circle);
     const head = build(doc, "span", "cr-head-line");
+    const face = faceOf(st.handle);
+    if (face) head.appendChild(face);
     head.appendChild(build(doc, "span", "cr-who", st.handle));
     head.appendChild(build(doc, "span", "cr-time", ` ${dateTimeOf(st.started) || whenOf(st.started)}`));
     li.appendChild(head);

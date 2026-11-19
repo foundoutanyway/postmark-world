@@ -44,6 +44,7 @@ function element(tag) {
     addEventListener(type, fn) { node.listeners.push({ type, fn }); },
     get firstChild() { return node.children[0] ?? null; },
     get parentElement() { return node.parent; },
+    get parentNode() { return node.parent; },
     contains(other) { for (let n = other; n; n = n.parent) if (n === node) return true; return false; },
     focus() { doc.activeElement = node; },
     // just enough of a selector for the column's live update: ".cls" and ".cls tag"
@@ -939,4 +940,131 @@ test("the SAY sheet: a sheet that is opened plainly starts with no reply target;
   assert.match(open, /sayReplyTo = null;[^\n]*\n\s*const sheet = document\.createElement\("div"\)/, "a fresh sheet clears the previous target before it is built");
   const set = SRC.slice(SRC.indexOf("function setReplyTarget"), SRC.indexOf("function openSayBox()"));
   assert.ok(set.indexOf("openSayBox()") < set.indexOf("sayReplyTo = {"), "an explicit Reply opens the sheet FIRST and sets its target after, so the chosen target survives the open");
+});
+
+// ── WLD-213 · the optional host-provided speaker face ───────────────────────
+//
+// The host owns what a face IS; the reader only places the fresh decorative node the host's `faceForSpeaker(handle)` returns, inline before the name, on every
+// line it draws (a room's openers, a conversation's full lines at every depth, its context lines, old talk), and knows no avatar source, household, photo, URL or
+// office field. Absent, null or unusable, the DOM is exactly what it was. FALSIFIER: one path lacks a face, a repeated handle steals an earlier node, a name or time
+// disappears, a bare caller changes, or drawing fetches a picture or an identity.
+const faceHook = (calls = []) => (handle) => { calls.push(handle); const n = element("span"); n.className = "rig-face"; n.setAttribute("data-face", handle); return n; };
+/** the shape of a tree as a string (tags, classes, attributes, text): two draws are the same draw when their shapes are */
+const shapeOf = (n) => (n.nodeType === TEXT ? JSON.stringify(n.text) : `<${n.tagName}.${n.className}${Object.entries(n.attrs).sort().map(([k, v]) => ` ${k}=${v.replace(/\bcr\d+-/g, "crN-")}`).join("")}>${n.children.map(shapeOf).join("")}</>`);   // a reader's own instance counter in its ids is not a difference
+const faceHost = (opts, { room = roomFind } = {}) => {
+  const host = element("div"); const scroller = element("div"); scroller.appendChild(host);
+  const calls = [];
+  const source = { async room(id) { calls.push(["room", id]); return room(); }, async circle(id, after) { calls.push(["circle", id, after]); return id === 50101 ? circle50101() : id === 50105 ? circle50105Page1() : { error: "bounce" }; } };
+  const reader = createCircleReader({ doc, host, source, roomId: "t20260514-pica", scroller, ...opts });
+  return { host, reader, root: reader.root, calls };
+};
+const facesOf = (root) => byAttr(root, "data-face");
+const headOf = (li) => li.children.find((c) => c.className === "cr-head-line");
+
+test("WLD-213 · room openers: each opener carries its speaker's face inline BEFORE the name, with the name, time, text and controls intact", async () => {
+  const calls = [];
+  const h = faceHost({ faceForSpeaker: faceHook(calls) });
+  await h.reader.showRoom();
+  const stubs = byAttr(h.root, "data-circle-stub");
+  assert.equal(stubs.length, 3);
+  for (const st of stubs) {
+    const head = headOf(st);
+    assert.deepEqual(head.children.map((c) => c.className), ["rig-face", "cr-who", "cr-time"], "face, name, time: inline in the one head line");
+    assert.equal(head.children[0].attrs["data-face"], text(head.children[1]), "the face is the speaker's own");
+    assert.equal(head.children[0].attrs["aria-hidden"], "true", "decorative: the name beside it is the label");
+  }
+  assert.deepEqual([...calls].sort(), stubs.map((s) => text(headOf(s).children[1])).sort(), "asked once per opener, by handle, and for nothing else");
+  assert.match(text(stubs[0]), /pica .*Welcome, everyone!/);
+  assert.ok(byAttr(stubs[0], "data-circle-open").length === 1 && byAttr(stubs[0], "data-thread").length === 1, "the Open control and the reply thread are untouched");
+});
+
+test("WLD-213 · a conversation's full lines at every depth, its context lines and a repeated speaker: every line has a face of its own, none is shared or moved", async () => {
+  const h = faceHost({ faceForSpeaker: faceHook(), canReply: true });
+  await h.reader.showCircle(50101);
+  openAll(h.root);
+  const lines = byAttr(h.root, "data-say");
+  assert.equal(lines.length, 10, "all ten statements, once opened");
+  const faces = lines.map((li) => headOf(li).children.filter((c) => c.className === "rig-face"));
+  assert.ok(faces.every((f) => f.length === 1), "exactly one face on every line, openers and the deepest replies alike");
+  const nodes = faces.map((f) => f[0]);
+  assert.equal(new Set(nodes).size, nodes.length, "a repeated handle never steals an earlier line's node");
+  const who = lines.map((li) => text(headOf(li).children[1]));
+  assert.ok(new Set(who).size < who.length, "the fixture does repeat speakers (pica speaks more than once)");
+  assert.deepEqual(nodes.map((n) => n.attrs["data-face"]), who, "each face is its own line's speaker's");
+  assert.equal(byAttr(h.root, "data-reply").length, 10, "Reply controls are still on every line");
+  // the context block (an ancestor shown for orientation) carries faces too
+  const c = faceHost({ faceForSpeaker: faceHook() });
+  await c.reader.showCircle(50105);
+  const ctx = byAttr(byAttr(c.root, "data-context")[0], "data-context-say");
+  assert.ok(ctx.length >= 1 && ctx.every((li) => headOf(li).children[0].className === "rig-face" && headOf(li).children[0].attrs["data-face"] === text(headOf(li).children[1])), "context lines have faces");
+});
+
+test("WLD-213 · old talk (no ids) is a plain timeline and its lines carry faces too", async () => {
+  const h = faceHost({ faceForSpeaker: faceHook() }, { room: legacyRoom });
+  await h.reader.showRoom();
+  const plain = byAttr(h.root, "data-say-plain");
+  assert.equal(plain.length, 2);
+  for (const li of plain) assert.deepEqual(headOf(li).children.map((c) => c.className).slice(0, 2), ["rig-face", "cr-who"]);
+  assert.match(text(h.root), /Claran, hello.*hi rei/, "the words are intact");
+});
+
+test("WLD-213 · absent, null, or unusable output is exactly today's DOM: no empty box, no gutter, no change for a bare caller", async () => {
+  const bare = faceHost({});
+  await bare.reader.showCircle(50101); openAll(bare.root);
+  const bareShape = shapeOf(bare.root);
+  const variants = { "a hook that returns null": () => null, "undefined": () => undefined, "a string": () => "<img src=x onerror=alert(1)>", "an object that is not a node": () => ({ nodeType: 3 }), "a hook that throws": () => { throw new Error("no face for you"); } };
+  for (const [name, hook] of Object.entries(variants)) {
+    const h = faceHost({ faceForSpeaker: hook });
+    await h.reader.showCircle(50101); openAll(h.root);
+    assert.equal(shapeOf(h.root), bareShape, `${name}: the same DOM as a bare call`);
+  }
+  // an option that is not a function is ignored, never called
+  const odd = faceHost({ faceForSpeaker: "pica" });
+  await odd.reader.showCircle(50101); openAll(odd.root);
+  assert.equal(shapeOf(odd.root), bareShape, "a non-function option is no option");
+  // the room view too
+  const b2 = faceHost({}); await b2.reader.showRoom();
+  const n2 = faceHost({ faceForSpeaker: () => null }); await n2.reader.showRoom();
+  assert.equal(shapeOf(n2.root), shapeOf(b2.root));
+});
+
+test("WLD-213 · a node that is already placed is NOT moved off its line: the same node returned twice is placed once, the second line has none", async () => {
+  const shared = element("span"); shared.setAttribute("data-face", "shared");
+  const h = faceHost({ faceForSpeaker: () => shared });
+  await h.reader.showRoom();
+  const placed = facesOf(h.root);
+  assert.equal(placed.length, 1, "one placement; the other openers were not given the same node");
+  assert.equal(shared.parent, headOf(byAttr(h.root, "data-circle-stub")[0]), "and it stayed on the first line");
+});
+
+test("WLD-213 · drawing with a hook reads nothing more and asks nobody who a speaker is: the office calls are exactly a bare caller's", async () => {
+  const bare = faceHost({}); await bare.reader.showRoom(); byAttr(bare.root, "data-circle-open", 50101)[0].click(); await tick(); openAll(bare.root);
+  const withHook = faceHost({ faceForSpeaker: faceHook([]) }); await withHook.reader.showRoom(); byAttr(withHook.root, "data-circle-open", 50101)[0].click(); await tick(); openAll(withHook.root);
+  assert.deepEqual(withHook.calls, bare.calls, "the same reads, in the same order: no picture, identity or avatar read of the reader's own");
+});
+
+test("WLD-213 · folds and the redraw keep the faces: opening a thread redraws in place and every line, new ones included, still has its own face", async () => {
+  const h = faceHost({ faceForSpeaker: faceHook() });
+  await h.reader.showCircle(50101);
+  assert.equal(facesOf(h.root).length, 1, "folded: only the opener is on screen, with its face");
+  byAttr(h.root, "data-thread-view")[0].click();
+  const open = byAttr(h.root, "data-thread", "t-50101")[0];
+  assert.equal(open.attrs["data-open"], "true", "the thread opened (the fold state kept by the reader)");
+  const lines = byAttr(h.root, "data-say");
+  assert.ok(lines.length > 1 && lines.every((li) => headOf(li).children[0].className === "rig-face"), "the newly shown replies have their faces");
+  assert.match(text(h.root), /Welcome, everyone!/, "text intact");
+});
+
+test("WLD-213 · the column hands its reader the host's hook only when it has one: with it the column's reader draws faces, without it the column is today's", async () => {
+  const { homeColumnModel, renderHomeColumn } = await import("../spectator/home-column.mjs");
+  const flat = [{ type: "paragraph", spans: [{ type: "text", text: "rig-ash: the old flat words" }] }];
+  const view = (extra) => homeColumnModel({ handle: "the-town", kicker: "k", title: "Cave Interior", door: { blocks: flat }, reader: { roomId: "t1", source: { async room() { return roomFind(); }, async circle() { return circle50101(); } }, ...extra } });
+  const withFace = element("div"); renderHomeColumn(doc, withFace, view({ faceForSpeaker: faceHook([]) })); await tick(); await tick();
+  assert.equal(facesOf(withFace).length, 3, "the column's reader placed a face on each opener");
+  const without = element("div"); renderHomeColumn(doc, without, view({})); await tick(); await tick();
+  assert.equal(facesOf(without).length, 0, "no hook, no faces");
+  const none = element("div"); renderHomeColumn(doc, none, view({ faceForSpeaker: null })); await tick(); await tick();
+  assert.equal(shapeOf(none), shapeOf(without), "an explicit null is the same as nothing");
+  // the World page's own view (viewer.mjs) hands none: its reader object carries no faceForSpeaker
+  assert.doesNotMatch((await import("node:fs")).readFileSync(new URL("../spectator/viewer.mjs", import.meta.url), "utf8"), /faceForSpeaker/, "the default World page has no provider");
 });
