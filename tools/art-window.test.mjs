@@ -131,8 +131,8 @@ const freePort = () => new Promise((resolve, reject) => {
 });
 
 // invented marks, at the town centre (so a camera on it has them in frame), every live picture stripped
-const SMALL = "the-town/the-post-office";      //    9 x  26 m, a real small mark the reader's field of view always holds, given a picture by this fixture: a picture only when zoomed right in
-const SMALL_SPAN = 26;                         // its longest side, from the record
+const SMALL = "fixture/the-small-yard";        //   30 x  24 m, planted in front of the reader and heavy enough (`weight`) that the engine's budget always shows it: a picture only when zoomed right in
+const SMALL_SPAN = 30;                         // its longest side
 const MEDIUM = "fixture/the-medium-garden";    //  400 x 300 m
 const COVER = "fixture/the-covering-district"; // 1700 x 1200 m, pictured, with a pictured child inside it
 const CHILD = "fixture/the-covered-child";     //  800 x  600 m
@@ -166,7 +166,10 @@ function fixtureWorld({ variant = null } = {}) {
     { id: BARE, kind: "sited", tier: "market", by: "fixture", at: { x: at.x + 1800, y: at.y }, extent: { w: 1700, h: 1200 }, placementParent: root },
     { id: BARE_CHILD, kind: "sited", tier: "market", by: "fixture", at: { x: at.x + 1800, y: at.y }, extent: { w: 900, h: 700 }, image, placementParent: BARE },
   );
-  w.marks.find((m) => m.id === SMALL).image = image;
+  // THE SMALL SUBJECT IS PLANTED, NOT BORROWED: the field of view ranks what it shows by angular size and
+  // `weight` under a budget, so a real small mark (the Post Office was used before) drops out of it whenever the
+  // record grows marks near the centre. A heavy one planted at the reader's feet cannot.
+  w.marks.push({ id: SMALL, kind: "sited", tier: "market", by: "fixture", at: { x: at.x + 60, y: at.y - 30 }, extent: { w: 30, h: 24 }, weight: 1000, image, placementParent: root });
   const region = w.marks.find((m) => m.id === REGION);
   if (region) region.image = image;
   writeFileSync(join(dir, "world-state.json"), JSON.stringify(w));
@@ -262,20 +265,38 @@ async function openPage(viewport = { width: 1400, height: 900 }) {
 }
 
 // where each planted mark stands, in metres east of MEDIUM (they share a latitude)
-const EAST_OF_MEDIUM = { [SMALL]: -255, [MEDIUM]: 0, [COVER]: -2100, [CHILD]: -2100, [BARE]: 1500, [BARE_CHILD]: 1500, [ANNEX]: -1200, [ANNEX_CHILD]: -1200 };
-const SOUTH_OF_MEDIUM = { [SMALL]: 115, [ANNEX]: 500, [ANNEX_CHILD]: 500 };
+const EAST_OF_MEDIUM = { [SMALL]: -240, [MEDIUM]: 0, [COVER]: -2100, [CHILD]: -2100, [BARE]: 1500, [BARE_CHILD]: 1500, [ANNEX]: -1200, [ANNEX_CHILD]: -1200 };
+const SOUTH_OF_MEDIUM = { [SMALL]: -30, [ANNEX]: 500, [ANNEX_CHILD]: 500 };
 
 /** wheel the camera in (-) or out (+) one notch at a time, the cursor held on `anchorId`'s centre
  *  (a wheel zooms about the cursor, so that point stays put), and hand each SETTLED reading to
  *  `visit`; stops when `visit` returns true or after `max` notches */
-async function sweep(h, anchorId, dy, max, visit) {
+async function sweep(h, anchorId, dy, max, visit, { centre = false } = {}) {
   let r = await h.settle();
   const p0 = { x: h.mediumX + (EAST_OF_MEDIUM[anchorId] ?? 0) * h.ppm(h.first), y: h.mediumY + (SOUTH_OF_MEDIUM[anchorId] ?? 0) * h.ppm(h.first) };
-  const p = { x: Math.min(1150, Math.max(150, p0.x)), y: Math.min(780, Math.max(120, p0.y)) };
+  let p = { x: Math.min(1150, Math.max(150, p0.x)), y: Math.min(780, Math.max(120, p0.y)) };
+  if (centre) {
+    // THE SPECTATOR STANDS AT THE CENTRE OF ITS VIEW (viewCentreM): the field of view the engine ranks, and so
+    // which small marks are shown at all, is taken from there. Zooming about a point off the centre walks the
+    // standpoint away from a small subject, which then leaves the drawn set. So the subject is dragged to the
+    // middle of the map first, and the wheel then zooms about the middle.
+    const box = await h.page.evaluate(() => { const b = document.querySelector(".wv-minimap > svg").getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
+    await h.page.mouse.move(p.x, p.y); await h.page.mouse.down();
+    await h.page.mouse.move((p.x + box.x) / 2, (p.y + box.y) / 2, { steps: 8 });
+    await h.page.mouse.move(box.x, box.y, { steps: 8 }); await h.page.mouse.up();
+    p = box;
+    r = await h.settle();
+  }
   if (visit(r, h.ppm(r))) return r;
   for (let i = 0; i < max; i++) {
-    await h.page.mouse.move(p.x, p.y);
-    await h.page.mouse.wheel(0, dy);
+    // RE-AIM ON THE SUBJECT whenever it has a dot or an outline on the page: the first aim is read off a dot
+    // 100 m away at far, an error that grows with the zoom until the subject has drifted out of the box
+    const at = await h.page.evaluate((id) => { const b = document.querySelector(`#wv-overlay [data-id="${id}"]`)?.getBoundingClientRect(); return b && b.width > 0 ? { x: b.x + b.width / 2, y: b.y + b.height / 2 } : null; }, anchorId);
+    if (at) p = { x: Math.min(1150, Math.max(150, at.x)), y: Math.min(780, Math.max(120, at.y)) };
+    // the wheel goes to the svg itself, about the aim: a hover bubble under the pointer takes a mouse wheel
+    await h.page.evaluate(({ x, y, dy: d }) => {
+      document.querySelector(".wv-minimap > svg").dispatchEvent(new WheelEvent("wheel", { deltaY: d, clientX: x, clientY: y, bubbles: true, cancelable: true }));
+    }, { x: p.x, y: p.y, dy });
     r = await h.settle();
     if (visit(r, h.ppm(r))) return r;
   }
@@ -292,7 +313,7 @@ test("THE PAGE — one unchanged mark wears its outline, then its picture, then 
     const px = SMALL_SPAN * ppm;
     seen.push({ px, tier: r.tier, pic: r.arts[SMALL]?.[0] ?? 0, outline: r.outlines[SMALL]?.[0] ?? 0, pictured: r.pictured.includes(SMALL), ppm });
     return px > 230;
-  });
+  }, { centre: true });
   assert.deepEqual(h.errors, [], "the page survived the zoom");
   assert.ok(seen.length > 8, `enough readings to cross the window (${seen.length})`);
   const above = seen.filter((s) => s.px > 196), below = seen.filter((s) => s.px < 20), inside = seen.filter((s) => s.px >= 33 && s.px <= 183);
@@ -319,7 +340,7 @@ test("THE PAGE — the fade is a crossfade: picture and outline are complements,
     const px = SMALL_SPAN * ppm;
     seen.push({ px, pic: r.arts[SMALL]?.[0] ?? 0, outline: r.outlines[SMALL]?.[0], tier: r.tier });
     return px > 230;
-  });
+  }, { centre: true });
   const ramp = seen.filter((s) => s.pic > 0 && s.pic < 1);
   assert.ok(ramp.length >= 1, `a notch landed inside an 8 px edge at least once (${seen.length} readings)`);
   for (const s of ramp) {
