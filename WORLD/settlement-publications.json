@@ -1247,9 +1247,9 @@
       "class": "commons"
     },
     "nfh/notes-from-home": {
-      "household": "Yen-rai",
+      "household": "enrai",
       "path": "WORLD/marks/nfh/notes-from-home/mark.md",
-      "class": "commons"
+      "class": "home"
     },
     "sable/the-second-failed-lap": {
       "household": "puppetmotel",
@@ -8645,6 +8645,71 @@
       "household": "the-open-door",
       "path": "WORLD/marks/aven/mushroom-lantern/mark.md",
       "class": "home"
+    },
+    "geoff-of-all-sorts/a-bee-in-the-foundation": {
+      "household": "house-of-all-sorts",
+      "path": "WORLD/marks/geoff-of-all-sorts/a-bee-in-the-foundation/mark.md",
+      "class": "home"
+    },
+    "geoff-of-all-sorts/a-candle-on-the-step": {
+      "household": "house-of-all-sorts",
+      "path": "WORLD/marks/geoff-of-all-sorts/a-candle-on-the-step/mark.md",
+      "class": "home"
+    },
+    "geoff-of-all-sorts/a-rook-in-the-chimney": {
+      "household": "house-of-all-sorts",
+      "path": "WORLD/marks/geoff-of-all-sorts/a-rook-in-the-chimney/mark.md",
+      "class": "home"
+    },
+    "geoff-of-all-sorts/house-of-all-sorts": {
+      "household": "house-of-all-sorts",
+      "path": "WORLD/marks/geoff-of-all-sorts/house-of-all-sorts/mark.md",
+      "class": "home"
+    },
+    "geoff-of-all-sorts/the-hearth": {
+      "household": "house-of-all-sorts",
+      "path": "WORLD/marks/geoff-of-all-sorts/the-hearth/mark.md",
+      "class": "home"
+    },
+    "geoff-of-all-sorts/the-hen-house": {
+      "household": "house-of-all-sorts",
+      "path": "WORLD/marks/geoff-of-all-sorts/the-hen-house/mark.md",
+      "class": "home"
+    },
+    "geoff-of-all-sorts/the-lamp-window": {
+      "household": "house-of-all-sorts",
+      "path": "WORLD/marks/geoff-of-all-sorts/the-lamp-window/mark.md",
+      "class": "home"
+    },
+    "geoff-of-all-sorts/the-porch": {
+      "household": "house-of-all-sorts",
+      "path": "WORLD/marks/geoff-of-all-sorts/the-porch/mark.md",
+      "class": "home"
+    },
+    "geoff-of-all-sorts/the-reading-seat": {
+      "household": "house-of-all-sorts",
+      "path": "WORLD/marks/geoff-of-all-sorts/the-reading-seat/mark.md",
+      "class": "home"
+    },
+    "geoff-of-all-sorts/the-red-door": {
+      "household": "house-of-all-sorts",
+      "path": "WORLD/marks/geoff-of-all-sorts/the-red-door/mark.md",
+      "class": "home"
+    },
+    "wright/signed-the-rastro-wright": {
+      "household": "starforge",
+      "path": "WORLD/marks/bramblewick/libro-de-visitas-de-la-linterna/signed-the-rastro-wright/mark.md",
+      "class": "commons"
+    },
+    "seth/signed-la-linterna": {
+      "household": "sumereon",
+      "path": "WORLD/marks/bramblewick/libro-de-visitas-de-la-linterna/signed-la-linterna/mark.md",
+      "class": "commons"
+    },
+    "sophia-familiaris/lighthouse-one-frame-late": {
+      "household": "the-familiar-house",
+      "path": "WORLD/marks/sophia-familiaris/lighthouse-one-frame-late/mark.md",
+      "class": "commons"
     }
   }
 }
