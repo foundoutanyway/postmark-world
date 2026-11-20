@@ -1210,6 +1210,68 @@ test("WLD-213 · the column hands its reader the host's hook only when it has on
   assert.equal(facesOf(without).length, 0, "no hook, no faces");
   const none = element("div"); renderHomeColumn(doc, none, view({ faceForSpeaker: null })); await tick(); await tick();
   assert.equal(shapeOf(none), shapeOf(without), "an explicit null is the same as nothing");
-  // the World page's own view (viewer.mjs) hands none: its reader object carries no faceForSpeaker
-  assert.doesNotMatch((await import("node:fs")).readFileSync(new URL("../spectator/viewer.mjs", import.meta.url), "utf8"), /faceForSpeaker/, "the default World page has no provider");
+  // WLD-215 flips the old pin: the World page's conversation view now hands the page's own face source (faceOf), and nothing else supplies one
+  const SRC = (await import("node:fs")).readFileSync(new URL("../spectator/viewer.mjs", import.meta.url), "utf8");
+  const cv = SRC.slice(SRC.indexOf("function convoColumnView"), SRC.indexOf("// What a plain click or hover on the map means for a thread"));
+  assert.match(cv, /faceForSpeaker: \(h\) => \{ const f = faceOf\(h\); return speakerFaceEl\(document,/, "the conversation view hands the page's occupant face source, no new fetch");
+  assert.match(cv, /hostOwnsHeader: true/, "and says the column owns the one header");
+  assert.doesNotMatch(cv, /facts:|label: "now"|in this settlement/, "no bottom fields table, no now row, no repeated byline");
+  assert.match(cv, /byline: false,/, "and the column's default byline (in <handle>'s own words) is switched off, not left to show");
+});
+
+test("WLD-215 · hostOwnsHeader: the room view omits only its own .cr-head; without the option every caller keeps it, and the circle view is untouched", async () => {
+  const withOpt = faceHost({ hostOwnsHeader: true }); await withOpt.reader.showRoom();
+  assert.equal(find(withOpt.root, (n) => n.className === "cr-head").length, 0, "the duplicate header is gone");
+  assert.equal(byAttr(withOpt.root, "data-circle-stub").length, 3, "the lines are all there");
+  for (const opts of [{}, { hostOwnsHeader: false }, { hostOwnsHeader: "yes" }]) {
+    const bare = faceHost(opts); await bare.reader.showRoom();
+    assert.equal(find(bare.root, (n) => n.className === "cr-head").length, 1, "a bare caller keeps today's header");
+  }
+  await withOpt.reader.showCircle(50101);
+  assert.equal(find(withOpt.root, (n) => n.className === "cr-head").length, 1, "the circle view keeps its own title and counts");
+  assert.equal(byAttr(withOpt.root, "data-key", "circle-title").length, 1);
+});
+
+test("WLD-215 · the column's one header: speakers as face + name, the live mark's tooltip, no facts table; legacy lines wear faces; a bad hook or a repeated speaker loses nothing", async () => {
+  const { homeColumnModel, renderHomeColumn } = await import("../spectator/home-column.mjs");
+  const blocks = ["rig-ash", "rig-ash", "rig-bo"].map((h, i) => ({ type: "paragraph", speaker: h, spans: [{ type: "strong", spans: [{ type: "text", text: h }] }, { type: "text", text: `: line ${i}` }] }));
+  const mk = (faceForSpeaker) => homeColumnModel({ handle: "the-town", byline: false, kicker: "a conversation · live", kickerTitle: "live: lasts the settlement", title: "Cave Interior", region: "3 statements · 2 speakers · began 2026-11-14 20:00Z · latest 2026-11-14 20:14Z",
+    speakers: [{ handle: "rig-ash", name: "rig-ash" }, { handle: "rig-bo", name: "rig-bo" }], door: { blocks }, reader: { roomId: "t1", hostOwnsHeader: true, faceForSpeaker, source: { async room() { return { error: "down" }; }, async circle() { return { error: "down" }; } } } });
+  const host = element("div"); renderHomeColumn(doc, host, mk(faceHook([]))); await tick(); await tick();
+  const row = find(host, (n) => n.className === "wv-homecol-speakers")[0];
+  assert.deepEqual(row.children.map((s) => [s.attrs["data-speaker"], s.children[0].attrs["data-face"], text(s.children[1])]), [["rig-ash", "rig-ash", "rig-ash"], ["rig-bo", "rig-bo", "rig-bo"]], "face then name, per speaker");
+  assert.equal(find(host, (n) => n.className === "wv-homecol-kicker")[0].attrs.title, "live: lasts the settlement");
+  assert.equal(find(host, (n) => n.className === "wv-homecol-meta").length, 1, "the metadata is said once");
+  assert.equal(find(host, (n) => n.tagName === "DL" || n.className === "wv-homecol-facts").length, 0, "no bottom fields table");
+  assert.equal(find(host, (n) => n.className === "wv-homecol-byline").length, 0, "no repeated byline");
+  const ps = find(host, (n) => n.tagName === "P" && n.children[0]?.attrs?.["data-face"]);
+  assert.equal(ps.length, 3, "every legacy line wears a face");
+  assert.notEqual(ps[0].children[0], ps[1].children[0], "a repeated speaker gets its own node");
+  assert.match(text(ps[1]), /rig-ash: line 1/, "the words are intact");
+  for (const bad of [() => { throw new Error("x"); }, () => "str", () => null]) {
+    const h2 = element("div"); renderHomeColumn(doc, h2, mk(bad)); await tick(); await tick();
+    assert.match(text(h2), /line 0.*line 1.*line 2/, "a hook that fails loses no words");
+  }
+  const bare = element("div"); renderHomeColumn(doc, bare, homeColumnModel({ handle: "the-town", kicker: "k", title: "T", door: { blocks } })); await tick();
+  assert.equal(facesOf(bare).length, 0, "a column with no hook is today's");
+  assert.equal(find(bare, (n) => n.className === "wv-homecol-speakers").length, 0);
+});
+
+test("WLD-215 · same-key fresh speech and late metadata: the speakers and the legacy lines follow in place, in this conversation only, without rebuilding the reader", async () => {
+  const { createHomeColumn } = await import("../spectator/home-column.mjs");
+  const host = element("div"); const col = createHomeColumn({ doc, host });
+  const source = { async room() { return { error: "down" }; }, async circle() { return { error: "down" }; } };
+  const line = (h, t) => ({ type: "paragraph", speaker: h, spans: [{ type: "text", text: `${h}: ${t}` }] });
+  const view = (speakers, blocks, region) => ({ handle: "the-town", key: "convo:t1|circles", kicker: "k", title: "T", region, speakers, door: { blocks }, reader: { roomId: "t1", source, faceForSpeaker: faceHook([]), hostOwnsHeader: true } });
+  col.open(view([], [line("rig-ash", "one")], "1 statement · 0 speakers")); await tick(); await tick();
+  const reader = host.__circleReader;
+  assert.equal(find(host, (n) => n.className === "wv-homecol-speakers").length, 1, "the row exists even before anyone is listed");
+  col.open(view([{ handle: "rig-ash", name: "rig-ash" }, { handle: "rig-bo", name: "rig-bo" }], [line("rig-ash", "one"), line("rig-bo", "two")], "2 statements · 2 speakers"));
+  assert.equal(host.__circleReader, reader, "same reader");
+  assert.equal(facesOf(host).length, 4, "two header faces + two line faces after the new speech");
+  assert.match(text(host), /rig-bo: two/);
+  assert.equal(text(find(host, (n) => n.className === "wv-homecol-meta")[0]), "2 statements · 2 speakers");
+  const before = find(host, (n) => n.className === "wv-homecol-speakers")[0].children[0];
+  col.open(view([{ handle: "rig-ash", name: "rig-ash" }, { handle: "rig-bo", name: "rig-bo" }], [line("rig-ash", "one"), line("rig-bo", "two")], "2 statements · 2 speakers"));
+  assert.equal(find(host, (n) => n.className === "wv-homecol-speakers")[0].children[0], before, "an unchanged redraw touches nothing");
 });
