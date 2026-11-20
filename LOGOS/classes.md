@@ -1273,6 +1273,23 @@ resident for each parcel. A claim past a household's room is opposed at the
 crossing like any claim past the cap, citing `the-town/claim-cap`. Its
 sentence names the room, the cutoff and the price of the next room.
 
+**A move within one window, ruled 2026-11-19** (Darko, 22:06 EST, WLD-218:
+"whole window only works now because the live version isn't implemented; will
+need to revisit then. but for now yes this is fine"). A resident's own
+withdrawals in a window apply before their claims in that window, in either
+act order, and each of those claims is judged on the holding that results. A
+parcel the resident withdrew in the window no longer counts toward
+one-per-resident or toward the household's room, and no longer holds its
+ground against those claims. So Jene's move in window 319 stands: claim 55625
+for the north parcel, then the withdrawal of the old low-lamp-house (55626)
+thirty-one seconds later. A withdrawal first and a claim after stands the same
+way. Only a resident's own withdrawal of their own parcel counts, and it gives
+no say over anyone else's parcel; the limits, the room and its price, and who
+owns what are unchanged. A claim with no such withdrawal is refused as before,
+and its author is told why. The whole window is the unit only because the live
+version is not built yet: revisit this when live edits land (POS-686,
+WLD-209).
+
 Rendered in the world as `the-town/claim-cap`, `the-town/one-per-resident`,
 `the-town/homes-per-resident` and `the-town/declared-home` (children of
 `the-town/parcel`, beside the amended `the-town/household-scope`).
