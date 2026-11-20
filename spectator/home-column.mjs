@@ -641,7 +641,10 @@ export function renderHomeColumn(doc, host, model, { imagePath = null } = {}) {
       doc, host: mount, source: model.reader.source, roomId: model.reader.roomId,
       canReply: !!model.reader.canReply, onReply: model.reader.onReply ?? null, hrefForCircle: model.reader.hrefForCircle ?? null,
       faceForSpeaker: model.reader.faceForSpeaker ?? null,    // WLD-213: only a host that hands one in; the World page's own view (viewer.mjs) hands none
-      onState: (st) => { const flat = st === "unavailable" && model.blocks.length > 0; body.hidden = !flat; note.hidden = !flat; },
+      hostHoldsPlain: model.blocks.length > 0,                // WLD-216: this column holds the selected conversation's plain transcript, so an old office's plain list stands down to it
+      // WLD-216: an office from before POS-1035 answers the room read with its plain list (`reason: "plain"`): that is no failure, so the plain transcript the
+      // map already holds shows as it always did, with no "could not be read" sentence over it. A real failed read keeps the sentence.
+      onState: (st, detail) => { const flat = st === "unavailable" && model.blocks.length > 0; body.hidden = !flat; note.hidden = !flat || detail?.reason === "plain"; },
     });
     host.__circleReader = reader;
     appendBlocks(doc, body, model.blocks, imagePath);
@@ -949,6 +952,18 @@ export function createHomeColumn({ doc, host, readHome, imagePath = null, reside
     const dds = Array.from(host.querySelectorAll?.(".wv-homecol-facts dd") ?? []);
     (view.facts ?? []).forEach((f, i) => { if (f && !f.detail && !f.swatch) set(dds[i], f.value); });
     r.setCanReply?.(!!view.reader.canReply, view.reader.onReply ?? null);
+    // WLD-216: the plain transcript behind the reader (what an old office's conversation shows) takes the words the map holds NOW, inside this same conversation
+    // only (the view is the selected thread's own, by id): rewritten only when they changed, so an unchanged redraw touches nothing.
+    const body = one(".wv-homecol-body");
+    const blocks = view.door?.blocks;
+    if (body && Array.isArray(blocks)) {
+      const sig = JSON.stringify(blocks);
+      if (body.__plainSig !== sig) {
+        while (body.firstChild) body.removeChild(body.firstChild);
+        appendBlocks(doc, body, blocks, imagePath);
+        body.__plainSig = sig;
+      }
+    }
   }
 
   function open(view) {
