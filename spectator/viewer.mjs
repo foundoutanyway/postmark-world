@@ -12832,7 +12832,7 @@ export function mountViewer(appEl) {
       if (!r.ok) return;
       const body = await r.json();
       const entries = Object.entries(body?.residents ?? {});
-      if (entries.length) { residentsMeta = new Map(entries); renderByMail(); } // the names the list already shows arrive with the faces
+      if (entries.length) { residentsMeta = new Map(entries); renderByMail(); refreshConvoColumn(); } // the names the list already shows arrive with the faces; an open conversation's faces follow (WLD-215)
     } catch { /* no faces today; the dots are still the truth */ }
   }
   // IN TOWN BY MAIL (POS-945): names only, each linking to their address page; hidden while nobody is. It draws from what the
@@ -13391,7 +13391,8 @@ export function mountViewer(appEl) {
     if (n > voices.length) blocks.push({ type: "paragraph", spans: [{ type: "em", spans: [{ type: "text", text: `the newest ${voices.length} of ${n} statements; the conversations page keeps the whole` }] }] });
     for (const v of voices) {
       const at = convoWhen(v?.at);
-      blocks.push({ type: "paragraph", speaker: String(v?.handle ?? ""), spans: [   // `speaker`: the column puts that speaker's face before the line (WLD-215)
+      const vf = faceOf(String(v?.handle ?? ""));
+      blocks.push({ type: "paragraph", speaker: String(v?.handle ?? ""), look: vf.avatar || vf.color || "", spans: [   // `speaker`: the column puts that speaker's face before the line (WLD-215)
         { type: "strong", spans: [{ type: "text", text: String(v?.handle ?? "") }] },
         { type: "text", text: `${at ? ` (${at})` : ""}: ${String(v?.said ?? "")}` },
       ] });
@@ -13408,7 +13409,7 @@ export function mountViewer(appEl) {
       // WLD-215: the column draws this conversation's ONE header (title, live, counts, began, latest, who spoke), so the reader drops its own (`hostOwnsHeader`), and
       // every line and speaker wears the page's own face for that handle (`faceOf`, the occupant tokens' source: no new fetch, a fresh node per call).
       reader: { roomId: tid, source: convoReaderSource, canReply: canAct() && !onPhone(), onReply: (target) => setReplyTarget(target), hrefForCircle: (c) => `/conversations/#circle-${encodeURIComponent(c)}`,
-        hostOwnsHeader: true, faceForSpeaker: (h) => { const f = faceOf(h); return speakerFaceEl(document, { name: f.name, monogram: f.monogram, color: f.color, picture: f.avatar ?? null }, markImagePath); } },
+        hostOwnsHeader: true, faceForSpeaker: (h) => { const f = faceOf(h); return speakerFaceEl(document, { name: f.name, monogram: f.monogram, color: f.color, picture: f.avatar ?? null }, (u) => markImagePath({ image: u })); } },   // the same gate the occupant tokens' pictures pass (the column's own imagePath)
       handle: "the-town", residentLink: false,
       kicker: live ? "a conversation · live" : "a conversation · gone quiet",
       // the old "now" row's meaning, kept where "live" is said
