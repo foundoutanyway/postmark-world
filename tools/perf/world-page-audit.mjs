@@ -106,6 +106,7 @@ export const dragMoved = ({ writes, travelPx }) => writes >= MIN_CAMERA_WRITES &
 export const VERSION_KEYS = ["code_sha", "town_data_sha", "town_sha", "world_sha", "world_digest", "crossing", "world_settlement"];
 export const versionOf = (build) => (build ? Object.fromEntries(VERSION_KEYS.map((k) => [k, build[k] ?? null])) : null);
 export const sameVersion = (a, b) => !!a && !!b && VERSION_KEYS.every((k) => a[k] === b[k]);
+const completeVersion = (v) => !!v && VERSION_KEYS.every((k) => v[k] !== null && v[k] !== undefined && v[k] !== "");
 
 /** one sample's own verdict: the reasons it is not valid (empty = valid). `s` is what measureSample returns. */
 export function sampleProblems(s, { official }) {
@@ -133,6 +134,12 @@ export function sampleProblems(s, { official }) {
 /** the audit row from the samples. `town` is the served town's size; `env` the tool/browser provenance. */
 export function auditRow({ samples, town, env, official, at }) {
   const invalid = samples.flatMap((s, i) => sampleProblems(s, { official }).map((m) => `sample ${i + 1}: ${m}`));
+  if (official) {
+    const version = versionOf(town ? { ...town, world_settlement: town.settlement } : null);
+    if (!completeVersion(version)) invalid.push("the audit town version is incomplete");
+    if (![town?.marks, town?.parcels].every((n) => Number.isInteger(n) && n >= 0)) invalid.push("the audit town size is unavailable");
+    if (samples.some((s) => !sameVersion(version, s.version_before) || !sameVersion(version, s.version_after))) invalid.push("mixed version across the audit town and samples");
+  }
   const pick = (f) => spread(samples.map(f));
   const place = (k, f) => pick((s) => s.places?.[k] ? f(s.places[k]) : NaN);
   const places = Object.fromEntries(Object.keys(PLACES).map((k) => [k, {

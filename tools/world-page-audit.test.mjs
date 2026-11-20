@@ -20,7 +20,8 @@ const sample = (over = {}) => ({
   version_before: versionOf(BUILD), version_after: versionOf(BUILD), idle_busy_pct: 8, heap_after_gc_mib: 60, scale_ref: 1.2,
   places: { town_centre: place(), spire: place() }, ...over,
 });
-const row = (samples, official = true) => auditRow({ samples, town: { marks: 3066 }, env: {}, official, at: "2026-11-20T00:00:00Z" });
+const TOWN = { ...BUILD, settlement: BUILD.world_settlement, marks: 3066, parcels: 195 };
+const row = (samples, official = true, town = TOWN) => auditRow({ samples, town, env: {}, official, at: "2026-11-20T00:00:00Z" });
 
 test("the median of three is the middle one and the range is kept; a missing sample is no value at all, never a zero", () => {
   assert.equal(median([5, 1, 3]), 3);
@@ -93,6 +94,26 @@ test("an unofficial run (another origin, other sample count) is flagged so; its 
   const s = sample({ version_before: null, version_after: null });
   assert.deepEqual(sampleProblems(s, { official: false }), []);
   assert.equal(row([s], false).official, false);
+});
+
+test("stable samples from different versions cannot form one baseline, or disagree with its town context", () => {
+  const other = versionOf({ ...BUILD, town_sha: "other" });
+  const mixed = row([sample(), sample({ version_before: other, version_after: other }), sample()]);
+  assert.equal(mixed.valid, false);
+  assert.ok(mixed.invalid.some((m) => /mixed version across/.test(m)));
+  const staleTown = row([sample(), sample(), sample()], true, { ...TOWN, world_sha: "stale" });
+  assert.equal(staleTown.valid, false);
+});
+
+test("an official baseline requires complete town counts and versions, not matching missing values", () => {
+  for (const town of [null, { ...TOWN, marks: null }, { ...TOWN, parcels: null }, { ...TOWN, world_sha: null }]) {
+    const r = row([sample(), sample(), sample()], true, town);
+    assert.equal(r.valid, false, JSON.stringify(town));
+  }
+  const missing = versionOf({});
+  const r = row([sample({ version_before: missing, version_after: missing })], true, { marks: 3066, parcels: 195 });
+  assert.equal(r.valid, false);
+  assert.ok(r.invalid.some((m) => /version is incomplete/.test(m)));
 });
 
 test("versions compare on every key; the repo path of a served URL is only for what the repo serves", () => {
