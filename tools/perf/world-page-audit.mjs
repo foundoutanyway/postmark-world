@@ -231,6 +231,29 @@ const placeRect = (page, id) => page.evaluate((id) => {
   const r = el?.getBoundingClientRect(); return r ? { x: r.x, y: r.y, width: r.width, height: r.height } : null;
 }, id);
 const paneRect = (page) => page.evaluate(() => { const r = document.querySelector("svg#map-svg").getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
+/** the nearest point to the middle of the map where the pointer would meet bare painting (the svg itself, or something drawn in it that is
+ *  no mark, link, button, card or column), with room around it for the drag's ellipse; null if there is none. `under` names what is there. */
+const bareGrab = (page) => page.evaluate(() => {
+  const svg = document.querySelector("svg#map-svg"); if (!svg) return null;
+  const r = svg.getBoundingClientRect(), cx = r.x + r.width / 2, cy = r.y + r.height / 2;
+  // what a hand cannot pan through: the page's own panels, cards, links and buttons. A mark's shape in the painting is not one
+  // (the painting is the pan surface), but a point off every mark is taken first, and `under` says which it was.
+  // (asked of what lies BETWEEN the element and the map's container, never beyond it: the map sits inside the page's own aside)
+  const mm = document.querySelector(".wv-minimap");
+  const uiSel = "a, button, input, textarea, .wv-card, .wv-homecol, .wv-tour, .wv-search-results, .wv-mapctl-tools, [role=dialog]";
+  const inUi = (e) => { for (let n = e; n && n !== mm; n = n.parentElement) if (n.matches(uiSel)) return true; return false; };
+  for (const [mx, my, offMarks] of [[140, 100, true], [140, 100, false], [60, 40, false]]) {
+    const pts = [];
+    for (let x = r.x + mx; x <= r.x + r.width - mx; x += 24) for (let y = r.y + my; y <= r.y + r.height - my; y += 24) pts.push([x, y]);
+    pts.sort((a, b) => Math.hypot(a[0] - cx, a[1] - cy) - Math.hypot(b[0] - cx, b[1] - cy));
+    for (const [x, y] of pts) {
+      const e = document.elementFromPoint(x, y);
+      // the pan surface is the map's container (.wv-minimap): the svg and the marks layered over it
+      if (e && mm?.contains(e) && !inUi(e) &&!(offMarks && e.closest("[data-id]"))) return { x, y, under: e.tagName.toLowerCase() + (e.id ? "#" + e.id : "") + ((e.getAttribute("class") || "").trim() ? "." + e.getAttribute("class").trim().split(/\s+/).join(".") : "") };
+    }
+  }
+  return null;
+});
 const drawnMarks = (page) => page.evaluate(() => new Set([...document.querySelectorAll("#wv-overlay [data-id]")].map((e) => e.getAttribute("data-id"))).size);
 
 async function settle(page, ms, cap) {
@@ -310,17 +333,26 @@ async function measureSample(browser, origin, cpu, scaleRef, worldPath) {
     for (const [key, place] of Object.entries(PLACES)) {
       const rec = { id: place.id };
       await settle(page, 1500, 60000);      // the page has let go of the last drag before the next hand reaches for the search box
+      // the common scale FIRST, wheeling over bare painting (a picked place opens a column over the map, and a wheel
+      // there scrolls the column, not the map): the first place takes one notch in (the fit view is the zoom-out limit);
+      // the second is brought to that. The search then centres the place without changing the zoom.
+      let grab = await bareGrab(page);
+      if (!grab) throw new Error(`${key}: no bare map point to wheel over`);
+      await page.mouse.move(grab.x, grab.y);
+      let cam = await camera(page);
+      if (scaleRef.value === null) {
+        const open = cam.scale;
+        await page.mouse.wheel(0, -300); await sleep(2500); cam = await camera(page);
+        if (sameScale(cam.scale, open, 0.01)) throw new Error(`${key}: the wheel did not zoom the map`);
+        scaleRef.value = cam.scale;
+      }
+      for (let n = 0; n < 14 && !sameScale(cam.scale, scaleRef.value); n++) { await page.mouse.wheel(0, cam.scale < scaleRef.value ? -300 : 300); await sleep(1200); cam = await camera(page); }
+      await page.mouse.move(4, 4);
       await page.fill(".wv-search-input", place.query);
       await page.waitForSelector(`.wv-search-hit[data-hit="${place.id}"]`, { timeout: 15000 });
       await page.click(`.wv-search-hit[data-hit="${place.id}"]`, { timeout: 90000 });
       await sleep(1500);
-      const pane = await paneRect(page);
-      const mid = { x: pane.x + pane.width / 2, y: pane.y + pane.height / 2 };
-      await page.mouse.move(mid.x, mid.y);
-      // the common scale: the first place takes one wheel notch in (the fit view is the zoom-out limit); the second is brought to that
-      let cam = await camera(page);
-      if (scaleRef.value === null) { await page.mouse.wheel(0, -300); await sleep(2500); cam = await camera(page); scaleRef.value = cam.scale; }
-      for (let n = 0; n < 14 && !sameScale(cam.scale, scaleRef.value); n++) { await page.mouse.wheel(0, cam.scale < scaleRef.value ? -300 : 300); await sleep(1200); cam = await camera(page); }
+      cam = await camera(page);
       rec.scale = cam.scale; rec.scale_ref = scaleRef.value; rec.scale_ok = sameScale(cam.scale, scaleRef.value);
       await settle(page, 1500, 30000);
       const standing = () => page.evaluate(() => document.querySelector(".wv-spectator-coordinate")?.textContent?.trim() ?? "");
@@ -331,6 +363,13 @@ async function measureSample(browser, origin, cpu, scaleRef, worldPath) {
       cam = await camera(page);
       await page.evaluate(() => { const W = globalThis.__wpa; W.track = true; W.writes = 0; W.tx = null; W.ty = null; });
       const cam0 = cam;
+      // the hand takes hold of bare painting: a picked place opens a column and card over the middle of the map, and a drag
+      // that begins on them pans nothing. What is under the pointer is read, not assumed, and kept as evidence.
+      grab = await bareGrab(page);
+      if (!grab) throw new Error(`${key}: no bare map point to take hold of`);
+      rec.grab = { x: Math.round(grab.x), y: Math.round(grab.y), under: grab.under };
+      const mid = { x: grab.x, y: grab.y };
+      const pane = await paneRect(page);
       const p0 = await nowMs(page);
       await page.mouse.move(mid.x, mid.y);
       await page.mouse.down();
