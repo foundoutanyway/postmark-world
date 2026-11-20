@@ -9,6 +9,7 @@ capacity: 120
 holder: true
 open: true
 portable: false
+entry: {"into": "dom-pidgey/pidgey-heights", "lands_at": "dom-pidgey/the-guest-book", "requires": {"holds": ["little-bird/exhibit-8"], "shown": false, "says": "The inquiry is {held} of {asks}. One witness has not been questioned."}}
 ---
 
 The Crumb 8 Inquiry. Crumb 8 is missing. Give a witness statement here, out loud. Then take one fortune. Do not eat the evidence. V.
