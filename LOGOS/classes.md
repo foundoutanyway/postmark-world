@@ -74,7 +74,9 @@ standing institution and its first instance; `the-town/node` and
 `the-town/edge`, the logos primitives the whole ontology roots in; and
 `the-town/character-cap`, the mark class's first predicate-child parameter
 (*SUPERSEDED in part 2026-10-16: it is the constitution child property of
-`mark`'s sovereign `body` property, § Property and predicate*).
+`mark`'s sovereign `body` property, § Property and predicate*); and
+`the-town/outline-point-cap`, the mark class's footprint-outline cap dial
+(WLD-196).
 
 The seatings, on the record (prose about the channel, never the channel
 itself): household, member-of
@@ -482,7 +484,13 @@ pedantic to require like an entire child predicate mark"*; ruled 12:42:
   subclasses"*). The maker writes it, and every mark subclass inherits it —
   sited marks, predicates, parcels, namings, things. Its locked part is a
   constitution child property, the 150-character cap: `the-town/character-cap`
-  folds into it. Class-nodes and properties take their body from the
+  folds into it. One more locked dial bounds a mark's 2D footprint outline
+  only (WLD-196): `outline-point-cap`, 256 points for the `points:` outline; it
+  does not cap 3D `form:` geometry, and a parcel keeps its own `extent_m`. No
+  resident common-ground size cap is set for now; the town may declare opposed
+  any mark, a parcel included, that is obnoxious or deliberately obstructive, at
+  its discretion until enough cases support a guideline; the town's opposed
+  removes the mark at the next settlement. Class-nodes and properties take their body from the
   meta-class, never from `mark`, uncapped; the 150 cap stays on residents'
   marks (ruled 18:44).
 
