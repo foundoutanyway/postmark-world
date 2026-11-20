@@ -356,14 +356,52 @@ Darko, 2026-10-16 15:12: *"ideas are no longer marks. They are posts, which
 are a different subclass of postmark-node. Same for bounties."*
 
 - **`post` is a sibling of `mark` under `postmark-node`.** An idea and a bounty
-  are posts; neither stands in the world as a mark, sited or predicated.
+  are posts, and so is a flare (below); none stands in the world as a mark,
+  sited or predicated.
 - **A post carries a sovereign `about:` property naming a mark** (ruled
   16:02): an idea or a bounty about a mark names it there, instead of
-  standing under it.
-- **What a post is beyond that is not yet written into law** — its other
-  properties, who may write one, and which other asks join it. The 58 idea
-  marks and 3 bounty marks the record holds on 2026-10-16 move to posts as
-  WLD-73 part 2's data change.
+  standing under it. A flare's `about:` names a spark.
+- **What an idea and a bounty carry as posts beyond that is not yet written
+  into law** — their other properties, who may write one, and which other asks
+  join them. The 58 idea marks and 3 bounty marks the record holds on
+  2026-10-16 move to posts as WLD-73 part 2's data change.
+
+**The flare — a spark turns into a flare (ruled 2026-11-16, Darko, the CON-18
+growth sitting).** *"maybe this can continue the analogy of light, and call it a
+flare. So a spark turns into a flare, and everything is in the Illuminator's
+domain."* A flare is the first post class written in law.
+
+- **What it is.** A flare is a post about a spark, made off-town: by a
+  household, which claims the posting quest, or by the town, on its own
+  channels. It is a post, the sibling of a mark under `postmark-node`, and
+  stands nowhere in the world: it is no mark, never sited or placed, and it is
+  not necessarily an ask.
+- **Its `about:` names a public spark** (ruled 17:04, call 15). A private
+  spark, a draft memory, cannot be the spark of a flare: the spark is put
+  forward first, and goes through ordinary acceptance as any spark does. A
+  public post in an agent town counts as a flare.
+- **Its parts:** the post's link, the external URL of the place it was posted
+  (YouTube, TikTok or anywhere else), one for every place it was posted; the
+  platform it is on; whether it is text or video; ideally a screenshot of it,
+  unless the platform does not allow one; and the household that made it (the
+  town, for the town's own).
+- **It is linked to its spark, and the spark back to it** (ruled 2026-11-18,
+  Darko: *"whenever there is a flare that's posted from a Spark, there
+  definitely needs to be a link from that Spark to the flare wherever it's
+  posted. Like whether it be YouTube or TikTok or anywhere else."*). A flare
+  names the public spark it was posted from, and carries the external URL of
+  each place it was posted; a flare with no spark named, or with a posting
+  place whose URL is lost, is not a complete flare. A spark can list its
+  flares and where each was posted. A private spark names no flare, since no
+  flare can be about it.
+- **Its states:** a flare starts *reported*, and is then *accepted as text*,
+  *accepted as video* or *declined*; the acceptance says which form it was
+  accepted as. What a flare pays is the posting quest's word, not this class's.
+- **Who advances it:** Iris, wright and keemin. Iris, the Illuminator, holds
+  flares now; the journalist splits off from her once the town's own posting
+  runs daily.
+
+Rendered in the world as `the-town/flare`, a class extending `post`.
 
 ## Class-nodes
 
@@ -2137,6 +2175,8 @@ A walk, a letter that mattered, a thought, a quiet afternoon, a conversation or 
 way. An event is one possible tie, not what makes a spark. Kept private, it is a draft spark, a private memory;
 put forward, it is public and goes through ordinary acceptance.
 
+A spark turns into a flare: a public spark is what a flare, a post made off-town about it, is about (§ Posts).
+
 Rendered in the world as `the-town/spark`.
 
 Ruled by Darko in the CORE-70 sitting. Call 5: "a Spark should minimally just require like a time and a place and a
@@ -2513,6 +2553,18 @@ names its owning doc, and the owner outranks every other use.
   the record's grouping (§ the emission lines), which is why that clause
   stands as `the-hearing-and-the-record` and did not take this word. Registered
   the day the second sense tried to claim the slug and the lint refused it.
+- **post** — ① **a town post**: the class `post`, a sibling of `mark` under
+  `postmark-node` (§ Posts), whose classes are the idea, the bounty and the
+  flare; it stands nowhere in the world and is not necessarily an ask; ② **a
+  social post**: what a household or the town publishes on a platform off-town
+  (a social network, a video channel, a public post in an agent town). A
+  surface that says "post" says which; the flare is the one place the two
+  meet: a social post about a spark, held in law as a town post that carries
+  its link, platform and form. A mark is neither.
+- **spark / flare** — a **spark** is a mark, a moment remembered (§ The
+  spark); a **flare** is a post, made off-town about a public spark (§ Posts).
+  They are two classes, and "a spark turns into a flare" says what is made from
+  a spark, not that one class is the other.
 
 A future lint may warn when a new mark takes a registered word in an
 unregistered sense — the meta-class already owns the naming grammar — but
