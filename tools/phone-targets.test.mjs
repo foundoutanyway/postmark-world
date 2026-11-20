@@ -79,6 +79,23 @@ test("TARGETS in the viewer's own stylesheet: the round map controls reach ~44 p
   assert.match(SOURCE, /const TOUR_SLIDES = \[/);
 });
 
+test("CORE-54 FIT (lead 20:01Z): the tour foot fits the 390 px card: tighter button padding and gaps, still 44 px targets, and the foot wraps rather than clip a control", () => {
+  // the published c300/0dae frame showed 'next' past the card: 8 dots x 20 px = 160 px + 12 gap + skip 56 + back 58 + next 58 + gaps = 364 > the 332 px inside the 370 px phone card
+  assert.match(SOURCE, /\.wv-tour-card \{ width:calc\(100vw - 20px\); padding:16px 17px 13px; \}/);
+  assert.match(SOURCE, /\.wv-tour-foot \{ flex-wrap:wrap; \}\s*\.wv-tour-acts \{ gap:4px; margin-left:auto; \}/);
+  assert.match(SOURCE, /\.wv-tour-acts \.wv-tour-skip \{ padding-left:6px; padding-right:6px; margin-right:0; \}/);
+  assert.match(SOURCE, /\.wv-tour-acts \.wv-tour-back, \.wv-tour-acts \.wv-tour-next \{ padding-left:8px; padding-right:8px; \}/);
+  // the budget at 390 (mono .68rem is ~6.5 px a letter + .06em spacing, ~29 px a four-letter word): skip max(44, 29+12), back/next 29+16+2 = 47 each, two 4 px gaps, beside 12 px and the 160 px of dots
+  const word = 29, skip = Math.max(44, word + 12), btn = word + 16 + 2, acts = skip + btn + btn + 4 + 4, inner = (390 - 20) - 3 - 1 - 2 * 17;   // the phone card is calc(100vw - 20px) wide with 17 px side padding and a 3 px + 1 px border (the rule at .wv-tour-card width:calc(100vw - 20px))
+  assert.ok(btn >= 44, "back and next stay at least a thumb wide");
+  assert.ok(160 + 12 + acts <= inner, `one row fits: ${160 + 12 + acts} <= ${inner}`);
+  // the targets this fit must not lose: dots 20 x 44, every button 44 tall
+  assert.match(SOURCE, /\.wv-tour-dot \{ position:relative; width:20px; height:44px;/);
+  assert.match(SOURCE, /\.wv-tour-acts button \{ min-height:44px; \}/);
+  // the words, steps and flow are still WLD-220's
+  assert.match(SOURCE, /const TOUR_SLIDES = \[/);
+});
+
 test("CORE-54 (Wright 16:57Z): a crowded press on a phone opens the EXISTING chooser in the column: phone only, first in the chain, the same rows and ids, a row a thumb tall", () => {
   assert.match(SOURCE, /function chooserColumnView\(id\) \{\s*const ids = id \? chooserIdsFrom\(id\) : null;\s*if \(!ids \|\| !onPhone\(\)\) return null;/);
   assert.match(SOURCE, /chooser: \{ fill: \(host\) => \{ host\.innerHTML = chooserHTML\(id\); \} \}/, "the viewer's own chooser markup, unchanged");

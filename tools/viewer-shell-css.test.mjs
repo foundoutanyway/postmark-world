@@ -96,8 +96,11 @@ import { MARK_ICON_CSS } from "../spectator/mark-icons.mjs";
 // RE-PINNED AGAIN FOR CORE-54, knowingly, after merging main 50fbbaf7: the chooser row's media rule MOVED (same bytes, 110597 still) from between CREATURE_CSS
 // and `.wv-choose-row.is-convo` to after `.wv-choose-row.is-creature`, because viewer-creature-nameplate pins CREATURE_CSS's neighbours. Only that one line's
 // position changed (e6974c7c… -> faa58492…); no rule was added or removed.
-const PINNED_MASKED_STYLE_SHA256 = "faa584926f011c5302c2c2221e08091fd439d58023f282ee20584795a8e8df7a";
-const PINNED_MASKED_STYLE_BYTES = 110597;
+// RE-PINNED A THIRD TIME FOR CORE-54 (lead fix, 2026-11-20 20:01Z): the 390 px tour foot FIT. The published 0dae4132/c300 tour frame showed "next" spilling past the card (the 8 step dots at
+// 20 px plus skip/back/next at 192 px did not fit the ~160 px beside them). One media block gains 6 lines / 571 bytes (110597 -> 111168), nothing removed or changed: the foot may wrap, the
+// actions sit 4 px apart and right-aligned, skip's padding 6 px and back/next 8 px a side (each still at least 44 px wide and 44 px tall). Measured by this test's own masked-emission route.
+const PINNED_MASKED_STYLE_SHA256 = "d8d986315a723c01b0ee068dd93c499a1eb60338b8fa153a5306f4c3cf03c64b";
+const PINNED_MASKED_STYLE_BYTES = 111168;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";

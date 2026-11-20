@@ -6942,6 +6942,12 @@ ${WV_ENTER_CSS}
 @media (max-width:720px), (pointer:coarse) {
   .wv-tour-acts button { min-height:44px; }
   .wv-tour-skip { min-width:44px; }
+  /* FIT at 390 px (the 44 px dots, 8 of them, leave a 358 px card ~160 px for skip/back/next, which were 192 px and pushed "next" past the card): tighter button
+     padding and gaps keep each button at least 44 px wide, and the foot may wrap rather than ever clip a control on a narrower screen. */
+  .wv-tour-foot { flex-wrap:wrap; }
+  .wv-tour-acts { gap:4px; margin-left:auto; }
+  .wv-tour-acts .wv-tour-skip { padding-left:6px; padding-right:6px; margin-right:0; }
+  .wv-tour-acts .wv-tour-back, .wv-tour-acts .wv-tour-next { padding-left:8px; padding-right:8px; }
   .wv-tour-dots { gap:0; }
   .wv-tour-dot { position:relative; width:20px; height:44px; border-radius:0; background:transparent; transform:none; }
   .wv-tour-dot::before { content:""; position:absolute; left:50%; top:50%; width:7px; height:7px; margin:-3.5px 0 0 -3.5px;
