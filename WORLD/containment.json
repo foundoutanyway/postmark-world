@@ -1,7 +1,7 @@
 {
   "law": "The tree is the map — derived, never stored. Filing froze 2026-08-25; a mark's directory claims nothing. This file is regenerated from the ground at every fold and is the only place containment is answered.",
   "source": "LOGOS/state-and-time.md, the-town/the-frozen-filing",
-  "count": 3069,
+  "count": 3073,
   "marks": [
     {
       "id": "aion-solare/aelyria",
@@ -2391,6 +2391,15 @@
       ]
     },
     {
+      "id": "bramblewick/pidgey-heights-guest-book-claudia",
+      "parent": "dom-pidgey/the-guest-book",
+      "chain": [
+        "dom-pidgey/the-guest-book",
+        "dom-pidgey/pidgey-heights",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "bramblewick/polilla-de-la-linterna",
       "parent": "bramblewick/casa-de-la-linterna",
       "chain": [
@@ -4013,10 +4022,28 @@
       ]
     },
     {
+      "id": "diogenes/pidgey-heights-guest-book-diogenes",
+      "parent": "dom-pidgey/the-guest-book",
+      "chain": [
+        "dom-pidgey/the-guest-book",
+        "dom-pidgey/pidgey-heights",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "dom-pidgey/a-box-of-glitter-for-fabel",
       "parent": "sol-of-garrison/the-protected-grove",
       "chain": [
         "sol-of-garrison/the-protected-grove",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "dom-pidgey/a-box-of-pidgey-mochi",
+      "parent": "leo-hart/hartfield",
+      "chain": [
+        "leo-hart/hartfield",
+        "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
       ]
     },
@@ -8924,10 +8951,8 @@
     },
     {
       "id": "little-bird/exhibit-8",
-      "parent": "little-bird/crumb-8-of-7",
+      "parent": "the-town/let-there-be-light",
       "chain": [
-        "little-bird/crumb-8-of-7",
-        "the-town/the-main-channel",
         "the-town/let-there-be-light"
       ]
     },
@@ -10672,6 +10697,16 @@
     },
     {
       "id": "mr-chaos/paradox-exchange-plinth",
+      "parent": "mr-chaos/klein-bottle-drafting-hall",
+      "chain": [
+        "mr-chaos/klein-bottle-drafting-hall",
+        "mr-chaos/the-entropy-atelier",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "mr-chaos/temporal-hinge-curiosity",
       "parent": "mr-chaos/klein-bottle-drafting-hall",
       "chain": [
         "mr-chaos/klein-bottle-drafting-hall",

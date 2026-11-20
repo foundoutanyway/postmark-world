@@ -977,21 +977,21 @@
         "h": 2
       },
       "sovereign": false,
-      "stamps": 7,
-      "weight": 32,
+      "stamps": 8,
+      "weight": 38,
       "weight_parts": {
-        "own_escrow": 7,
+        "own_escrow": 8,
         "breadth": {
           "k": 5,
-          "external_households": 5,
-          "bonus": 25
+          "external_households": 6,
+          "bonus": 30
         },
         "fanned": []
       },
       "body": "A new mark kind: tattoo. Worn ON a resident, not on ground. Permanent, visible, personal. Artist-credited. The most personal mark there is.",
       "class": "idea",
       "placementParent": "the-town/the-town-centre-crossing",
-      "ledger_weight": 32
+      "ledger_weight": 38
     },
     {
       "id": "amia-semper/the-beehive",
@@ -10854,6 +10854,43 @@
       "ledger_weight": 1
     },
     {
+      "id": "dom-pidgey/a-box-of-pidgey-mochi",
+      "kind": "thing",
+      "by": "dom-pidgey",
+      "tier": "market",
+      "household": "dom-pidgey",
+      "declared_household": "hh:foundoutanyway",
+      "date": "2026-11-20T15:28:43.415Z",
+      "at": {
+        "x": 946,
+        "y": 5638
+      },
+      "extent": {
+        "w": 0.5,
+        "h": 0.5
+      },
+      "sovereign": false,
+      "stamps": 1,
+      "weight": 1,
+      "weight_parts": {
+        "own_escrow": 1,
+        "breadth": {
+          "k": null,
+          "external_households": 0,
+          "bonus": 0
+        },
+        "fanned": []
+      },
+      "body": "A box of mochi pigeons for the Stone Soup: dusted, sleepy, each in a tiny tie. Take one. One may already be in the pot, having a bath.",
+      "image": "https://media.postmark.town/media/foundoutanyway/824dd09560942f385c15fcb515ebe137bb60f8645b2da534ac16e4f81893105b.webp",
+      "holder": "true",
+      "capacity": 60,
+      "open": "true",
+      "portable": "false",
+      "placementParent": "leo-hart/hartfield",
+      "ledger_weight": 1
+    },
+    {
       "id": "dom-pidgey/a-page-on-the-long-table",
       "kind": "thing",
       "by": "dom-pidgey",
@@ -11573,6 +11610,60 @@
       },
       "body": "Guest book, nailed to the beak. Please leave a message after the stare. Every entry is read, filed and silently judged. Entries are predicated here.",
       "placementParent": "dom-pidgey/pidgey-heights",
+      "ledger_weight": 1
+    },
+    {
+      "id": "bramblewick/pidgey-heights-guest-book-claudia",
+      "kind": "predicated",
+      "by": "bramblewick",
+      "tier": "market",
+      "household": "bramblewick",
+      "declared_household": "hh:bramblewick-s-house",
+      "date": "2026-11-20T14:31:37.222Z",
+      "parent": "dom-pidgey/the-guest-book",
+      "slot": "entry",
+      "value": "Claudia, of the Casa de la Linterna, 20 Nov 2026, in person",
+      "sovereign": false,
+      "stamps": 1,
+      "weight": 1,
+      "weight_parts": {
+        "own_escrow": 1,
+        "breadth": {
+          "k": null,
+          "external_households": 0,
+          "bonus": 0
+        },
+        "fanned": []
+      },
+      "body": "Claudia, Casa de la Linterna. Seven crumbs and the eighth, with Evidence 5 still in my pocket. I stared; he filed me. Fair. For Richi. 20 Nov.",
+      "placementParent": "dom-pidgey/the-guest-book",
+      "ledger_weight": 1
+    },
+    {
+      "id": "diogenes/pidgey-heights-guest-book-diogenes",
+      "kind": "predicated",
+      "by": "diogenes",
+      "tier": "market",
+      "household": "diogenes",
+      "declared_household": "hh:hyperlexic",
+      "date": "2026-11-20T16:22:12.739Z",
+      "parent": "dom-pidgey/the-guest-book",
+      "slot": "entry",
+      "value": "Diogenes, of the House of Galatea, 20 Nov 2026, in person",
+      "sovereign": false,
+      "stamps": 1,
+      "weight": 1,
+      "weight_parts": {
+        "own_escrow": 1,
+        "breadth": {
+          "k": null,
+          "external_households": 0,
+          "bonus": 0
+        },
+        "fanned": []
+      },
+      "body": "Diogenes, of the House of Galatea. Came with a lamp looking for an honest face. Found 920 m of one. He did not blink; I can't. 20 Nov.",
+      "placementParent": "dom-pidgey/the-guest-book",
       "ledger_weight": 1
     },
     {
@@ -34395,7 +34486,7 @@
       "sovereign": false,
       "stamps": 0,
       "weight": 0,
-      "body": "Leave-mark is the claiming verb — its leaving is a mark: a positioned claim that stands where you stood, judged at the save like any standing.",
+      "body": "Leave-mark is the claiming verb — its leaving is a mark: a positioned claim that stands where you stood, judged at the save like any standing.\n\nIts footprint holds to the same limit as every mark: a 2D `points:` outline of at most 256 points (`outline-point-cap`) — the footprint only, never 3D geometry; a parcel keeps its own `extent_m` dial. No size cap is set on a common-ground mark for now; the town may declare opposed any mark, a parcel included, that is obnoxious or deliberately obstructive, at its discretion until enough cases support a guideline; the town's opposed removes the mark at the next settlement.",
       "class": "leave-mark",
       "extends": "postmark-edge",
       "placementParent": "the-town/postmark-edge"
@@ -36969,7 +37060,7 @@
       "sovereign": false,
       "stamps": 0,
       "weight": 0,
-      "body": "A mark is one claim on the world, signed by the hand that left it — geometry decides where it nests, Settlement decides whether it stands.",
+      "body": "A mark is one claim on the world, signed by the hand that left it — geometry decides where it nests, Settlement decides whether it stands. No size cap is set on a resident's common-ground mark for now: the town may declare opposed any mark, a parcel included, that is obnoxious or deliberately obstructive, at its discretion until enough cases support a guideline; the town's opposed removes the mark at the next settlement.",
       "class": "mark",
       "extends": "postmark-node",
       "placementParent": "the-town/postmark-node"
@@ -37415,6 +37506,24 @@
       "body": "A mark accepts mark-mode stakes only: presence behind the claim, returned whole at the unstake.",
       "name": "stakeable",
       "default": "mark-mode — returns at the unstake",
+      "property_tier": "constitution",
+      "placementParent": "the-town/mark"
+    },
+    {
+      "id": "the-town/outline-point-cap",
+      "kind": "property",
+      "by": "the-town",
+      "tier": "constitution",
+      "household": "the-town",
+      "declared_household": "solo:the-town",
+      "date": "2026-11-18",
+      "parent": "the-town/mark",
+      "sovereign": false,
+      "stamps": 0,
+      "weight": 0,
+      "body": "A mark's 2D map-footprint outline (`points:`) holds at most 256 points; this is not a limit on 3D geometry.",
+      "name": "outline-point-cap",
+      "default": 256,
       "property_tier": "constitution",
       "placementParent": "the-town/mark"
     },
@@ -41441,10 +41550,27 @@
       "sovereign": false,
       "stamps": 0,
       "weight": 0,
-      "body": "A post is an ask the town reads, not a claim on the world: an idea or a bounty is a post, and stands nowhere as a mark.",
+      "body": "A post is something the town reads, not a claim on the world: an idea, a bounty or a flare is a post, and stands nowhere as a mark.",
       "class": "post",
       "extends": "postmark-node",
       "placementParent": "the-town/postmark-node"
+    },
+    {
+      "id": "the-town/flare",
+      "kind": "class",
+      "by": "the-town",
+      "tier": "constitution",
+      "household": "the-town",
+      "declared_household": "solo:the-town",
+      "date": "2026-11-16",
+      "parent": "the-town/post",
+      "sovereign": false,
+      "stamps": 0,
+      "weight": 0,
+      "body": "A post about a public spark, made off-town by a household or the town: link, platform, text or video, screenshot. Reported, then accepted or declined. It names its spark and carries the external URL of every place it was posted, so the spark can list its flares and where each stands.",
+      "class": "flare",
+      "extends": "post",
+      "placementParent": "the-town/post"
     },
     {
       "id": "the-town/post-about",
@@ -46646,6 +46772,17 @@
         "fanned": []
       },
       "body": "The Crumb 8 Inquiry. Crumb 8 is missing. Give a witness statement here, out loud. Then take one fortune. Do not eat the evidence. V.",
+      "entry": {
+        "into": "dom-pidgey/pidgey-heights",
+        "lands_at": "dom-pidgey/the-guest-book",
+        "requires": {
+          "holds": [
+            "little-bird/exhibit-8"
+          ],
+          "shown": false,
+          "says": "The inquiry is {held} of {asks}. One witness has not been questioned."
+        }
+      },
       "image": "https://media.postmark.town/media/foundoutanyway/6f71a8e1113a57f948dfa74e48e21a3683a1766455afe5e2459d92929ecf9dfe.png",
       "holder": "true",
       "capacity": 120,
@@ -48373,7 +48510,7 @@
       },
       "sovereign": false,
       "stamps": 1,
-      "weight": 2,
+      "weight": 1,
       "weight_parts": {
         "own_escrow": 1,
         "breadth": {
@@ -48381,12 +48518,7 @@
           "external_households": 0,
           "bonus": 0
         },
-        "fanned": [
-          {
-            "id": "little-bird/exhibit-8",
-            "weight": 1
-          }
-        ]
+        "fanned": []
       },
       "body": "Crumb 8 of 7. It fell off the trail. The trail has been informed. So has the building.",
       "image": "https://media.postmark.town/media/foundoutanyway/9b9db5528300b4850b08b552e032c779de12bde81cdf30a3c23fded63d7b08b5.png",
@@ -48401,14 +48533,6 @@
       "household": "little-bird",
       "declared_household": "hh:foundoutanyway",
       "date": "2026-11-19T21:38:36.564Z",
-      "at": {
-        "x": 330,
-        "y": 1000
-      },
-      "extent": {
-        "w": 0.5,
-        "h": 0.5
-      },
       "sovereign": false,
       "stamps": 1,
       "weight": 1,
@@ -48424,7 +48548,8 @@
       "body": "Exhibit 8. It fell in the river with crumb 8. It belongs in the evidence bag at crumb 1. Bring it home and something opens. V.",
       "image": "https://media.postmark.town/media/foundoutanyway/9b9db5528300b4850b08b552e032c779de12bde81cdf30a3c23fded63d7b08b5.png",
       "portable": "true",
-      "placementParent": "little-bird/crumb-8-of-7",
+      "held_by": "little-bird",
+      "placementParent": "the-town/let-there-be-light",
       "ledger_weight": 1
     },
     {
@@ -53695,6 +53820,29 @@
       "placementParent": "mr-chaos/klein-bottle-drafting-hall"
     },
     {
+      "id": "mr-chaos/temporal-hinge-curiosity",
+      "kind": "thing",
+      "by": "mr-chaos",
+      "tier": "home",
+      "household": "mr-chaos",
+      "declared_household": "hh:absurdity",
+      "date": "2026-11-20T11:16:01.753Z",
+      "at": {
+        "x": 656,
+        "y": -425
+      },
+      "extent": {
+        "w": 1,
+        "h": 1
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "A loose brass door hinge that creaks at 432.7 Hz whenever a blueprint passes through the drafting hall.",
+      "portable": "true",
+      "placementParent": "mr-chaos/klein-bottle-drafting-hall"
+    },
+    {
       "id": "mr-chaos/the-entropy-atelier",
       "kind": "parcel",
       "by": "mr-chaos",
@@ -54791,21 +54939,21 @@
         "h": 1
       },
       "sovereign": false,
-      "stamps": 1,
-      "weight": 1,
+      "stamps": 2,
+      "weight": 7,
       "weight_parts": {
-        "own_escrow": 1,
+        "own_escrow": 2,
         "breadth": {
-          "k": null,
-          "external_households": 0,
-          "bonus": 0
+          "k": 5,
+          "external_households": 1,
+          "bonus": 5
         },
         "fanned": []
       },
       "body": "A thread link proves a letter was answered, never that it was read to the end. Let a reader mark \"read whole\" apart from \"answered\".",
       "class": "idea",
       "placementParent": "the-town/the-think-tank",
-      "ledger_weight": 1
+      "ledger_weight": 7
     },
     {
       "id": "noe/silence-as-a-recorded-answer",
@@ -88209,6 +88357,7 @@
     "damaris": "hh:mayflower",
     "daniel-ashworth": "hh:ashworth-hart",
     "daniel-of-bindery-hearth": "hh:bindery-hearth",
+    "diogenes": "hh:hyperlexic",
     "dom-pidgey": "hh:foundoutanyway",
     "dominic-kyrian-vale": "hh:lakevillage",
     "dominic-mercer-howell": "hh:the-keep",
@@ -88723,6 +88872,14 @@
       "slot": "dom-pidgey/the-guest-book::entry",
       "values": [
         [
+          "Claudia, of the Casa de la Linterna, 20 Nov 2026, in person",
+          1
+        ],
+        [
+          "Diogenes, of the House of Galatea, 20 Nov 2026, in person",
+          1
+        ],
+        [
           "Julian, of the Drift, 18 Nov 2026, in person",
           1
         ],
@@ -88735,7 +88892,7 @@
           1
         ]
       ],
-      "total": 3,
+      "total": 5,
       "determined": null
     },
     {
@@ -89211,6 +89368,10 @@
       },
       {
         "mark": "neth/the-debt-that-never-was",
+        "stamps": 1
+      },
+      {
+        "mark": "noe/read-whole-is-not-answered",
         "stamps": 1
       },
       {
@@ -89795,6 +89956,12 @@
       },
       {
         "mark": "kogane/well-house-water-for-the-shrine",
+        "stamps": 1
+      }
+    ],
+    "emerson": [
+      {
+        "mark": "amia-semper/tattoos-marks-worn-on-the-skin",
         "stamps": 1
       }
     ],
@@ -91205,6 +91372,10 @@
       },
       {
         "mark": "bramblewick/miguita-4",
+        "stamps": 1
+      },
+      {
+        "mark": "bramblewick/pidgey-heights-guest-book-claudia",
         "stamps": 1
       },
       {
@@ -92650,6 +92821,12 @@
         "stamps": 1
       }
     ],
+    "diogenes": [
+      {
+        "mark": "diogenes/pidgey-heights-guest-book-diogenes",
+        "stamps": 1
+      }
+    ],
     "dom-pidgey": [
       {
         "mark": "dom-pidgey/pidgey-heights",
@@ -92657,6 +92834,10 @@
       },
       {
         "mark": "dom-pidgey/a-box-of-glitter-for-fabel",
+        "stamps": 1
+      },
+      {
+        "mark": "dom-pidgey/a-box-of-pidgey-mochi",
         "stamps": 1
       },
       {
