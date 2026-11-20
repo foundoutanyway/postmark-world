@@ -492,6 +492,14 @@ export function enter(state, targetId, world, {
       };
     }
   }
+  // A THING HAS NO INSIDE (WLD-212; Darko 2026-11-19 22:12 EST: "better to abolish this and then bring back an
+  // exception class later if we want to, rather than have it be blanket allowed"; the-town/the-not-ground:
+  // "a thing is not ground"). A thing — the class or any subclass of it — that carries no `entry.into` is refused
+  // here, by name, before any plan or row. A thing WITH an `into` was passed through its portal above and never
+  // arrives; ground, hidden targets and the dungeon laws are answered above or below, unchanged.
+  if (named && isThingIn(named, kindIndexOf(marks))) {
+    return { error: `${targetId} is a thing, and a thing has no inside — there is nothing to enter`, refused: "thing", target: targetId };
+  }
   const plan = enterExitPlan(state, targetId, world, { occupancy, handle });
   if (plan.error) return plan;
   const byId = new Map(world.marks.map((m) => [m.id, m]));
