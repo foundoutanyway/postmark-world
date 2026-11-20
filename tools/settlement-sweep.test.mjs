@@ -1984,3 +1984,43 @@ test("POS-688 D-O2 (Darko 2026-10-19 17:14): a thing owned by sb-ash is judged o
     if (!leaves) assert.equal(c.state().marks.find((m) => m.id === "berthillon/a-cone")?.owned_by, "sb-ash");
   }
 });
+
+// ── WLD-224: a parcel that newly takes in an older foreign mark is said to the keeper, and nothing else changes ─────────────────
+// Darko, 2026-11-20 15:48 EST: "isn't it just admit normally? and it gets flagged to the worldkeeper for coordination." Invented
+// residents: pip's older cafe stands; ola's parcel over it is published by the crossing.
+function parcelOverCrossing(t, { cafeBy }) {
+  const c = crossing(t, "parcel-capture");
+  c.put(`WORLD/marks/${cafeBy}/the-cafe/mark.md`, record({ by: cafeBy, at: { x: 1000, y: 1000 }, extent: { w: 10, h: 10 }, body: "a small cafe", date: "2026-07-28" }));
+  c.commit("published main");
+  c.git("switch", "-q", "-c", "draft/house-ola");
+  c.put("WORLD/marks/ola/the-low-house-parcel/mark.md", record({ kind: "parcel", by: "ola", at: { x: 1000, y: 1000 }, extent: { w: 25, h: 25 }, body: "ola's ground", date: "2026-11-18" }));
+  c.git("add", "-A");
+  c.git("-c", "user.name=fixture", "-c", "user.email=fixture@test.invalid", "commit", "-q", "-m", "ola lays a parcel");
+  c.git("switch", "-q", "main");
+  return c;
+}
+
+test("WLD-224: the crossing publishes the parcel as ever, the older mark files under it as ever, and the report flags the capture", (t) => {
+  const c = parcelOverCrossing(t, { cafeBy: "pip" });
+  const report = c.sweep();
+  assert.deepEqual(report.published.map((row) => row.id), ["ola/the-low-house-parcel"], "admission is unchanged: the parcel publishes");
+  const state = c.state();
+  assert.equal(state.marks.find((m) => m.id === "pip/the-cafe").placementParent, "ola/the-low-house-parcel", "containment is unchanged: the older mark files under the parcel by geometry");
+  assert.deepEqual(state.errors, [], "and the fold has no error, as before: this class cannot fail a gate, which is why it is flagged");
+  assert.equal(report.parcel_captures.checked, true);
+  assert.equal(report.parcel_captures.parcels_checked, 1);
+  assert.equal(report.parcel_captures.events.length, 1);
+  const [e] = report.parcel_captures.events;
+  assert.deepEqual([e.parcel, e.mark, e.overlap_m2, e.mark_area_m2], ["ola/the-low-house-parcel", "pip/the-cafe", 100, 100]);
+  assert.equal(e.parcel_household === e.mark_household, false, "two different households, named");
+  assert.deepEqual([e.parcel_by, e.mark_by], ["ola", "pip"]);
+  assert.equal(Array.isArray(report.parcel_captures), false, "an object, never an outcome channel an older receipt composer would name as unknown");
+});
+
+test("WLD-224 control: the same parcel over the same household's older mark is admitted and is not a capture", (t) => {
+  const c = parcelOverCrossing(t, { cafeBy: "ola" });
+  const report = c.sweep();
+  assert.deepEqual(report.published.map((row) => row.id), ["ola/the-low-house-parcel"]);
+  assert.equal(c.state().marks.find((m) => m.id === "ola/the-cafe").placementParent, "ola/the-low-house-parcel");
+  assert.deepEqual(report.parcel_captures, { checked: true, parcels_checked: 1, events: [] }, "looked at one parcel and found nothing taken in: checked-empty, not absent");
+});
