@@ -16955,6 +16955,12 @@ export function mountViewer(appEl) {
 
   // ───────── events ─────────
   let devTimer = null;
+  // A ROW PRESS BEGINS ON THE ROW (CORE-54, found in the built capture). On a touch screen a crowded press on the map opens the chooser in the phone column
+  // under the finger, and the click that follows the same touch then lands on the row that appeared there: the chooser chose its first row by itself
+  // (pointerup 5972 ms, "Choose one" 5991, click on a row 6033, "The Green House" 6120). So a click on a row counts only if its pointer press began on that
+  // row; a keyboard activation (no pointer, detail 0) is always a press.
+  let chooseDownOn = null;
+  root.addEventListener("pointerdown", (e) => { chooseDownOn = e.target.closest?.("[data-choose]") ?? null; }, true);
   root.addEventListener("click", (e) => {
     // the tour first, and every branch returns: while it is up it owns the page,
     // and a click that fell through to the painting underneath would select a
@@ -16989,6 +16995,7 @@ export function mountViewer(appEl) {
     // picking one out of the stack: from here it is an ordinary selection, and
     // the mark opens in exactly the bubble it would have opened in alone
     const chosen = e.target.closest("[data-choose]");
+    if (chosen && e.detail !== 0 && chooseDownOn !== chosen) return;     // a click whose press began elsewhere (the map) is not a row press
     if (chosen && isConvoChoiceId(chosen.dataset.choose)) { selectMark(chosen.dataset.choose); return; }
     if (chosen) { selectMark(chosen.dataset.choose, { scrollCell: true }); return; }
     const actor = e.target.closest("[data-act-as]");

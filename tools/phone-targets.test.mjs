@@ -88,3 +88,12 @@ test("CORE-54 (Wright 16:57Z): a crowded press on a phone opens the EXISTING cho
   // the chooser's content is not redesigned: the bubble path still builds it from the same function
   assert.match(SOURCE, /el\.innerHTML = html;\s*el\.hidden = false;\s*return;/);
 });
+
+test("CORE-54: the chooser does not choose for itself: a click counts as a ROW press only if its pointer press began on that row (the touch's own click lands on the row that appeared under the finger)", () => {
+  // found in the built capture: pointerup opened the chooser column, then the same touch's click hit its first row and opened that mark
+  assert.match(SOURCE, /let chooseDownOn = null;\s*root\.addEventListener\("pointerdown", \(e\) => \{ chooseDownOn = e\.target\.closest\?\.\("\[data-choose\]"\) \?\? null; \}, true\);/);
+  assert.match(SOURCE, /const chosen = e\.target\.closest\("\[data-choose\]"\);\s*if \(chosen && e\.detail !== 0 && chooseDownOn !== chosen\) return;/);
+  // the guard sits BEFORE both selection branches, and a keyboard activation (detail 0, no pointer) is still a press
+  const at = SOURCE.indexOf("if (chosen && e.detail !== 0 && chooseDownOn !== chosen) return;");
+  assert.ok(at > 0 && at < SOURCE.indexOf("if (chosen && isConvoChoiceId(chosen.dataset.choose))"), "the guard comes first");
+});
