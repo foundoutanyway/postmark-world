@@ -16327,6 +16327,13 @@ export function mountViewer(appEl) {
   // this. Without the latch, selecting a mark rebuilt the bubble that was
   // rebuilding it until the renderer died. The inner sync still does its own job
   // (the class toggles); it is only the bubble rebuild that must not nest.
+  // WLD-216: the open conversation's column takes the words each conversations read brings. The column keeps ONE key for the life of a conversation (so the reader is never
+  // rebuilt under its cursor); handing it the selected thread's fresh view under the same key is the column's liveUpdate, which also rewrites the plain transcript when an
+  // old office's conversation is showing it. The view is the selected thread's own, taken by id from what was just read: no other room's words, nothing concatenated.
+  function refreshConvoColumn() {
+    const column = convoColumnView(markInteraction.getState().selectedId);
+    if (column) homeColumn.open(column);
+  }
   let renderingBubbles = false;
   function renderBubbles() {
     if (renderingBubbles) return;
@@ -18180,7 +18187,7 @@ export function mountViewer(appEl) {
       // THE LANE IT LANDED IN, shown rather than asserted. The conversations
       // layer is the same record the town's page serves; re-reading it is the
       // cheapest honest proof that the voice is in it.
-      loadConversations().then(drawConversations).catch(() => {});
+      loadConversations().then(drawConversations).then(() => refreshConvoColumn()).catch(() => {});
     } else {
       send.disabled = !field.value.trim();
     }
@@ -18707,7 +18714,7 @@ export function mountViewer(appEl) {
     // the talk moves faster than the record: every other tick (~60 s), gentler
     // than the conversations page's own 7 s poll — this is a map, not a feed,
     // and a hidden layer costs the office nothing
-    if (convoVisible && tick % 2 === 0) loadConversations().then(drawConversations).then(() => homeColumn.refreshReader?.());
+    if (convoVisible && tick % 2 === 0) loadConversations().then(drawConversations).then(() => { refreshConvoColumn(); homeColumn.refreshReader?.(); });
     // ⚑ THE AMBIENT RE-DOWNLOAD ONLY RUNS WHERE THERE IS A FOLD. It re-fetched
     // the WHOLE town every ~60 s to notice the record had moved. On the
     // resident path there is no fold to refresh and the reads are keyed by

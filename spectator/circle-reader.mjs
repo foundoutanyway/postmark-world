@@ -389,13 +389,16 @@ let READER_UID = 0;
  * @param {(circleId) => string|null} [o.hrefForCircle]   a permalink for a circle (the page's anchor); drawn as a plain link when given
  * @param {Element} [o.scroller]         the element that scrolls the reader (its position is kept across a refresh); default: the nearest scrolling ancestor
  * @param {object} [o.labels]            word overrides (READER_WORDS keys)
+ * @param {boolean} [o.hostHoldsPlain]   WLD-216, explicit and off by default: the host itself holds this conversation's plain transcript and shows it when told
+ *   `onState("unavailable", { reason: "plain" })`. Only then does an old office's SUCCESSFUL plain list (no circles) stand down to the host; for every other caller
+ *   (no option) that answer is "could not read" with the reader's own notice and Try again, exactly as it was, so a bare caller never ends up with nothing.
  * @param {(handle: string) => (Node|null)} [o.faceForSpeaker]   WLD-213: an OPTIONAL host hook. Called with a speaker's handle each time a line (a room's opening
  *   statement, a conversation's full, context or old-talk line) is drawn; the FRESH decorative DOM node it returns is placed inline before the name, and null (or
  *   nothing) places nothing. The host owns what a face is (a picture, a monogram…) and how it is made safely: the reader knows no avatar source, household, photo,
  *   URL or office field, fetches nothing and looks nothing up. A string, a node that already has a parent (a reused one would be MOVED off an earlier line) or a
  *   throw is treated as null. Absent, the DOM and layout are exactly what they were. Further options may be added beside it; none is resolved here.
  */
-export function createCircleReader({ doc, host, source, roomId = null, canReply = false, onReply = null, onState = null, onNavigate = null, hrefForCircle = null, labels = null, scroller = null, faceForSpeaker = null } = {}) {
+export function createCircleReader({ doc, host, source, roomId = null, canReply = false, onReply = null, onState = null, onNavigate = null, hrefForCircle = null, labels = null, scroller = null, faceForSpeaker = null, hostHoldsPlain = false } = {}) {
   if (!doc || !host || !source) throw new Error("createCircleReader needs a document, a host and a source");
   const W = { ...READER_WORDS, ...(labels ?? {}) };
   const uid = ++READER_UID;
@@ -861,9 +864,10 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
   };
   const whyOf = (answer) => String(answer?.defect ?? answer?.error ?? (answer && typeof answer === "object" ? NOT_SERVED : ""));
   // WLD-216 (prod, 2026-11-19: "we couldn't read this … the office did not answer with the circles of this room"). An office from before POS-1035 ignores `?room=` and
-  // SUCCEEDS with its plain conversations list (`live` / `closed`), with no `error` and no `circles`. That is not a failed read: the host already holds the selected
-  // conversation's plain transcript, so the reader draws NOTHING of its own and says why (`reason: "plain"`); the host keeps (or shows) its plain timeline, with no
-  // error. Everything else stays what it was: an `error`, no answer, a non-object, or an object that is neither circles nor the plain list is "could not read".
+  // SUCCEEDS with its plain conversations list (`live` / `closed`), with no `error` and no `circles`. For a host that says it holds the selected conversation's
+  // plain transcript (`hostHoldsPlain`), that is not a failed read: the reader draws NOTHING of its own and says why (`reason: "plain"`); the host shows its plain
+  // timeline, with no error. Every other caller, and everything else (an `error`, no answer, a non-object, an object that is neither circles nor the plain list),
+  // is "could not read" as it always was.
   const plainFeed = (answer) => {
     if (!answer || typeof answer !== "object" || Array.isArray(answer) || answer.error) return false;
     const f = unwrap(answer);
@@ -878,7 +882,7 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     let answer;
     try { answer = await source.room(state.roomId); } catch (e) { answer = { error: String(e?.message ?? e) }; }
     if (mine !== state.token) return;
-    if (plainFeed(answer)) { state.roomModel = null; clear(root); setState("unavailable", { reason: "plain" }); return; }
+    if (hostHoldsPlain && plainFeed(answer)) { state.roomModel = null; clear(root); setState("unavailable", { reason: "plain" }); return; }
     if (refused(answer, "room")) { return failed(whyOf(answer)); }
     state.roomModel = modelOfRoom(answer);
     drawRoom(state.roomModel);
