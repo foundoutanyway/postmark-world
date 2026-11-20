@@ -17,8 +17,11 @@
 // is asked of the parcel, not of a word on its ground.
 //
 // NEWLY: only a parcel published in THIS crossing, and standing in the folded world (a refused or unpublished candidate is not in
-// it, so it is never reported as an event that completed). Nothing here is a census of the town and nothing backfills a closed
-// case; a pair that already stood last crossing is not a parcel published this crossing.
+// it, so it is never reported as an event that completed), AND only a pair the crossing made. A parcel an ordinary amend republishes
+// (its words, a picture) is "published" too, so publication alone is not new: `priorParentOf` is main's folded parent before this
+// crossing (the sweep's `mainFolded`), and a mark that already filed under this parcel then is an unchanged pair, never an event.
+// A parcel that is moved or resized and newly takes in an older mark IS still flagged. Nothing here is a census of the town and
+// nothing backfills a closed case.
 //
 // ABSENT IS NOT EMPTY. `{ checked: false, why }` when the folded world could not be read; `{ checked: true, parcels_checked, events: [] }`
 // when it was read and nothing was taken in, with how many new parcels it looked at.
@@ -30,11 +33,12 @@ const area = (row) => { const r = rect(row); return r.w * r.h; };
 const round = (n) => Math.round(n * 100) / 100;
 
 /**
- * @param {{ state: object|null, publishedIds: Iterable<string> }} input
- *   state: the parsed WORLD/world-state.json the fold just wrote; publishedIds: the ids this crossing published.
+ * @param {{ state: object|null, publishedIds: Iterable<string>, priorParentOf?: (id: string) => string|null }} input
+ *   state: the parsed WORLD/world-state.json the fold just wrote; publishedIds: the ids this crossing published;
+ *   priorParentOf: where a mark filed before this crossing (main's folded placementParent), null when it did not stand.
  * @returns {{ checked: boolean, why?: string, parcels_checked?: number, events?: object[] }}
  */
-export function parcelCaptures({ state, publishedIds }) {
+export function parcelCaptures({ state, publishedIds, priorParentOf = () => null }) {
   if (!state || !Array.isArray(state.marks)) return { checked: false, why: "the folded world could not be read, so nobody looked for a parcel taking in an older mark" };
   const refused = new Set((state.errors ?? []).map((e) => e?.mark).filter(Boolean));
   const fresh = new Set(publishedIds ?? []);
@@ -44,6 +48,7 @@ export function parcelCaptures({ state, publishedIds }) {
     const laid = Date.parse(String(claimInstant(parcel) ?? ""));
     for (const mark of state.marks) {
       if (mark.id === parcel.id || mark.placementParent !== parcel.id) continue;     // what files under it, by the fold's own containment
+      if (priorParentOf(mark.id) === parcel.id) continue;                             // it filed under this parcel before this crossing: an unchanged pair
       const hh = householdOf(mark), parcelHh = householdOf(parcel);
       if (hh == null || parcelHh == null || hh === parcelHh) continue;                // another household's, by the credential grain
       const older = Date.parse(String(claimInstant(mark) ?? ""));

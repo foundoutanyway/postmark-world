@@ -2032,6 +2032,7 @@ export function settlementSweep({
       parcelCaptureReport = parcelCaptures({
         state: JSON.parse(readFileSync(join(repo, "WORLD", "world-state.json"), "utf8")),
         publishedIds: published.map((row) => row.id),
+        priorParentOf: (id) => mainFolded.get(id)?.placementParent ?? null,   // main's fold before this crossing: an unchanged pair is not new
       });
     } catch (error) {
       parcelCaptureReport = { checked: false, why: `the folded world could not be read for parcel captures: ${String(error?.message ?? error).slice(0, 200)}` };

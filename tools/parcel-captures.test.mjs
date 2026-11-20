@@ -60,6 +60,22 @@ test("absent is not empty: an unreadable world says so, a read world with nothin
   assert.deepEqual(parcelCaptures({ state: { marks: [parcel("ola/the-low-house-parcel")], errors: [] }, publishedIds: NEW }), { checked: true, parcels_checked: 1, events: [] });
 });
 
+test("newly means the crossing made the pair: a republished parcel's unchanged pair is not an event, a parcel that newly takes one in still is (WLD-224 F1)", () => {
+  const prior = (map) => (id) => map[id] ?? null;
+  // the parcel is republished (its words amended): it is in publishedIds, and pip's cafe already filed under it on main
+  const same = parcelCaptures({ state: world(), publishedIds: NEW, priorParentOf: prior({ "pip/the-cafe": "ola/the-low-house-parcel" }) });
+  assert.deepEqual(same, { checked: true, parcels_checked: 1, events: [] }, "an unchanged older-foreign pair is not a new capture: looked at one parcel, found nothing new");
+  // the same republication, but the parcel was moved or resized and now newly takes the cafe in: its prior parent was the frame
+  const moved = parcelCaptures({ state: world(), publishedIds: NEW, priorParentOf: prior({ "pip/the-cafe": "the-town/the-frame" }) });
+  assert.deepEqual(moved.events.map((e) => e.mark), ["pip/the-cafe"], "a parcel that newly takes an older mark in is flagged, republished or not");
+  // a mark that did not stand on main (no prior parent) is a pair this crossing made
+  assert.equal(parcelCaptures({ state: world(), publishedIds: NEW, priorParentOf: prior({}) }).events.length, 1);
+  // the other pairs are judged one by one: one unchanged, one new
+  const two = world({ marks: [row("cy/the-stall", { placementParent: "ola/the-low-house-parcel", date: "2026-10-30T00:00:00.000Z" })] });
+  const mixed = parcelCaptures({ state: two, publishedIds: NEW, priorParentOf: prior({ "pip/the-cafe": "ola/the-low-house-parcel" }) });
+  assert.deepEqual(mixed.events.map((e) => e.mark), ["cy/the-stall"]);
+});
+
 test("it reads, it does not decide: the same rows give the same parents with or without the flag (nothing is written or filtered)", () => {
   const state = world();
   const before = JSON.stringify(state);

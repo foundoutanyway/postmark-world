@@ -2024,3 +2024,24 @@ test("WLD-224 control: the same parcel over the same household's older mark is a
   assert.equal(c.state().marks.find((m) => m.id === "ola/the-cafe").placementParent, "ola/the-low-house-parcel");
   assert.deepEqual(report.parcel_captures, { checked: true, parcels_checked: 1, events: [] }, "looked at one parcel and found nothing taken in: checked-empty, not absent");
 });
+
+test("WLD-224 F1: a body-only republication of an existing parcel is published, and its unchanged older-foreign pair is not a new capture", (t) => {
+  const c = crossing(t, "parcel-republished");
+  c.put("WORLD/marks/pip/the-cafe/mark.md", record({ by: "pip", at: { x: 1000, y: 1000 }, extent: { w: 10, h: 10 }, body: "a small cafe", date: "2026-07-28" }));
+  const parcelPath = "WORLD/marks/ola/the-low-house-parcel/mark.md";
+  const parcel = (body) => record({ kind: "parcel", by: "ola", at: { x: 1000, y: 1000 }, extent: { w: 25, h: 25 }, body, date: "2026-11-18" });
+  c.put(parcelPath, parcel("ola's ground"));
+  c.commit("published main");
+  const before = c.state().marks.find((m) => m.id === "pip/the-cafe").placementParent;
+  assert.equal(before, "ola/the-low-house-parcel", "the pair already stands on main: the cafe files under the parcel");
+  c.git("switch", "-q", "-c", "draft/house-ola");
+  c.put(parcelPath, parcel("ola's ground, with a new name for the house"));   // only the words change: geometry, claim instant and parents do not
+  c.git("add", "-A");
+  c.git("-c", "user.name=fixture", "-c", "user.email=fixture@test.invalid", "commit", "-q", "-m", "ola amends her parcel's words");
+  c.git("switch", "-q", "main");
+  const report = c.sweep();
+  assert.deepEqual(report.published.map((row) => row.id), ["ola/the-low-house-parcel"], "the republication is real: the amended parcel is published again");
+  assert.equal(c.state().marks.find((m) => m.id === "pip/the-cafe").placementParent, before, "and no parent moved");
+  assert.deepEqual(report.parcel_captures, { checked: true, parcels_checked: 1, events: [] },
+    "the pair stood before this crossing, so nothing is new: it looked at the republished parcel and found no new capture");
+});
