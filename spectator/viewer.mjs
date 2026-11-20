@@ -15674,7 +15674,9 @@ export function mountViewer(appEl) {
   function chooserColumnView(id) {
     const ids = id ? chooserIdsFrom(id) : null;
     if (!ids || !onPhone()) return null;
-    return { key: id, kicker: "here", title: "Choose one", chooser: { fill: (host) => { host.innerHTML = chooserHTML(id); } } };
+    // the column opens a view only with a handle and a key; a view that brings its own door (here an empty one) is painted as handed, with no home read
+    return { key: id, handle: "the-town", residentLink: false, kicker: "here", title: "Choose one", byline: " ", door: { blocks: [] },
+      chooser: { fill: (host) => { host.innerHTML = chooserHTML(id); } } };
   }
   function creatureColumnView(id) {
     if (!isCreatureId(id)) return null;
