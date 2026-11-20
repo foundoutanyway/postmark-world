@@ -1020,6 +1020,19 @@ export const HOME_COLUMN_CSS = `
 .wv-homecol-close { margin-left:auto; flex:none; border:0; background:transparent; color:var(--dim);
   font:inherit; font-size:.95rem; line-height:1; padding:3px 7px; border-radius:4px; cursor:pointer; }
 .wv-homecol-close:hover, .wv-homecol-close:focus-visible { color:var(--paper); background:var(--panel2); }
+/* CORE-54 (Darko 2026-11-20: "1. Buttons cover titles", "4. Small targets"). ON A PHONE the host's own floating buttons (a Postmark pill, a Time-travel pill)
+   ride over the top of this full-height column, and nothing reserved room for them: the title began under them. The host says, in --wv-chrome-bottom, the
+   y (px from the top of the screen) below which it has nothing floating; the column's sticky nav is at least that tall, so its bar IS the band the
+   host's buttons float on and the title, the facts and the close sit clear below it. No host value, no reserve (a standalone viewer has no such buttons).
+   The close keeps its mark and gains a 44 px press target. */
+@media (max-width:720px) {
+  .wv-homecol-nav { min-height:var(--wv-chrome-bottom, 0px); box-sizing:border-box; align-items:flex-end; }
+  .wv-homecol-close { align-self:flex-start; }
+}
+@media (max-width:720px), (pointer:coarse) {
+  .wv-homecol-close { min-width:44px; min-height:44px; }
+  .wv-homecol-all { display:inline-block; padding:12px 6px; }
+}
 .wv-homecol-scroll { flex:1; min-height:0; overflow-y:auto; padding:14px 15px 26px;
   scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
 .wv-homecol-title { margin:0; color:var(--paper); font-size:1.22rem; line-height:1.25; }

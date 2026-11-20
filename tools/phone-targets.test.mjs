@@ -1,0 +1,78 @@
+// phone-targets.test.mjs — CORE-54 (Darko 2026-11-20 picks: "1. Buttons cover titles", "4. Small targets"; Wright 13:50:53Z).
+//
+//   node --test tools/phone-targets.test.mjs
+//
+// Two things, both at a phone's width and for a finger:
+//   · TARGETS: a touch press reaches farther than a cursor (22 px, a 44 px target; a pip is ~6 px and its cursor reach is 18). The ranking and the
+//     chooser are the SAME, only the reach grows; a crowded press still lists everything it reaches.
+//   · CLEARANCE: the column's sticky nav is at least as tall as the host's floating chrome (--wv-chrome-bottom, set by the Site), so the title begins
+//     below the Postmark and Time-travel buttons. No host value, no reserve: a standalone viewer and the desktop layout are unchanged.
+// The real browser demonstration (a touch press near an old target edge, the crowded case, and the 390 px pictures) lives in the PR report; these are the
+// direct pins the viewer's pure parts and source can hold.
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { clickablesAtPoint, contestedMarksAtPoint, MARK_SNAP_RADIUS_PX, MARK_SNAP_RADIUS_TOUCH_PX, CONVO_HIT_TOUCH_PX, snapRadiusFor } from "../spectator/viewer.mjs";
+import { HOME_COLUMN_CSS } from "../spectator/home-column.mjs";
+
+const SOURCE = readFileSync(new URL("../spectator/viewer.mjs", import.meta.url), "utf8");
+const at = { x: 200, y: 300 };
+const pip = (id, dx, dy = 0) => ({ id, x: at.x + dx, y: at.y + dy });
+
+test("the reach is the pointer's own: a finger 22 px (a 44 px target), a pen the same, a cursor stays 18", () => {
+  assert.equal(MARK_SNAP_RADIUS_PX, 18, "the cursor's reach did not move");
+  assert.equal(MARK_SNAP_RADIUS_TOUCH_PX, 22);
+  assert.equal(CONVO_HIT_TOUCH_PX, 22);
+  assert.equal(snapRadiusFor("touch"), 22);
+  assert.equal(snapRadiusFor("pen"), 22);
+  assert.equal(snapRadiusFor("mouse"), 18);
+  assert.equal(snapRadiusFor(undefined), 18, "an unknown pointer is a cursor (today's behaviour)");
+});
+
+test("a press near an OLD edge: 20 px from a pip misses with a cursor and lands with a finger; 24 px still misses both", () => {
+  const marks = [pip("the-town/main-channel", 20)];
+  assert.deepEqual(clickablesAtPoint(at, { marks }, snapRadiusFor("mouse")).all, [], "20 px is outside the cursor's 18");
+  assert.deepEqual(clickablesAtPoint(at, { marks }, snapRadiusFor("touch")).all, ["the-town/main-channel"], "and inside the finger's 22");
+  assert.deepEqual(clickablesAtPoint(at, { marks: [pip("far", 24)] }, snapRadiusFor("touch")).all, [], "the reach has an edge: 24 px is not 'near'");
+  // the default (no radius) is the cursor's, so every existing caller is unchanged
+  assert.deepEqual(clickablesAtPoint(at, { marks }).all, []);
+});
+
+test("the CROWDED case still goes to the one chooser: a finger lists every pip it reaches, nearest first, and the ranking is the single click's own", () => {
+  const marks = [pip("a/centre", 2, 1), pip("b/edge-of-old", 17), pip("c/only-new-reach", 21), pip("d/outside", 40)];
+  const touch = clickablesAtPoint(at, { marks }, snapRadiusFor("touch")).all;
+  const mouse = clickablesAtPoint(at, { marks }, snapRadiusFor("mouse")).all;
+  assert.deepEqual(touch, ["a/centre", "b/edge-of-old", "c/only-new-reach"], "three under the finger, nearest first, none outside");
+  assert.deepEqual(mouse, ["a/centre", "b/edge-of-old"], "two under the cursor");
+  assert.ok(touch.length > 1, "more than one: the caller opens the chooser, it does not guess");
+  assert.deepEqual(touch, contestedMarksAtPoint(at, marks, 22), "the chooser's list IS the snap's ranking at that reach");
+  // one alone still opens directly
+  assert.deepEqual(clickablesAtPoint(at, { marks: [pip("solo", 21)] }, 22).all, ["solo"]);
+});
+
+test("the click path asks that rule, for a touch's reach: the pins on the pointer-up branch and the drawn-disc reach for the conversation badge", () => {
+  assert.match(SOURCE, /const reach = snapRadiusFor\(e\.pointerType\);/);
+  assert.match(SOURCE, /clickablesAtPoint\(\{ x: e\.clientX, y: e\.clientY \}, \{ marks: candidates \}, reach\)\.all/);
+  // the badge: resolved on screen from the drawn disc, a finger 22 px / a cursor 13 px; a reader who can act keeps the ground beside it as ground
+  assert.match(SOURCE, /const convoDiscsAt = \(x, y, pointerType\) => \{/);
+  assert.match(SOURCE, /const reach = canAct\(\) \? \(touch \? 16 : 0\) : \(touch \? CONVO_HIT_TOUCH_PX : CONVO_HIT_MIN_PX\);/);
+  assert.match(SOURCE, /const hit = convoClickAt\(wp\.x, wp\.y\) \?\? convoDiscsAt\(e\.clientX, e\.clientY, e\.pointerType\)\[0\] \?\? null;/);
+});
+
+test("CLEARANCE: the phone column's nav is at least the host's chrome tall (--wv-chrome-bottom), with NO value no reserve; the close and the 'all conversations' link are thumb-sized", () => {
+  assert.match(HOME_COLUMN_CSS, /@media \(max-width:720px\) \{\s*\.wv-homecol-nav \{ min-height:var\(--wv-chrome-bottom, 0px\); box-sizing:border-box; align-items:flex-end; \}/);
+  assert.match(HOME_COLUMN_CSS, /@media \(max-width:720px\), \(pointer:coarse\) \{\s*\.wv-homecol-close \{ min-width:44px; min-height:44px; \}/);
+  assert.match(HOME_COLUMN_CSS, /\.wv-homecol-all \{ display:inline-block; padding:12px 6px; \}/);
+  // desktop: the nav rule lives only inside the phone media query (nothing outside it names --wv-chrome-bottom)
+  const outside = HOME_COLUMN_CSS.replace(/\/\*[\s\S]*?\*\//g, "").replace(/@media \(max-width:720px\) \{[\s\S]*?\n\}\n/, "");
+  assert.doesNotMatch(outside, /--wv-chrome-bottom/, "the reserve is a phone rule only");
+});
+
+test("TARGETS in the viewer's own stylesheet: the round map controls reach ~44 px tall, the tour's three buttons are 44 px, each step dot sits in a 20 x 44 target, the mark bubble's close is 44 px", () => {
+  assert.match(SOURCE, /@media \(max-width:720px\), \(pointer:coarse\) \{\s*\.wv-mapctl \.ctl \{ position:relative; \}\s*\.wv-mapctl \.ctl::after \{ content:""; position:absolute; inset:-5px -3px; border-radius:999px; \}/);
+  assert.match(SOURCE, /\.wv-tour-acts button \{ min-height:44px; \}/);
+  assert.match(SOURCE, /\.wv-tour-dot \{ position:relative; width:20px; height:44px; border-radius:0; background:transparent; transform:none; \}/);
+  assert.match(SOURCE, /\.wv-bubble-close \{ min-width:44px; min-height:44px; \}/);
+  // the tour's words, steps and flow are WLD-220's: this change did not touch them
+  assert.match(SOURCE, /const TOUR_SLIDES = \[/);
+});

@@ -2211,6 +2211,14 @@ export function hydrateMarkImages(box, resolve, doc = globalThis.document) {
 }
 
 export const MARK_SNAP_RADIUS_PX = 18;
+// A FINGER IS NOT A CURSOR (CORE-54, Darko 2026-11-20 "4. Small targets"): a pip is ~6 px and its 18 px snap circle is a 36 px target, under the
+// ~44 px a thumb needs. A touch press reaches 22 px (a 44 px target); a mouse keeps 18. Same ranking, same chooser: only the reach grows.
+export const MARK_SNAP_RADIUS_TOUCH_PX = 22;
+/** The snap reach for the pointer that pressed: a touch (or pen) gets the finger's reach, anything else the cursor's. */
+export const snapRadiusFor = (pointerType) => (pointerType === "touch" || pointerType === "pen" ? MARK_SNAP_RADIUS_TOUCH_PX : MARK_SNAP_RADIUS_PX);
+/** A conversation badge is a ~5 px disc: the screen distance a press may be from its centre and still mean it. Resolved from the drawn disc at use
+ *  (like the pip boxes), so it can never drift from what is on screen: a cursor reaches 13 px (the long-standing easy reach), a finger 22 px. */
+export const CONVO_HIT_TOUCH_PX = 22;
 
 // ── marker size on screen ────────────────────────────────────────────────────
 // Markers are authored in painting units but have to read at a stable size on
@@ -5042,9 +5050,9 @@ export function chooserLeadLine(ids = []) {
  *  click could have meant and nothing else. `people` are the residents and
  *  the creatures, `marks` the pips, cards and shapes, all in screen space.
  *  Pure. */
-export function clickablesAtPoint(point, { people = [], marks = [] } = {}) {
-  const who = contestedMarksAtPoint(point, people);
-  const what = contestedMarksAtPoint(point, marks);
+export function clickablesAtPoint(point, { people = [], marks = [] } = {}, radiusPx = MARK_SNAP_RADIUS_PX) {
+  const who = contestedMarksAtPoint(point, people, radiusPx);
+  const what = contestedMarksAtPoint(point, marks, radiusPx);
   return { people: who, marks: what, all: [...who, ...what] };
 }
 
@@ -6929,6 +6937,21 @@ ${WV_ENTER_CSS}
 .wv-tour-back:disabled { opacity:.3; cursor:not-allowed; }
 .wv-tour-next { color:var(--night); background:linear-gradient(180deg,#a9c8ef,var(--blue));
   border:1px solid var(--blue); font-weight:700; }
+/* CORE-54 (Darko, "4. Small targets"): the tour's own controls keep their words, steps and order (WLD-220 owns those) and gain REACH on a phone or a
+   touch screen: the three buttons are 44 px tall, and each 7 px step dot sits in a 20 x 44 press target that draws the same dot. */
+@media (max-width:720px), (pointer:coarse) {
+  .wv-tour-acts button { min-height:44px; }
+  .wv-tour-skip { min-width:44px; }
+  .wv-tour-dots { gap:0; }
+  .wv-tour-dot { position:relative; width:20px; height:44px; border-radius:0; background:transparent; transform:none; }
+  .wv-tour-dot::before { content:""; position:absolute; left:50%; top:50%; width:7px; height:7px; margin:-3.5px 0 0 -3.5px;
+    border-radius:999px; background:rgba(123,167,224,.26); transition:background .12s; }
+  .wv-tour-dot:hover { background:transparent; transform:none; }
+  .wv-tour-dot:hover::before { background:rgba(123,167,224,.62); }
+  .wv-tour-dot.on, .wv-tour-dot.on:hover { background:transparent; }
+  .wv-tour-dot.on::before { background:var(--blue); }
+  .wv-tour-open::after { content:""; position:absolute; inset:-5px -3px; }
+}
 /* the ? wears a ring until the tour has been taken once — a tutorial nobody
    finds is a tutorial nobody reads, and this is the smallest thing that says
    "there is one" without taking the page hostage on arrival */
@@ -7194,6 +7217,14 @@ ${PIP_CSS}
   background:rgba(232,197,106,.16); }
 .wv-mapctl .ctl.on { color:var(--night); border-color:var(--amber);
   background:linear-gradient(180deg,#f0d68f,var(--amber)); }
+/* CORE-54 (Darko 2026-11-20, "4. Small targets"): on a phone or a touch screen the round map controls keep their DRAWN size and gain REACH: a
+   transparent border-box extension makes each press target about 44 px tall (and 38 px wide, so the five-circle row and its 6 px gaps do not move). */
+@media (max-width:720px), (pointer:coarse) {
+  .wv-mapctl .ctl { position:relative; }
+  .wv-mapctl .ctl::after { content:""; position:absolute; inset:-5px -3px; border-radius:999px; }
+  .wv-root-mark { position:relative; }
+  .wv-root-mark::after { content:""; position:absolute; inset:-9px; border-radius:999px; }
+}
 /* THE SEARCH PILL. Collapsed it is one of the circles; open it is a pill that
    grows leftward, which is free because the row is right-anchored. The width is
    the only thing that animates, so nothing reflows around it. */
@@ -7540,6 +7571,7 @@ ${WV_BUBBLE_CSS}
 .wv-bubble-close { margin-left:auto; flex:none; border:0; background:transparent; color:var(--dim);
   font:inherit; font-size:.95rem; line-height:1; padding:4px 7px; cursor:pointer; border-radius:4px; }
 .wv-bubble-close:hover, .wv-bubble-close:focus-visible { color:var(--paper); background:var(--panel2); }
+@media (max-width:720px), (pointer:coarse) { .wv-bubble-close { min-width:44px; min-height:44px; } }   /* CORE-54: the close keeps its mark, gains a thumb's reach */
 /* the cell inside a bubble is the SAME cell the panel builds — the bubble only
    takes away the frame it no longer needs (its own border, its width cap) */
 .wv-bubble .wv-card { border:0; border-radius:0; margin:0; max-width:none; padding:10px 13px; cursor:pointer; }
@@ -11471,11 +11503,17 @@ export function mountViewer(appEl) {
       // EVERY CLICKABLE UNDER THE CURSOR, no kind special-cased (Darko 2026-10-16
       // 17:37, row 55: "If it's … there under the cursor when you click it, then
       // it should be included in the chooser. Simple as that.")
+      const reach = snapRadiusFor(e.pointerType);          // CORE-54: a finger reaches 22 px, a cursor 18 (same ranking, same chooser)
       const here = clickablesAtPoint({ x: e.clientX, y: e.clientY },
-        { people: [...screenWalkerCandidates(), ...screenCreatureCandidates()], marks: screenMarkCandidates() });
+        { people: [...screenWalkerCandidates(), ...screenCreatureCandidates()], marks: screenMarkCandidates() }, reach);
       // …and with the 💬 lens up, every wash the point is in (Darko 18:06, call A):
       // alone it opens its thread, as ever; with anything else it is one more entry
-      const washes = (() => { const wp = worldPointForEvent(e); return convosAt(wp.x, wp.y).map((h) => convoChoiceId(h.id)); })();
+      const washes = (() => {
+        const wp = worldPointForEvent(e);
+        const ids = new Set(convosAt(wp.x, wp.y).map((h) => String(h.id)));
+        for (const d of convoDiscsAt(e.clientX, e.clientY, e.pointerType)) ids.add(String(d.id));    // the drawn disc, resolved on screen (CORE-54)
+        return [...ids].map((id) => convoChoiceId(id));
+      })();
       const peopleHere = here.people;
       if (peopleHere.length) {
         if (here.all.length + washes.length > 1) { openChooser([...here.all, ...washes]); return; }
@@ -11493,7 +11531,7 @@ export function mountViewer(appEl) {
       // it meant before the layer existed.
       {
         const wp = worldPointForEvent(e);
-        const hit = convoClickAt(wp.x, wp.y); // visibility-gated: always null while hidden
+        const hit = convoClickAt(wp.x, wp.y) ?? convoDiscsAt(e.clientX, e.clientY, e.pointerType)[0] ?? null; // visibility-gated: always null while hidden
         // the thread opens in the right-hand column (Darko 2026-11-06), beside the map, never over it and in no new tab:
         // a click selects it, and the selection is what the column and the wash follow
         if (hit) { selectMark(convoChoiceId(hit.id)); return; }
@@ -11506,7 +11544,7 @@ export function mountViewer(appEl) {
       // behaviour this map has always had, down to the scrollCell.
       const candidates = screenMarkCandidates();
       // no one here: the same one rule over the marks (row 55)
-      const contested = clickablesAtPoint({ x: e.clientX, y: e.clientY }, { marks: candidates }).all;
+      const contested = clickablesAtPoint({ x: e.clientX, y: e.clientY }, { marks: candidates }, reach).all;
       if (contested.length > 1) { openChooser(contested); return; }
       const markId = contested[0] ?? null;
       // A PIP OR A CARD names its mark outright, and aims at it, as always. A hung
@@ -13303,6 +13341,23 @@ export function mountViewer(appEl) {
     const k = markerScale(m.zoomK ?? 1);
     const mpp = m.paneW > 0 && m.view?.w ? (m.view.w / m.paneW) * m.mPerPx : 0;
     return Math.max((CONVO_BADGE_R * m.mPerPx) / k, CONVO_HIT_MIN_PX * mpp);
+  };
+  // The badges a PRESS reaches, measured on screen from the drawn discs at use (CORE-54: a ~5 px disc is not a thumb-sized target, and the world-space
+  // test above can drift from what is drawn). A spectator's cursor reaches CONVO_HIT_MIN_PX, a finger CONVO_HIT_TOUCH_PX; a reader who CAN ACT walks
+  // the map, so the ground beside a badge stays ground: a cursor keeps the disc alone (the world-space test above), a finger gets a short 16 px reach.
+  const convoDiscsAt = (x, y, pointerType) => {
+    if (!convoVisible || !mapCtx?.convoLayer) return [];
+    const touch = pointerType === "touch" || pointerType === "pen";
+    const reach = canAct() ? (touch ? 16 : 0) : (touch ? CONVO_HIT_TOUCH_PX : CONVO_HIT_MIN_PX);
+    if (!reach) return [];
+    const out = [];
+    for (const g of mapCtx.convoLayer.querySelectorAll(".wv-convo-badge")) {
+      const r = g.querySelector(".wv-convo-disc")?.getBoundingClientRect();
+      if (!r || !(r.width > 0)) continue;
+      const dist = Math.hypot(r.x + r.width / 2 - x, r.y + r.height / 2 - y);
+      if (dist <= Math.max(reach, r.width / 2)) out.push({ id: g.getAttribute("data-convo"), dist });
+    }
+    return out.sort((a, b) => a.dist - b.dist);
   };
   // every badge holding the point, nearest first (row 63's rule counts them all)
   const convosAt = (wx, wy, { disc = false } = {}) => {
