@@ -10405,11 +10405,11 @@ export function mountViewer(appEl) {
       }
       return null;
     }
-    const e0 = eyesAt(standpoint, name, key);
+    const e = eyesAt(standpoint, name, key);
     // the display selection takes the non-matches out of the one radial both the list and the painting are built from (the memoised read is not touched)
-    const e = { ...e0, radial: displayRadial(e0.radial) };
-    const within = e.radial.within ?? [];
-    const obs = e.radial.observer ?? {};
+    const radial = displayRadial(e.radial);
+    const within = radial.within ?? [];
+    const obs = radial.observer ?? {};
     const isNew = state.markFilter === "new";
     // (`chips` — one row, one question: everything, just mine, or recency — is
     // hoisted above the resident branch, since both arms wear it.)
@@ -10441,7 +10441,7 @@ export function mountViewer(appEl) {
     // modularity, 2026-07-24 eve: the seam residents' own mechanics will use).
     const TELLERS = {
       elevation: () => elevStateLine(obs),
-      fog: () => fogStateLine(e.radial, obs),
+      fog: () => fogStateLine(radial, obs),
     };
     // World-law cells are the-town's (constitution) — skipped under Mine, and part
     // of the ladder, so they go with it under New.
@@ -10464,12 +10464,12 @@ export function mountViewer(appEl) {
         ? `<div class="wv-section-lbl">new marks — the whole record, newest first</div>`
           + `<div class="wv-cards">${feed.html}</div>`
           + `<div class="wv-tallies">${esc(feed.count)}</div>`
-        : `<div class="wv-cards">${tellingCards(e.radial, mine ? isMine : null)}</div>`
-          + `<div class="wv-tallies">${esc(tallies(e.radial))}</div>`);
-    if (mine) renderMineTail(box, e.radial);  // the same just-mine list continues beyond this sight
+        : `<div class="wv-cards">${tellingCards(radial, mine ? isMine : null)}</div>`
+          + `<div class="wv-tallies">${esc(tallies(radial))}</div>`);
+    if (mine) renderMineTail(box, radial);  // the same just-mine list continues beyond this sight
     foldRenderedPredicates(box);
     mountMarkImages(box);
-    return e.radial;
+    return radial;
   }
   // ───────── the resident's telling, written from the read ───────────────────
   //
@@ -11976,7 +11976,7 @@ export function mountViewer(appEl) {
       for (const arr of Object.values(bands ?? {}))
         for (const m of arr ?? []) {
           if (!m?.id || !m.at || typeof m.at.x !== "number" || seen.has(m.id)) continue;
-          seen.add(m.id); out.push(m);
+          seen.add(m.id); if (shownByDisplay(m)) out.push(m);
         }
     // the radial's own entries come first and are KEPT: they carry distM and
     // bearing, which the bare record mark does not
@@ -11991,14 +11991,14 @@ export function mountViewer(appEl) {
     for (const id of paintingMarkIds({ radialIds: [...seen], mineIds })) {
       if (seen.has(id)) continue;
       const m = byId.get(id);
-      if (m?.at && typeof m.at.x === "number") { seen.add(id); out.push(m); }
+      if (m?.at && typeof m.at.x === "number") { seen.add(id); if (shownByDisplay(m)) out.push(m); }
     }
     // A HELD THING IS NOT DRAWN (POS-688, Darko 2026-10-18 20:58): published but
     // unplaced, it shows as its holder's contents and never as a mark of its own.
     // The record says so (`held_by`, the office's world read over the hold record).
     // THE DISPLAY SELECTION (CORE-127, Darko 2026-11-20: "Hide them"): a non-match is not in the draw-set, so it has no pip, no tinted extent, no icon and no hit
-    // target. The radial arrives already filtered (displayRadial); this is the other way in, "all of yours" above, and the one place a draw-set is finished.
-    return out.filter((m) => !heldBy(byId.get(m.id) ?? m) && shownByDisplay(m));
+    // target. The radial arrives already filtered (displayRadial); this is the other way in, "all of yours" above; both pushes above are gated on it.
+    return out.filter((m) => !heldBy(byId.get(m.id) ?? m));
   }
   // ───────── the overlay: built on the RECORD, scaled on the CAMERA ─────────
   //
