@@ -74,7 +74,9 @@ standing institution and its first instance; `the-town/node` and
 `the-town/edge`, the logos primitives the whole ontology roots in; and
 `the-town/character-cap`, the mark class's first predicate-child parameter
 (*SUPERSEDED in part 2026-10-16: it is the constitution child property of
-`mark`'s sovereign `body` property, § Property and predicate*).
+`mark`'s sovereign `body` property, § Property and predicate*); and
+`the-town/outline-point-cap`, the mark class's footprint-outline cap dial
+(WLD-196).
 
 The seatings, on the record (prose about the channel, never the channel
 itself): household, member-of
@@ -520,7 +522,13 @@ pedantic to require like an entire child predicate mark"*; ruled 12:42:
   subclasses"*). The maker writes it, and every mark subclass inherits it —
   sited marks, predicates, parcels, namings, things. Its locked part is a
   constitution child property, the 150-character cap: `the-town/character-cap`
-  folds into it. Class-nodes and properties take their body from the
+  folds into it. One more locked dial bounds a mark's 2D footprint outline
+  only (WLD-196): `outline-point-cap`, 256 points for the `points:` outline; it
+  does not cap 3D `form:` geometry, and a parcel keeps its own `extent_m`. No
+  resident common-ground size cap is set for now; the town may declare opposed
+  any mark, a parcel included, that is obnoxious or deliberately obstructive, at
+  its discretion until enough cases support a guideline; the town's opposed
+  removes the mark at the next settlement. Class-nodes and properties take their body from the
   meta-class, never from `mark`, uncapped; the 150 cap stays on residents'
   marks (ruled 18:44).
 
@@ -1310,6 +1318,21 @@ and never returned, up to the same cap of three. One parcel per resident still h
 resident for each parcel. A claim past a household's room is opposed at the
 crossing like any claim past the cap, citing `the-town/claim-cap`. Its
 sentence names the room, the cutoff and the price of the next room.
+
+**A move within one window, ruled 2026-11-19** (Darko, 22:06 EST, WLD-218:
+"whole window only works now because the live version isn't implemented; will
+need to revisit then. but for now yes this is fine"). A resident's own
+withdrawals in a window apply before their claims in that window, in either
+act order, and each of those claims is judged on the holding that results. A
+parcel the resident withdrew in the window no longer counts toward
+one-per-resident or toward the household's room, and no longer holds its
+ground against those claims. Only a resident's own withdrawal of their own
+parcel counts, and it gives no say over anyone else's parcel; the limits, the
+room and its price, and who owns what are unchanged. A claim whose resulting
+holding still puts the resident past one parcel, or the household past its
+room, is refused as before, and its author is told why. The whole window is
+the unit only because the live version is not built yet: revisit this when
+live edits land (POS-686, WLD-209).
 
 Rendered in the world as `the-town/claim-cap`, `the-town/one-per-resident`,
 `the-town/homes-per-resident` and `the-town/declared-home` (children of

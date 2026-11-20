@@ -18040,6 +18040,16 @@
       ]
     },
     {
+      "id": "the-town/outline-point-cap",
+      "parent": "the-town/mark",
+      "chain": [
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "the-town/ownership",
       "parent": "the-town/postmark-derived",
       "chain": [

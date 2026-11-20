@@ -225,6 +225,16 @@ sets, irregular shapes, FOV and fan-up over them — is a **filed PULSE follow-u
 not tonight. A mark that carries `points:` today gains fine honoring later with
 **no record change**.
 
+**The outline cap (WLD-196; ruled by Darko 2026-11-17/18).** A mark's 2D
+map-footprint outline (`points:`) holds at most **256 points** — the
+`outline-point-cap` dial, a locked constitution property of `mark` in the Keeping
+Works; this is not a limit on 3D geometry, and not a vertex or detail budget for a
+3D `form:`. A parcel keeps its own `extent_m` dial. **No size cap is set on a
+resident's common-ground mark for now:** the town may declare opposed any mark, a
+parcel included, that is obnoxious or deliberately obstructive, at its discretion
+until enough cases support a published guideline; the town's opposed removes the
+mark at the next settlement.
+
 **`face` — the reserved predicated slot, universal (2026-08-14, the classes
 sitting).** Any mark may carry one predicated child `slot: face, value: <asset
 path in the author's own space>` — its art. The slot is universal; the value is
