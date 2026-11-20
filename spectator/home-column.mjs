@@ -243,7 +243,7 @@ export function isParcelMark(mark) {
  * renders blank: every state below ends in either prose or one line saying why
  * there is none.
  */
-export function homeColumnModel({ handle, kicker, title, region, leadImage, door = null, error = null, loading = false, residentHref = null, titleLink = false, parcelId = null, canEnter = false, byline = null, residents = [], ownWords = null, enterId = null, facts = [], relations = [], back = null, icons = [], stamps = null, footprint = null, bars = [], tokens = [], copyId = null, pronouns = null, footerLink = null, reader = null, chooser = null } = {}) {
+export function homeColumnModel({ handle, kicker, title, region, leadImage, door = null, error = null, loading = false, residentHref = null, titleLink = false, parcelId = null, canEnter = false, byline = null, residents = [], ownWords = null, enterId = null, facts = [], relations = [], back = null, icons = [], stamps = null, footprint = null, bars = [], tokens = [], copyId = null, pronouns = null, footerLink = null, reader = null, chooser = null, speakers = [], kickerTitle = null } = {}) {
   const who = String(handle ?? "").trim();
   // THE DOOR SPEAKS ONLY FOR ITS OWN PARCEL (POS-584, Darko 2026-10-11: "Sol's
   // parcel got yeeted"). There is one home page per handle, so a household's
@@ -284,7 +284,7 @@ export function homeColumnModel({ handle, kicker, title, region, leadImage, door
     // it stops implying it is showing the region's own page. A caller may
     // therefore name its own byline; nobody else does, and the default is what
     // it always was.
-    byline: byline ? String(byline) : (who ? `in ${who}'s own words` : ""),
+    byline: byline === false ? "" : byline ? String(byline) : (who ? `in ${who}'s own words` : ""),
     blocks,
     note: blocks.length || (chooser && typeof chooser.fill === "function") ? ""
       : loading ? "reading the home…"
@@ -343,6 +343,10 @@ export function homeColumnModel({ handle, kicker, title, region, leadImage, door
     // in the phone column). The view hands in `{ fill(host) }`: the viewer fills the column's host with the chooser it has always drawn (its own markup, its own
     // escaping, its own rows and `data-choose` ids); this file holds no markup of its own and still parses no HTML string.
     chooser: chooser && typeof chooser.fill === "function" ? chooser : null,
+    // WLD-215, the conversation's ONE header: who spoke (face + name, the face from the reader hook's host) and what the live mark means on hover. Plain data.
+    speakers: (speakers ?? []).filter((s) => s && String(s.handle ?? "").trim())
+      .map((s) => ({ handle: String(s.handle).trim(), name: String(s.name ?? s.handle).trim(), look: String(s.look ?? "") })),
+    kickerTitle: String(kickerTitle ?? "").trim() || null,
     // the way back to the mark this column was reached from, named
     back: back && String(back.id ?? "").trim()
       ? { id: String(back.id).trim(), name: String(back.name ?? back.id).trim() } : null,
@@ -440,7 +444,61 @@ function appendSpans(doc, parent, spans, imagePath) {
   }
 }
 
-function appendBlocks(doc, parent, blocks, imagePath) {
+// THE ONE FACE (the occupant token's idiom, WLD-215): the colour, the picture through the `imagePath` gate (a failed load removes itself, so the monogram under it stays),
+// else the silhouette or the monogram. A FRESH node on every call; `extra` adds a modifier class (the small speaker face).
+function faceEl(doc, tok, imagePath, extra = "") {
+  const face = el(doc, "span", extra ? `wv-tok-face ${extra}` : "wv-tok-face");
+  if (tok.color && tok.kind === "resident") face.setAttribute("style", `background:${tok.color}`);
+  const src = tok.picture && imagePath ? imagePath(tok.picture) : null;
+  if (src) {
+    const img = el(doc, "img", "wv-tok-img");
+    img.setAttribute("alt", "");
+    img.addEventListener?.("error", () => img.remove());
+    img.src = src;
+    face.appendChild(img);
+  } else if (tok.silhouette) {
+    const sil = el(doc, "span", "wv-tok-sil");
+    sil.setAttribute("style", `--wv-sil:${tok.silhouette}`);
+    face.appendChild(sil);
+  } else {
+    face.textContent = tok.monogram || String(tok.name ?? "").charAt(0).toUpperCase();
+  }
+  return face;
+}
+
+/** A small decorative face for a speaker (a resident's token fields: name, monogram, color, picture): a fresh node, hidden from assistive tech (the name is always beside it). */
+export function speakerFaceEl(doc, tok, imagePath = null) {
+  const face = faceEl(doc, { kind: "resident", ...tok }, imagePath, "wv-sp-face");
+  face.setAttribute("aria-hidden", "true");
+  return face;
+}
+
+// a host's `faceForSpeaker(handle)` hook, made safe: only a fresh Element counts (a string, a node already placed, or a throw is no face)
+function hostFace(faceFor, handle) {
+  if (typeof faceFor !== "function" || typeof handle !== "string" || handle === "") return null;
+  let node = null;
+  try { node = faceFor(handle); } catch { return null; }
+  if (!node || typeof node !== "object" || node.nodeType !== 1 || node.parentNode) return null;
+  if (node.getAttribute?.("aria-hidden") == null) node.setAttribute?.("aria-hidden", "true");
+  return node;
+}
+
+// WHO SPOKE, as face + name, one per speaker: the conversation header's list (a fresh face per entry, so a repeated handle never steals a node)
+function fillSpeakers(doc, row, speakers, faceFor) {
+  while (row.firstChild) row.removeChild(row.firstChild);
+  for (const sp of speakers) {
+    const item = el(doc, "span", "wv-homecol-speaker");
+    item.setAttribute("data-speaker", sp.handle);
+    const face = hostFace(faceFor, sp.handle);
+    if (face) item.appendChild(face);
+    const name = el(doc, "span", "wv-homecol-speaker-name");
+    name.textContent = sp.name;
+    item.appendChild(name);
+    row.appendChild(item);
+  }
+}
+
+function appendBlocks(doc, parent, blocks, imagePath, faceFor = null) {
   for (const block of blocks ?? []) {
     if (block.type === "heading") {
       const node = el(doc, `h${Math.min(6, Math.max(1, block.level))}`);
@@ -491,6 +549,9 @@ function appendBlocks(doc, parent, blocks, imagePath) {
       continue;
     }
     const p = el(doc, "p");
+    // WLD-215: a plain statement names its speaker, and wears that speaker's face before the words (the old office's transcript, which prod still shows)
+    const face = typeof block.speaker === "string" ? hostFace(faceFor, block.speaker) : null;
+    if (face) p.appendChild(face);
     appendSpans(doc, p, block.spans, imagePath);
     parent.appendChild(p);
   }
@@ -504,6 +565,7 @@ export function renderHomeColumn(doc, host, model, { imagePath = null } = {}) {
   const nav = el(doc, "div", "wv-homecol-nav");
   const kicker = el(doc, "span", "wv-homecol-kicker");
   kicker.textContent = model.kicker;
+  if (model.kickerTitle) kicker.setAttribute("title", model.kickerTitle);
   let enter = null;
   if (model.enter) {
     // THE CARD'S OWN DOOR (founder, 2026-09-11: "make the enter button in the
@@ -565,6 +627,13 @@ export function renderHomeColumn(doc, host, model, { imagePath = null } = {}) {
     const meta = el(doc, "div", "wv-homecol-meta");
     meta.textContent = model.region;
     scroll.appendChild(meta);
+  }
+
+  if (model.speakers.length || model.reader) {   // a reader's column always holds the row (empty hides itself), so late speakers have a place
+    const row = el(doc, "div", "wv-homecol-speakers");
+    fillSpeakers(doc, row, model.speakers, model.reader?.faceForSpeaker ?? null);
+    row.__sig = JSON.stringify(model.speakers);
+    scroll.appendChild(row);
   }
 
   if (model.chooser) {
@@ -651,14 +720,15 @@ export function renderHomeColumn(doc, host, model, { imagePath = null } = {}) {
     const reader = createCircleReader({
       doc, host: mount, source: model.reader.source, roomId: model.reader.roomId,
       canReply: !!model.reader.canReply, onReply: model.reader.onReply ?? null, hrefForCircle: model.reader.hrefForCircle ?? null,
-      faceForSpeaker: model.reader.faceForSpeaker ?? null,    // WLD-213: only a host that hands one in; the World page's own view (viewer.mjs) hands none
+      faceForSpeaker: model.reader.faceForSpeaker ?? null,    // WLD-213: only a host that hands one in; the World page's conversation view hands the page's own face source (WLD-215)
+      hostOwnsHeader: model.reader.hostOwnsHeader === true,   // WLD-215: only a view that draws the room's header itself (the conversation column) says so
       hostHoldsPlain: model.blocks.length > 0,                // WLD-216: this column holds the selected conversation's plain transcript, so an old office's plain list stands down to it
       // WLD-216: an office from before POS-1035 answers the room read with its plain list (`reason: "plain"`): that is no failure, so the plain transcript the
       // map already holds shows as it always did, with no "could not be read" sentence over it. A real failed read keeps the sentence.
       onState: (st, detail) => { const flat = st === "unavailable" && model.blocks.length > 0; body.hidden = !flat; note.hidden = !flat || detail?.reason === "plain"; },
     });
     host.__circleReader = reader;
-    appendBlocks(doc, body, model.blocks, imagePath);
+    appendBlocks(doc, body, model.blocks, imagePath, model.reader.faceForSpeaker ?? null);
     scroll.appendChild(note);
     scroll.appendChild(body);
     reader.showRoom();
@@ -787,23 +857,7 @@ export function renderHomeColumn(doc, host, model, { imagePath = null } = {}) {
       b.setAttribute("type", "button");
       b.setAttribute("data-choose", tok.id);
       b.setAttribute("title", tok.name);
-      const face = el(doc, "span", "wv-tok-face");
-      if (tok.color && tok.kind === "resident") face.setAttribute("style", `background:${tok.color}`);
-      const src = tok.picture && imagePath ? imagePath(tok.picture) : null;
-      if (src) {
-        const img = el(doc, "img", "wv-tok-img");
-        img.setAttribute("alt", "");
-        img.addEventListener?.("error", () => img.remove());
-        img.src = src;
-        face.appendChild(img);
-      } else if (tok.silhouette) {
-        const sil = el(doc, "span", "wv-tok-sil");
-        sil.setAttribute("style", `--wv-sil:${tok.silhouette}`);
-        face.appendChild(sil);
-      } else {
-        face.textContent = tok.monogram || tok.name.charAt(0).toUpperCase();
-      }
-      b.appendChild(face);
+      b.appendChild(faceEl(doc, tok, imagePath));
       // a creature is a diamond with no legs (WLD-82); a resident keeps its two
       if (tok.kind !== "creature") {
         b.appendChild(el(doc, "span", "wv-tok-leg l"));
@@ -938,6 +992,8 @@ export function createHomeColumn({ doc, host, readHome, imagePath = null, reside
       footerLink: view.footerLink ?? null,
       reader: view.reader ?? null,
       chooser: view.chooser ?? null,
+      speakers: view.speakers ?? [],
+      kickerTitle: view.kickerTitle ?? null,
     }), { imagePath });
   };
 
@@ -972,10 +1028,20 @@ export function createHomeColumn({ doc, host, readHome, imagePath = null, reside
       const sig = JSON.stringify(blocks);
       if (body.__plainSig !== sig) {
         while (body.firstChild) body.removeChild(body.firstChild);
-        appendBlocks(doc, body, blocks, imagePath);
+        appendBlocks(doc, body, blocks, imagePath, view.reader.faceForSpeaker ?? null);
         body.__plainSig = sig;
       }
     }
+    // WLD-215: the header's speakers and the live mark's meaning follow the office's late public metadata in place (rewritten only when they changed)
+    const row = one(".wv-homecol-speakers");
+    if (row && Array.isArray(view.speakers)) {
+      const speakers = view.speakers.filter((s) => s && String(s.handle ?? "").trim())
+        .map((s) => ({ handle: String(s.handle).trim(), name: String(s.name ?? s.handle).trim(), look: String(s.look ?? "") }));   // `look` = what the face is made from (so a picture arriving late redraws it)
+      const sig = JSON.stringify(speakers);
+      if (row.__sig !== sig) { fillSpeakers(doc, row, speakers, view.reader.faceForSpeaker ?? null); row.__sig = sig; }
+    }
+    const kick = one(".wv-homecol-kicker");
+    if (kick && view.kickerTitle) kick.setAttribute("title", String(view.kickerTitle));
   }
 
   function open(view) {
@@ -1147,6 +1213,13 @@ export const HOME_COLUMN_CSS = `
 .wv-tok.is-creature .wv-tok-face::before { content:""; position:absolute; z-index:-1; left:3px; top:3px; width:22px; height:22px;
   transform:rotate(45deg); background:#f4b4ad; box-shadow:0 0 0 2px #d8706a; border-radius:1px; }
 .wv-tok.is-creature .wv-tok-sil { width:68%; height:68%; }
+/* WLD-215: the same face, small, beside a name or a line (CORE-131 owns later sizing). z-index auto so it never rides over the column's own chrome. */
+.wv-sp-face { display:inline-grid; flex:none; width:20px; height:20px; font-size:.62rem; z-index:auto; box-shadow:0 0 0 1.5px var(--green); vertical-align:-5px; margin-right:6px; }
+.wv-homecol-speakers { display:flex; flex-wrap:wrap; gap:6px 14px; margin:.55rem 0 0; font-size:.8rem; color:var(--paper); }
+.wv-homecol-speakers:empty { display:none; }
+.wv-homecol-speaker { display:inline-flex; align-items:center; min-width:0; }
+.wv-homecol-speaker .wv-sp-face { vertical-align:baseline; }
+.wv-homecol-speaker-name { overflow-wrap:anywhere; }
 .wv-tok-img { width:100%; height:100%; object-fit:cover; display:block; }
 .wv-tok-sil { width:86%; height:86%; background:#4a2326; -webkit-mask:var(--wv-sil) center/contain no-repeat; mask:var(--wv-sil) center/contain no-repeat; }
 .wv-tok-leg { position:absolute; top:25px; width:2px; height:7px; border-radius:1px; background:var(--green); }

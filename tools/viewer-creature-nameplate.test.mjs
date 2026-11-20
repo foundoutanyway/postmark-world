@@ -212,8 +212,11 @@ test("wiring: the closure is gone, and the one call site passes the looked-up ro
 // hashed), not this test's code. That route reproduced the three digests it is checked against: 94d56a41… (107135 bytes) on the POS-945
 // merge-base, ed771ead… (107711 bytes, the pin above) on this main, and 37ddf8f8… (107954 bytes, the pin the reviewed head 6f4c906a
 // carried) on that head. A line diff of the masked texts, main to the merge, is exactly the 8 `.wv-bymail*` lines and none removed.
-const PINNED_MASKED_STYLE_SHA256 = "3126531517b069f826eb4fdd5660c68fc19dc74638dc165c5f1864c33682af98";
-const PINNED_MASKED_STYLE_BYTES = 108530;
+// RE-PINNED FOR CORE-54, knowingly (the same intended STYLE change tools/viewer-shell-css.test.mjs re-pins, which carries the account): STYLE gains the
+// phone/touch hit-area rules, 108530 -> 110597 bytes, nothing removed; CREATURE_CSS and both of its neighbours are untouched (the chooser row's media rule
+// sits AFTER `.wv-choose-row.is-creature`, so the neighbour pin below still holds). The digest is the one viewer-shell-css measures by this same masked route.
+const PINNED_MASKED_STYLE_SHA256 = "faa584926f011c5302c2c2221e08091fd439d58023f282ee20584795a8e8df7a";
+const PINNED_MASKED_STYLE_BYTES = 110597;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";

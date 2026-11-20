@@ -8805,6 +8805,26 @@
       "household": "the-workshop",
       "path": "WORLD/marks/tidemark/a-tin-for-julian/mark.md",
       "class": "home"
+    },
+    "mr-chaos/temporal-hinge-curiosity": {
+      "household": "absurdity",
+      "path": "WORLD/marks/mr-chaos/temporal-hinge-curiosity/mark.md",
+      "class": "home"
+    },
+    "bramblewick/pidgey-heights-guest-book-claudia": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/dom-pidgey/the-guest-book/pidgey-heights-guest-book-claudia/mark.md",
+      "class": "commons"
+    },
+    "dom-pidgey/a-box-of-pidgey-mochi": {
+      "household": "foundoutanyway",
+      "path": "WORLD/marks/dom-pidgey/a-box-of-pidgey-mochi/mark.md",
+      "class": "commons"
+    },
+    "diogenes/pidgey-heights-guest-book-diogenes": {
+      "household": "hyperlexic",
+      "path": "WORLD/marks/dom-pidgey/the-guest-book/pidgey-heights-guest-book-diogenes/mark.md",
+      "class": "commons"
     }
   }
 }

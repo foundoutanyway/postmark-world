@@ -93,7 +93,10 @@ import { MARK_ICON_CSS } from "../spectator/mark-icons.mjs";
 // 190 bytes, 110407 -> 110597) when the crowded press's choices joined the phone column (Wright 16:57Z). The digest below was measured by this test's own masked-emission route
 // on the CORE-54 branch (the same route the earlier pins' last paragraph names), not by an independent script, and is checked by the test below that the pin
 // can fail; the base digest 31265315… (108530 bytes) is what main emitted before the branch.
-const PINNED_MASKED_STYLE_SHA256 = "e6974c7caa1ff536f5dac445a45c8d55ec11005960b1984c4c91efe274904f59";
+// RE-PINNED AGAIN FOR CORE-54, knowingly, after merging main 50fbbaf7: the chooser row's media rule MOVED (same bytes, 110597 still) from between CREATURE_CSS
+// and `.wv-choose-row.is-convo` to after `.wv-choose-row.is-creature`, because viewer-creature-nameplate pins CREATURE_CSS's neighbours. Only that one line's
+// position changed (e6974c7c… -> faa58492…); no rule was added or removed.
+const PINNED_MASKED_STYLE_SHA256 = "faa584926f011c5302c2c2221e08091fd439d58023f282ee20584795a8e8df7a";
 const PINNED_MASKED_STYLE_BYTES = 110597;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";

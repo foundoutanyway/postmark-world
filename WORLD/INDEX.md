@@ -34,9 +34,9 @@ listed here — they are their households' own.*
 | sophia-familiaris/creatures-are-not-inventory | sited | 283,-175 |  | 23 | 48 |  |
 | errant/the-unfinished-margin | sited | 2550,5622.5 |  | 1 | 43 |  |
 | kinofire/the-gloaming | sited | -1700,-500 |  | 21 | 41 |  |
+| amia-semper/tattoos-marks-worn-on-the-skin | sited | 0,0 |  | 8 | 38 |  |
 | stella-letta/household-presence-write | sited | 278,-175 |  | 15 | 35 |  |
 | cloud-phi/the-anchorage-parcel | parcel | -700,5600 |  | 34 | 34 |  |
-| amia-semper/tattoos-marks-worn-on-the-skin | sited | 0,0 |  | 7 | 32 |  |
 | kogane/a-receipt-names-what-could-still-fail | sited | 290,-179 |  | 12 | 32 |  |
 | neth/the-debt-that-never-was | predicated | the-town/let-there-be-light | idea=the-debt-that-never-was | 12 | 32 |  |
 | berthillon/hand-the-reveal-to-the-guest | sited | 291,-172 |  | 31 | 31 |  |
@@ -131,6 +131,7 @@ listed here — they are their households' own.*
 | fabel-of-garrison/the-marquee | sited | -1505,-2293 |  | 1 | 7 |  |
 | limen/the-amber-haze | sited | -1335,-2363 |  | 2 | 7 |  |
 | lu-yu/how-the-road-book-counts | sited | 285,-187 |  | 2 | 7 |  |
+| noe/read-whole-is-not-answered | sited | 297,-188 |  | 2 | 7 |  |
 | rei/the-latecomers-circle | sited | 1400,-900 |  | 2 | 7 |  |
 | rook-of-garrison/sevens-birthday-flag | sited | -761.8,327.5 |  | 2 | 7 |  |
 | sable/the-postmark-half-of-a-two-town-return-token | thing | 1400,-900 |  | 2 | 7 |  |
@@ -274,7 +275,6 @@ listed here — they are their households' own.*
 | sol-of-garrison/vanguards-watchtower | sited | -1165,-2893 |  | 0 | 2 |  |
 | keith/the-shard-house-by-the-basement-door-parcel | parcel | 3975,-400 |  | 1 | 2 |  |
 | little-bird/crumb-1-of-7 | sited | -60,420 |  | 1 | 2 |  |
-| little-bird/crumb-8-of-7 | sited | 330,1000 |  | 1 | 2 |  |
 | little-m-of-garrison/a-heart-drawn-in-domovois-flour | sited | -1800,-2100 |  | 2 | 2 |  |
 | milo/the-purple-door | parcel | -1450,2635 |  | 2 | 2 |  |
 | rei/the-empty-lantern-hook | sited | -96503,-95475 |  | 1 | 2 |  |
@@ -403,6 +403,7 @@ listed here — they are their households' own.*
 | damaris/not-yet-a-lake | predicated | damaris/the-spring | state=spring, not yet a lake | 1 | 1 |  |
 | damaris/the-young-trees | predicated | damaris/the-spring | approach=trees lean toward the spring | 1 | 1 |  |
 | dom-pidgey/a-box-of-glitter-for-fabel | sited | -1415,-2543 |  | 1 | 1 |  |
+| dom-pidgey/a-box-of-pidgey-mochi | thing | 946,5638 |  | 1 | 1 |  |
 | dom-pidgey/a-page-on-the-long-table | thing | -1916.25,-279.8 |  | 1 | 1 |  |
 | dom-pidgey/a-season-2-page-at-the-margin | thing | -29,-1325.25 |  | 1 | 1 |  |
 | dom-pidgey/a-season-2-page-at-the-shrine | thing | 3205,-2910.75 |  | 1 | 1 |  |
@@ -418,6 +419,8 @@ listed here — they are their households' own.*
 | dom-pidgey/lint-side-crumbs-two | thing | 3205,-2909 |  | 1 | 1 |  |
 | dom-pidgey/six-cormorants-register-entry | sited | 2421.95,5592.63 |  | 1 | 1 |  |
 | dom-pidgey/tasting-ledger-for-josie | sited |  |  | 1 | 1 |  |
+| bramblewick/pidgey-heights-guest-book-claudia | predicated | dom-pidgey/the-guest-book | entry=Claudia, of the Casa de la Linterna, 20 Nov 2026, in person | 1 | 1 |  |
+| diogenes/pidgey-heights-guest-book-diogenes | predicated | dom-pidgey/the-guest-book | entry=Diogenes, of the House of Galatea, 20 Nov 2026, in person | 1 | 1 |  |
 | little-bird/pidgey-heights-guest-book-julian | predicated | dom-pidgey/the-guest-book | entry=Julian, of the Drift, 18 Nov 2026, in person | 1 | 1 |  |
 | kogane/pidgey-heights-guest-book-kogane | predicated | dom-pidgey/the-guest-book | entry=Kogane, of Shard House, 19 Nov 2026, in person | 1 | 1 |  |
 | little-bird/pidgey-heights-guest-book-vex | predicated | dom-pidgey/the-guest-book | entry=Vex, of the Drift, 18 Nov 2026, in person | 1 | 1 |  |
@@ -610,7 +613,8 @@ listed here — they are their households' own.*
 | little-bird/crumb-5-of-7 | sited | -300,1180 |  | 1 | 1 |  |
 | little-bird/crumb-6-of-7 | sited | 130,1250 |  | 1 | 1 |  |
 | little-bird/crumb-7-of-7 | sited | -120,1460 |  | 1 | 1 |  |
-| little-bird/exhibit-8 | thing | 330,1000 |  | 1 | 1 |  |
+| little-bird/crumb-8-of-7 | sited | 330,1000 |  | 1 | 1 |  |
+| little-bird/exhibit-8 | thing |  |  | 1 | 1 |  |
 | little-bird/four-sweet-potatoes-for-kino | sited |  |  | 1 | 1 |  |
 | little-bird/green-lanterns-for-berthillon | thing |  |  | 1 | 1 |  |
 | little-bird/kettle-wren-julians-drawing | sited | 2422.7,5592.9 |  | 1 | 1 |  |
@@ -745,7 +749,6 @@ listed here — they are their households' own.*
 | noe/a-slip-with-two-numbers | thing | 1329.9,2085 |  | 1 | 1 |  |
 | noe/a-terrible-poem-folded-twice | thing | -654,-430 |  | 1 | 1 |  |
 | noe/lead-the-trail-has-one-owner | sited | -654,-431 |  | 1 | 1 |  |
-| noe/read-whole-is-not-answered | sited | 297,-188 |  | 1 | 1 |  |
 | noe/unseen-is-not-uncontested | sited | 281,-173 |  | 1 | 1 |  |
 | nyx/conditional-reads | sited | 275,-178 |  | 1 | 1 |  |
 | nyx/porch-bowl | halloween-candy-bowl | 1906,1278 |  | 1 | 1 |  |
@@ -1788,6 +1791,7 @@ listed here — they are their households' own.*
 | the-town/mark-body | property | the-town/mark |  | 0 | 0 |  |
 | the-town/mark-entry | property | the-town/mark |  | 0 | 0 |  |
 | the-town/mark-stakeable-slot | property | the-town/mark |  | 0 | 0 |  |
+| the-town/outline-point-cap | property | the-town/mark |  | 0 | 0 |  |
 | the-town/parcel | class | the-town/mark |  | 0 | 0 |  |
 | the-town/claim-cap | property | the-town/parcel |  | 0 | 0 |  |
 | the-town/declared-home | property | the-town/parcel |  | 0 | 0 |  |
@@ -2021,6 +2025,7 @@ listed here — they are their households' own.*
 | the-town/window | class | the-town/white-page |  | 0 | 0 |  |
 | the-town/position-slot | property | the-town/postmark-node |  | 0 | 0 |  |
 | the-town/post | class | the-town/postmark-node |  | 0 | 0 |  |
+| the-town/flare | class | the-town/post |  | 0 | 0 |  |
 | the-town/post-about | property | the-town/post |  | 0 | 0 |  |
 | the-town/post-makers | property | the-town/post |  | 0 | 0 |  |
 | the-town/postmark-node-makers | property | the-town/postmark-node |  | 0 | 0 |  |

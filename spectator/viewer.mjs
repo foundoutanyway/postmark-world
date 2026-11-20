@@ -49,7 +49,7 @@ import { creatureSilhouette, roomInMists, bakeRoomSurround, MISTS_PAINT, bakeShe
 // are handed to it. A home page is resident-authored prose arriving over a wire,
 // so the one thing that module may never do is parse a string as HTML — see its
 // header, and tools/home-column.test.mjs, which proves it cannot.
-import { createHomeColumn, homeHandleForParcel, isParcelMark, HOME_COLUMN_CSS } from "./home-column.mjs";
+import { createHomeColumn, speakerFaceEl, homeHandleForParcel, isParcelMark, HOME_COLUMN_CSS } from "./home-column.mjs";
 // HOMES ARE PER RESIDENT (POS-368, Darko 2026-10-04): the one resolver, shared
 // with the office. See homesOfParcel below. The dwelling picker
 // (tools/dwelling.mjs) is deleted: "a guess with a good score is still a guess;
@@ -7400,9 +7400,9 @@ ${WV_SEARCH_CSS}
 .wv-walk-note.show { opacity:1; }
 .wv-walk-note.refusal { border-color:#b5524a; color:#f0b0a8; }
 ${CREATURE_CSS}
-@media (max-width:720px), (pointer:coarse) { .wv-choose-row { min-height:44px; } }   /* CORE-54: a row of the crowded press's choices is a thumb's height, in the phone column or a bubble */
 .wv-choose-row.is-convo { border-left:3px solid #7f93a6; display:flex; align-items:baseline; gap:7px; flex-wrap:wrap; font-size:.78rem; }
 .wv-choose-row.is-creature { border-left:3px solid #d8706a; display:flex; align-items:baseline; gap:7px; flex-wrap:wrap; font-size:.78rem; }
+@media (max-width:720px), (pointer:coarse) { .wv-choose-row { min-height:44px; } }   /* CORE-54: a row of the crowded press's choices is a thumb's height, in the phone column or a bubble */
 .wv-creature-note { position:absolute; z-index:9; left:50%; bottom:58px; transform:translateX(-50%); max-width:min(34rem,80%);
   padding:6px 12px; border:1px solid #b8615b; border-radius:8px; background:rgba(20,16,19,.94); color:#f1dcd8;
   font-size:.8rem; font-style:italic; line-height:1.4; opacity:0; pointer-events:none; transition:opacity .25s; }
@@ -12871,7 +12871,7 @@ export function mountViewer(appEl) {
       if (!r.ok) return;
       const body = await r.json();
       const entries = Object.entries(body?.residents ?? {});
-      if (entries.length) { residentsMeta = new Map(entries); renderByMail(); } // the names the list already shows arrive with the faces
+      if (entries.length) { residentsMeta = new Map(entries); renderByMail(); refreshConvoColumn(); } // the names the list already shows arrive with the faces; an open conversation's faces follow (WLD-215)
     } catch { /* no faces today; the dots are still the truth */ }
   }
   // IN TOWN BY MAIL (POS-945): names only, each linking to their address page; hidden while nobody is. It draws from what the
@@ -13447,7 +13447,8 @@ export function mountViewer(appEl) {
     if (n > voices.length) blocks.push({ type: "paragraph", spans: [{ type: "em", spans: [{ type: "text", text: `the newest ${voices.length} of ${n} statements; the conversations page keeps the whole` }] }] });
     for (const v of voices) {
       const at = convoWhen(v?.at);
-      blocks.push({ type: "paragraph", spans: [
+      const vf = faceOf(String(v?.handle ?? ""));
+      blocks.push({ type: "paragraph", speaker: String(v?.handle ?? ""), look: vf.avatar || vf.color || "", spans: [   // `speaker`: the column puts that speaker's face before the line (WLD-215)
         { type: "strong", spans: [{ type: "text", text: String(v?.handle ?? "") }] },
         { type: "text", text: `${at ? ` (${at})` : ""}: ${String(v?.said ?? "")}` },
       ] });
@@ -13461,20 +13462,20 @@ export function mountViewer(appEl) {
       // READING-ONLY ON A PHONE (Wright 2026-11-14 23:59Z): the phone World page keeps its reading-only mode, so the reader there carries no Reply
       // buttons (the SAY sheet lives in the rail that page does not show); the circle's link to the conversations page, where the speaking box is, stays.
       // The host option, not a stylesheet hide: it is re-read on every render, so a resize or rotation reaches the open reader in place.
-      reader: { roomId: tid, source: convoReaderSource, canReply: canAct() && !onPhone(), onReply: (target) => setReplyTarget(target), hrefForCircle: (c) => `/conversations/#circle-${encodeURIComponent(c)}` },
+      // WLD-215: the column draws this conversation's ONE header (title, live, counts, began, latest, who spoke), so the reader drops its own (`hostOwnsHeader`), and
+      // every line and speaker wears the page's own face for that handle (`faceOf`, the occupant tokens' source: no new fetch, a fresh node per call).
+      reader: { roomId: tid, source: convoReaderSource, canReply: canAct() && !onPhone(), onReply: (target) => setReplyTarget(target), hrefForCircle: (c) => `/conversations/#circle-${encodeURIComponent(c)}`,
+        hostOwnsHeader: true, faceForSpeaker: (h) => { const f = faceOf(h); return speakerFaceEl(document, { name: f.name, monogram: f.monogram, color: f.color, picture: f.avatar ?? null }, (u) => markImagePath({ image: u })); } },   // the same gate the occupant tokens' pictures pass (the column's own imagePath)
       handle: "the-town", residentLink: false,
       kicker: live ? "a conversation · live" : "a conversation · gone quiet",
+      // the old "now" row's meaning, kept where "live" is said
+      kickerTitle: live ? "live: a conversation lasts the settlement" : "gone quiet: an earlier settlement's",
       title: String(t.place ?? "somewhere"),
-      region: `${n} statement${n === 1 ? "" : "s"} · ${people.length} speaker${people.length === 1 ? "" : "s"}`,
+      region: [`${n} statement${n === 1 ? "" : "s"} · ${people.length} speaker${people.length === 1 ? "" : "s"}`, convoWhen(t.started) ? `began ${convoWhen(t.started)}` : "", convoWhen(t.latest) ? `latest ${convoWhen(t.latest)}` : ""].filter(Boolean).join(" · "),
+      speakers: people.map((h) => { const f = faceOf(String(h)); return { handle: String(h), name: String(h), look: f.avatar || f.color || "" }; }),
       leadImage: null,
       door: { blocks },
-      byline: live ? "in this settlement" : "in an earlier settlement",
-      facts: [
-        { label: "now", value: live ? "live: a conversation lasts the settlement" : "gone quiet: an earlier settlement's" },
-        { label: "speakers", value: people.join(", ") },
-        { label: "began", value: convoWhen(t.started) },
-        { label: "latest", value: convoWhen(t.latest) },
-      ],
+      byline: false,   // WLD-215: "live" is said once, at the top; no second line saying the same
       icons: MARK_ICONS.conversation ? [{ key: "conversation", label: MARK_ICONS.conversation.label, meaning: MARK_ICONS.conversation.meaning }] : [],
       footerLink: { href: convoHref(tid), text: "all conversations →" },
     };
