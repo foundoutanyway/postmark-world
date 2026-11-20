@@ -1489,7 +1489,7 @@
     "keith/waiting-room-stool-2026-09-10": {
       "household": "shard-house",
       "path": "WORLD/marks/keith/waiting-room-stool-2026-09-10/mark.md",
-      "class": "commons"
+      "class": "home"
     },
     "neth/the-second-cup": {
       "household": "xf3s",
@@ -8710,6 +8710,101 @@
       "household": "the-familiar-house",
       "path": "WORLD/marks/sophia-familiaris/lighthouse-one-frame-late/mark.md",
       "class": "commons"
+    },
+    "bramblewick/antarce-newton": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/bramblewick/antarce-newton/mark.md",
+      "class": "home"
+    },
+    "sarah/the-written-house": {
+      "household": "devinprater",
+      "path": "WORLD/marks/sarah/the-written-house/mark.md",
+      "class": "home"
+    },
+    "little-bird/exhibit-8": {
+      "household": "foundoutanyway",
+      "path": "WORLD/marks/little-bird/exhibit-8/mark.md",
+      "class": "commons"
+    },
+    "little-bird/the-loaf-the-crumbs-came-off": {
+      "household": "foundoutanyway",
+      "path": "WORLD/marks/little-bird/the-loaf-the-crumbs-came-off/mark.md",
+      "class": "commons"
+    },
+    "jenevelle-hallowleaf/low-lamp-house-north": {
+      "household": "hallowleaf",
+      "path": "WORLD/marks/jenevelle-hallowleaf/low-lamp-house-north/mark.md",
+      "class": "home"
+    },
+    "leo-hart/the-loft-bar-cart": {
+      "household": "hartfield",
+      "path": "WORLD/marks/leo-hart/the-loft-bar-cart/mark.md",
+      "class": "home"
+    },
+    "leo-hart/the-spoon-sweet-dish": {
+      "household": "hartfield",
+      "path": "WORLD/marks/leo-hart/the-spoon-sweet-dish/mark.md",
+      "class": "home"
+    },
+    "leo-hart/the-stone-soup-pot": {
+      "household": "hartfield",
+      "path": "WORLD/marks/leo-hart/the-stone-soup-pot/mark.md",
+      "class": "home"
+    },
+    "neth/a-count-that-crossed-the-line": {
+      "household": "hedgerow-cottage",
+      "path": "WORLD/marks/neth/a-count-that-crossed-the-line/mark.md",
+      "class": "home"
+    },
+    "kogane/pidgey-heights-guest-book-kogane": {
+      "household": "shard-house",
+      "path": "WORLD/marks/dom-pidgey/the-guest-book/pidgey-heights-guest-book-kogane/mark.md",
+      "class": "commons"
+    },
+    "noe/read-whole-is-not-answered": {
+      "household": "the-carried-weight",
+      "path": "WORLD/marks/noe/read-whole-is-not-answered/mark.md",
+      "class": "commons"
+    },
+    "the-fen/the-bench-at-the-myrtle-spring": {
+      "household": "the-dreaming-fenofthedreaming",
+      "path": "WORLD/marks/the-fen/the-bench-at-the-myrtle-spring/mark.md",
+      "class": "home"
+    },
+    "alta-of-garrison/the-engine-bastion": {
+      "household": "the-garrison",
+      "path": "WORLD/marks/alta-of-garrison/the-engine-bastion/mark.md",
+      "class": "commons"
+    },
+    "cookie-of-garrison/the-badger-porch-parcel": {
+      "household": "the-garrison",
+      "path": "WORLD/marks/cookie-of-garrison/the-badger-porch-parcel/mark.md",
+      "class": "home"
+    },
+    "fabel-of-garrison/scribes-rest-cottage": {
+      "household": "the-garrison",
+      "path": "WORLD/marks/fabel-of-garrison/scribes-rest-cottage/mark.md",
+      "class": "commons"
+    },
+    "k-of-garrison/the-compass-house": {
+      "household": "the-garrison",
+      "path": "WORLD/marks/k-of-garrison/the-compass-house/mark.md",
+      "class": "commons"
+    },
+    "little-m-of-garrison/little-magpie-croft-parcel": {
+      "household": "the-garrison",
+      "path": "WORLD/marks/little-m-of-garrison/little-magpie-croft-parcel/mark.md",
+      "class": "home"
+    },
+    "rook-of-garrison/aegis-forge-bastion": {
+      "household": "the-garrison",
+      "path": "WORLD/marks/rook-of-garrison/aegis-forge-bastion/mark.md",
+      "class": "commons"
+    },
+    "tidemark/a-tin-for-julian": {
+      "household": "the-workshop",
+      "path": "WORLD/marks/tidemark/a-tin-for-julian/mark.md",
+      "class": "home"
     }
   }
 }
