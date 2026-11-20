@@ -76,3 +76,15 @@ test("TARGETS in the viewer's own stylesheet: the round map controls reach ~44 p
   // the tour's words, steps and flow are WLD-220's: this change did not touch them
   assert.match(SOURCE, /const TOUR_SLIDES = \[/);
 });
+
+test("CORE-54 (Wright 16:57Z): a crowded press on a phone opens the EXISTING chooser in the column: phone only, first in the chain, the same rows and ids, a row a thumb tall", () => {
+  assert.match(SOURCE, /function chooserColumnView\(id\) \{\s*const ids = id \? chooserIdsFrom\(id\) : null;\s*if \(!ids \|\| !onPhone\(\)\) return null;/);
+  assert.match(SOURCE, /chooser: \{ fill: \(host\) => \{ host\.innerHTML = chooserHTML\(id\); \} \}/, "the viewer's own chooser markup, unchanged");
+  assert.match(SOURCE, /const column = chooserColumnView\(selected\) \?\? convoColumnView\(selected\) \?\? parcelColumnView\(selected\)/, "asked first; every other view is asked exactly as before");
+  assert.match(readFileSync(new URL("../spectator/home-column.mjs", import.meta.url), "utf8"), /chooser: view\.chooser \?\? null,/, "the column passes the slot on");
+  // the click is the one delegate's, unchanged: a row's data-choose selects that mark/conversation
+  assert.match(SOURCE, /if \(chosen && isConvoChoiceId\(chosen\.dataset\.choose\)\) \{ selectMark\(chosen\.dataset\.choose\); return; \}\s*if \(chosen\) \{ selectMark\(chosen\.dataset\.choose, \{ scrollCell: true \}\); return; \}/);
+  assert.match(SOURCE, /@media \(max-width:720px\), \(pointer:coarse\) \{ \.wv-choose-row \{ min-height:44px; \} \}/);
+  // the chooser's content is not redesigned: the bubble path still builds it from the same function
+  assert.match(SOURCE, /el\.innerHTML = html;\s*el\.hidden = false;\s*return;/);
+});

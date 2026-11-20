@@ -243,7 +243,7 @@ export function isParcelMark(mark) {
  * renders blank: every state below ends in either prose or one line saying why
  * there is none.
  */
-export function homeColumnModel({ handle, kicker, title, region, leadImage, door = null, error = null, loading = false, residentHref = null, titleLink = false, parcelId = null, canEnter = false, byline = null, residents = [], ownWords = null, enterId = null, facts = [], relations = [], back = null, icons = [], stamps = null, footprint = null, bars = [], tokens = [], copyId = null, pronouns = null, footerLink = null, reader = null } = {}) {
+export function homeColumnModel({ handle, kicker, title, region, leadImage, door = null, error = null, loading = false, residentHref = null, titleLink = false, parcelId = null, canEnter = false, byline = null, residents = [], ownWords = null, enterId = null, facts = [], relations = [], back = null, icons = [], stamps = null, footprint = null, bars = [], tokens = [], copyId = null, pronouns = null, footerLink = null, reader = null, chooser = null } = {}) {
   const who = String(handle ?? "").trim();
   // THE DOOR SPEAKS ONLY FOR ITS OWN PARCEL (POS-584, Darko 2026-10-11: "Sol's
   // parcel got yeeted"). There is one home page per handle, so a household's
@@ -286,7 +286,7 @@ export function homeColumnModel({ handle, kicker, title, region, leadImage, door
     // it always was.
     byline: byline ? String(byline) : (who ? `in ${who}'s own words` : ""),
     blocks,
-    note: blocks.length ? ""
+    note: blocks.length || (chooser && typeof chooser.fill === "function") ? ""
       : loading ? "reading the home…"
       : error ? `the office did not answer for this home — ${error}`
       : "nothing written here yet",
@@ -339,6 +339,10 @@ export function homeColumnModel({ handle, kicker, title, region, leadImage, door
     // shared reader where the flat statements stood. The flat `door.blocks` stay, drawn only when the reader says it could not read the
     // room (an unavailable read is said, and the words the map already holds stand in; it is never drawn as an empty room).
     reader: reader && reader.source && reader.roomId !== undefined && reader.roomId !== null ? reader : null,
+    // THE CROWDED PRESS'S CHOICES (CORE-54, Wright 2026-11-20 16:57Z: on a phone a tap on crowded marks or conversation badges opens the EXISTING chooser content
+    // in the phone column). The view hands in `{ fill(host) }`: the viewer fills the column's host with the chooser it has always drawn (its own markup, its own
+    // escaping, its own rows and `data-choose` ids); this file holds no markup of its own and still parses no HTML string.
+    chooser: chooser && typeof chooser.fill === "function" ? chooser : null,
     // the way back to the mark this column was reached from, named
     back: back && String(back.id ?? "").trim()
       ? { id: String(back.id).trim(), name: String(back.name ?? back.id).trim() } : null,
@@ -561,6 +565,13 @@ export function renderHomeColumn(doc, host, model, { imagePath = null } = {}) {
     const meta = el(doc, "div", "wv-homecol-meta");
     meta.textContent = model.region;
     scroll.appendChild(meta);
+  }
+
+  if (model.chooser) {
+    // the crowded press's choices: the viewer fills this host with the chooser's rows (their `data-choose` ids are the viewer's one click delegate's)
+    const mount = el(doc, "div", "wv-homecol-chooser");
+    scroll.appendChild(mount);
+    model.chooser.fill(mount);
   }
 
   if (model.icons?.length) {
@@ -926,6 +937,7 @@ export function createHomeColumn({ doc, host, readHome, imagePath = null, reside
       pronouns: view.pronouns ?? null,
       footerLink: view.footerLink ?? null,
       reader: view.reader ?? null,
+      chooser: view.chooser ?? null,
     }), { imagePath });
   };
 

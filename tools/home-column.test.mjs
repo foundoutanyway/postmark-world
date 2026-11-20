@@ -1023,3 +1023,22 @@ test("a footer link is a same-origin path, opens beside the map, and nothing els
   }
   assert.equal(safeSitePath("/conversations/#t%201"), "/conversations/#t%201");
 });
+
+// ── THE CROWDED PRESS'S CHOICES (CORE-54, Wright 2026-11-20 16:57Z) ──────────────────────
+
+test("CORE-54: a view's chooser slot is filled by the viewer into the column's own host, and the column writes no markup and no 'nothing written here yet'", () => {
+  let filled = null;
+  const chooser = { fill: (host) => { filled = host; const row = element("button"); row.className = "wv-choose-row"; row.setAttribute("data-choose", "the-town/main-channel"); host.appendChild(row); } };
+  const model = homeColumnModel({ kicker: "here", title: "Choose one", chooser });
+  assert.equal(model.chooser, chooser, "the slot passes through the model");
+  assert.equal(model.note, "", "a chooser column is not an empty home");
+  const col = render(model);
+  const mount = byClass(col, "wv-homecol-chooser")[0];
+  assert.ok(mount, "the column holds a host for the choices");
+  assert.equal(filled, mount, "the viewer was handed exactly that host");
+  assert.deepEqual(byClass(mount, "wv-choose-row").map((r) => r.getAttribute("data-choose")), ["the-town/main-channel"], "its rows are the viewer's, with the viewer's ids");
+  assert.doesNotMatch(serialize(col), /nothing written here yet/);
+  // no slot, no host: every existing column is untouched
+  assert.equal(byClass(render(homeColumnModel({ handle: "x", kicker: "x", door: { description: "w" } })), "wv-homecol-chooser").length, 0);
+  assert.equal(homeColumnModel({ kicker: "k", title: "t", chooser: { fill: "not a function" } }).chooser, null, "a slot with no fill is no slot");
+});

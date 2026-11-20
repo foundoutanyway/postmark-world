@@ -89,11 +89,12 @@ import { MARK_ICON_CSS } from "../spectator/mark-icons.mjs";
 // is exactly the 8 `.wv-bymail*` lines and none removed, the same 8 lines the reviewed head added over its own base.
 // RE-PINNED FOR CORE-54 (Darko 2026-11-20, "4. Small targets"), knowingly, an INTENDED change to STYLE over the pin above: the phone/touch hit-area
 // rules (the round map controls and root mark, the tour's three buttons and step dots, the mark bubble's close) and the touch-reach constants' CSS
-// neighbours: 1877 bytes added (108530 -> 110407), nothing removed or changed. The digest below was measured by this test's own masked-emission route
+// neighbours: 1877 bytes added (108530 -> 110407), nothing removed or changed; then the chooser row's 44 px reach (`.wv-choose-row`, one media rule,
+// 190 bytes, 110407 -> 110597) when the crowded press's choices joined the phone column (Wright 16:57Z). The digest below was measured by this test's own masked-emission route
 // on the CORE-54 branch (the same route the earlier pins' last paragraph names), not by an independent script, and is checked by the test below that the pin
 // can fail; the base digest 31265315… (108530 bytes) is what main emitted before the branch.
-const PINNED_MASKED_STYLE_SHA256 = "d778adddc5d1d7c358402dd28d611443ba6d2144c936163f44bdc8f920dec9f4";
-const PINNED_MASKED_STYLE_BYTES = 110407;
+const PINNED_MASKED_STYLE_SHA256 = "e6974c7caa1ff536f5dac445a45c8d55ec11005960b1984c4c91efe274904f59";
+const PINNED_MASKED_STYLE_BYTES = 110597;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";

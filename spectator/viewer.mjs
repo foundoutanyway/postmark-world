@@ -7400,6 +7400,7 @@ ${WV_SEARCH_CSS}
 .wv-walk-note.show { opacity:1; }
 .wv-walk-note.refusal { border-color:#b5524a; color:#f0b0a8; }
 ${CREATURE_CSS}
+@media (max-width:720px), (pointer:coarse) { .wv-choose-row { min-height:44px; } }   /* CORE-54: a row of the crowded press's choices is a thumb's height, in the phone column or a bubble */
 .wv-choose-row.is-convo { border-left:3px solid #7f93a6; display:flex; align-items:baseline; gap:7px; flex-wrap:wrap; font-size:.78rem; }
 .wv-choose-row.is-creature { border-left:3px solid #d8706a; display:flex; align-items:baseline; gap:7px; flex-wrap:wrap; font-size:.78rem; }
 .wv-creature-note { position:absolute; z-index:9; left:50%; bottom:58px; transform:translateX(-50%); max-width:min(34rem,80%);
@@ -15665,6 +15666,16 @@ export function mountViewer(appEl) {
   }
   // ITS COLUMN: what it is in its kind's own words, its kind, what it is doing,
   // its moods, when it came out, what it runs on, and what was done to it and how it answered.
+  // THE CROWDED PRESS, ON A PHONE (CORE-54; Wright 2026-11-20 16:57Z: "On a phone, a tap on crowded marks or conversation badges opens the existing
+  // chooser content in the phone column", inside Darko's pick 4). A contested press has always selected a chooser id (`openChooser`), whose only surface
+  // is the bubble, and bubbles exist only in painting-only mode: on a phone the column is the one selection surface and it had no view for that id, so the
+  // press rendered nothing. This view hands the column the SAME chooser (chooserHTML: its groups, its rows, its ids, its order) and a row press goes through
+  // the one delegate (`[data-choose]` -> selectMark), exactly as a row in a bubble does. Phone only: a desktop selection is unchanged, byte for byte.
+  function chooserColumnView(id) {
+    const ids = id ? chooserIdsFrom(id) : null;
+    if (!ids || !onPhone()) return null;
+    return { key: id, kicker: "here", title: "Choose one", chooser: { fill: (host) => { host.innerHTML = chooserHTML(id); } } };
+  }
   function creatureColumnView(id) {
     if (!isCreatureId(id)) return null;
     const c = liveCreatures.get(id) ?? null;
@@ -16403,7 +16414,7 @@ export function mountViewer(appEl) {
     // to swap either: the click scrolls the mark's cell up in the Telling, and
     // it still does.)
     const selected = markInteraction.getState().selectedId;
-    const column = convoColumnView(selected) ?? parcelColumnView(selected) ?? regionColumnView(selected) ?? creatureColumnView(selected) ?? residentColumnView(selected) ?? markColumnView(selected);
+    const column = chooserColumnView(selected) ?? convoColumnView(selected) ?? parcelColumnView(selected) ?? regionColumnView(selected) ?? creatureColumnView(selected) ?? residentColumnView(selected) ?? markColumnView(selected);
     if (column) homeColumn.open(column); else homeColumn.close();
     renderConvoWash(); // the selected thread keeps its wash drawn, and clearing the selection takes it away
     // ── AND THE MAP HAS TO HEAR ABOUT IT (2026-09-12) ─────────────────────
