@@ -118,7 +118,8 @@ test("the panel: chosen choices are pressed, a household is needed for my marks 
 const SKIP = `${NO_PLAYWRIGHT}: playwright is absent, so the viewer's display selection goes unguarded: run npm ci here (playwright is this package's devDependency)`;
 let chromium = null, browser = null, rig = null, office = null;
 const CLEANUP = [];
-after(() => { for (const stop of CLEANUP.reverse()) { try { stop(); } catch { /* gone */ } } });
+// Reaped in reverse and AWAITED: the browser is closed (its Chromium tree gone) and the spectator child has exited before the file ends.
+after(async () => { for (const stop of CLEANUP.splice(0).reverse()) { try { await stop(); } catch { /* gone */ } } });
 const freePort = () => new Promise((ok, no) => { const p = createServer(); p.on("error", no); p.listen(0, "127.0.0.1", () => { const { port } = p.address(); p.close(() => ok(port)); }); });
 
 const ACTOR = "rig-actor", HOUSE = "rig-house";
@@ -161,21 +162,26 @@ async function bootOffice() {
     res.writeHead(404, { "content-type": "application/json" }); res.end(JSON.stringify({ error: "bounce", defect: "no such door in the rig" }));
   });
   await new Promise((ok) => srv.listen(port, "127.0.0.1", ok));
-  CLEANUP.push(() => srv.close());
+  CLEANUP.push(() => new Promise((done) => { srv.close(() => done()); srv.closeAllConnections?.(); }));
   return { port };
 }
 async function bootRig() {
   const atlasPort = await freePort();
   const atlas = createHttp((req, res) => { if (req.url.startsWith("/atlas/")) { res.writeHead(200, { "content-type": "text/html" }); return res.end('<!doctype html><html><body><svg id="map-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 2400"><rect width="1500" height="2400" fill="#101418"/></svg></body></html>'); } res.writeHead(404); res.end(""); });
   await new Promise((ok) => atlas.listen(atlasPort, "127.0.0.1", ok));
-  CLEANUP.push(() => atlas.close());
+  CLEANUP.push(() => new Promise((done) => { atlas.close(() => done()); atlas.closeAllConnections?.(); }));
   const dir = mkdtempSync(join(tmpdir(), "core127-world-"));
   CLEANUP.push(() => rmSync(dir, { recursive: true, force: true }));
   writeFileSync(join(dir, "world-state.json"), JSON.stringify(world));
   for (const f of ["skeleton.json", "enter-exit-ledger.md", "walk-ledger.md", "enter-exit-ledger-frozen.md"]) { try { cpSync(join(ROOT, "WORLD", f), join(dir, f)); } catch { /* optional */ } }
   const port = await freePort();
   const proc = spawn(process.execPath, [join(ROOT, "spectator", "server.mjs")], { cwd: ROOT, env: { ...process.env, PORT: String(port), ATLAS_ORIGIN: "http://127.0.0.1:" + atlasPort, SHELF_ORIGIN: "http://127.0.0.1:" + atlasPort, WORLD_DIR: dir }, stdio: ["ignore", "pipe", "pipe"] });
-  CLEANUP.push(() => proc.kill());
+  CLEANUP.push(() => new Promise((done) => {
+    if (proc.exitCode !== null || proc.signalCode) return done();
+    const hard = setTimeout(() => proc.kill("SIGKILL"), 5_000);
+    proc.once("exit", () => { clearTimeout(hard); done(); });
+    proc.kill();
+  }));
   await new Promise((ok, no) => {
     const t = setTimeout(() => no(new Error("the rig did not announce itself in 30s")), 30_000);
     proc.stdout.on("data", (b) => { if (String(b).includes("localhost:" + port)) { clearTimeout(t); ok(); } });
