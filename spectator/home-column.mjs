@@ -1038,7 +1038,8 @@ export const HOME_COLUMN_CSS = `
    host's buttons float on and the title, the facts and the close sit clear below it. No host value, no reserve (a standalone viewer has no such buttons).
    The close keeps its mark and gains a 44 px press target. */
 @media (max-width:720px) {
-  .wv-homecol-nav { min-height:var(--wv-chrome-bottom, 0px); box-sizing:border-box; align-items:flex-end; }
+  .wv-homecol-nav { min-height:var(--wv-chrome-bottom, 0px); box-sizing:border-box; align-items:flex-start; }
+  .wv-homecol-kicker { margin-top:14px; }   /* the kicker stays on the top row beside the close (a bottom-aligned kicker sat where the host's Time-travel pill floats) */
   .wv-homecol-close { align-self:flex-start; }
 }
 @media (max-width:720px), (pointer:coarse) {

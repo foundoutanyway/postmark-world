@@ -60,7 +60,9 @@ test("the click path asks that rule, for a touch's reach: the pins on the pointe
 });
 
 test("CLEARANCE: the phone column's nav is at least the host's chrome tall (--wv-chrome-bottom), with NO value no reserve; the close and the 'all conversations' link are thumb-sized", () => {
-  assert.match(HOME_COLUMN_CSS, /@media \(max-width:720px\) \{\s*\.wv-homecol-nav \{ min-height:var\(--wv-chrome-bottom, 0px\); box-sizing:border-box; align-items:flex-end; \}/);
+  assert.match(HOME_COLUMN_CSS, /@media \(max-width:720px\) \{\s*\.wv-homecol-nav \{ min-height:var\(--wv-chrome-bottom, 0px\); box-sizing:border-box; align-items:flex-start; \}\s*\.wv-homecol-kicker \{ margin-top:14px; \}/);
+  // the kicker (a conversation's "A CONVERSATION · LIVE") rides the top row beside the close: the built capture showed a bottom-aligned kicker under the host's Time-travel pill
+  assert.doesNotMatch(HOME_COLUMN_CSS.replace(/\/\*[\s\S]*?\*\//g, ""), /wv-homecol-nav \{[^}]*align-items:flex-end/);
   assert.match(HOME_COLUMN_CSS, /@media \(max-width:720px\), \(pointer:coarse\) \{\s*\.wv-homecol-close \{ min-width:44px; min-height:44px; \}/);
   assert.match(HOME_COLUMN_CSS, /\.wv-homecol-all \{ display:inline-block; padding:12px 6px; \}/);
   // desktop: the nav rule lives only inside the phone media query (nothing outside it names --wv-chrome-bottom)
