@@ -705,15 +705,100 @@ test("mountCircleReader adds its stylesheet once per document and reads the room
 
 // ── an office that does not serve circles yet, and the column that hosts the reader ──────────────────
 
-test("an office that answers a room read with the OLD list shape (no circles) is 'could not read', never 'nobody spoke'", async () => {
-  const h = harness({ room: { live: [], closed: [], earshot_m: 60 } });
-  await h.reader.showRoom(); await tick();
-  assert.equal(h.root.getAttribute("data-state"), "unavailable");
-  assert.deepEqual(byAttr(h.root, "data-notice").map((n) => n.attrs["data-notice"]), ["unavailable"]);
-  assert.match(text(h.root), /did not answer with the circles of this room/);
+test("an office that answers a room read with an answer that is NOT circles and NOT its plain list is 'could not read', never 'nobody spoke'; a circle read in the old list shape is still unavailable", async () => {
+  for (const [name, answer] of Object.entries({ "no circles and no list": { hello: 1, earshot_m: 60 }, "an array": [], "an error": { error: "bounce", defect: "no such room" }, "nothing": null })) {
+    const h = harness({ room: answer });
+    await h.reader.showRoom(); await tick();
+    assert.equal(h.root.getAttribute("data-state"), "unavailable", name);
+    assert.deepEqual(byAttr(h.root, "data-notice").map((n) => n.attrs["data-notice"]), ["unavailable"], `${name}: said, with the reader's own notice`);
+  }
+  const odd = harness({ room: { hello: 1 } });
+  await odd.reader.showRoom(); await tick();
+  assert.match(text(odd.root), /did not answer with the circles of this room/, "a shape that is neither circles nor the plain list keeps its honest sentence");
   const c = harness({ circles: { "1|": { live: [] } } });
   await c.reader.showCircle(1); await tick();
   assert.equal(c.root.getAttribute("data-state"), "unavailable", "and the same for a circle read");
+});
+
+// ── WLD-216 · the plain list a pre-POS-1035 office answers `?room=` with is no failure ──────────────────────────────────────────────────────
+// Prod 2026-11-19 (Darko): "a lot of conversations where it just says we couldn't read this … the office did not answer with the circles of this room". The w47 Office
+// ignores `?room=` and SUCCEEDS with its plain conversations list. The recorded KEY SHAPE of that answer (anonymous prod, keys only, no values kept) is below with INVENTED
+// values; the selected conversation's transcript is the host's, so the reader says "plain" and draws nothing, and the column keeps its plain timeline.
+const W47_ROOT_KEYS = ["pinned", "now", "earshot_m", "fade_minutes", "hearable_since", "close_minutes", "close_minutes_deprecated", "settlement_since", "place_note", "voices_note", "live", "closed", "earlier", "record"];
+const W47_THREAD_KEYS = ["id", "live", "place", "at", "aboard", "extent", "started", "latest", "participants", "voice_count", "voices"];
+const W47_VOICE_KEYS = ["handle", "standing", "said", "at", "at_ms", "x", "y"];
+const w47Voice = (handle, said, ms) => ({ handle, standing: "resident", said, at: "2026-11-19T21:0" + (ms % 10) + ":00.000Z", at_ms: 1795122000000 + ms * 60000, x: 10, y: 20 });
+const w47Thread = (id, place, voices) => ({ id, live: true, place, at: { x: 10, y: 20 }, aboard: null, extent: null, started: "2026-11-19T21:00:00.000Z", latest: "2026-11-19T21:09:00.000Z", participants: [...new Set(voices.map((v) => v.handle))], voice_count: voices.length, voices });
+const SELECTED_SAID = ["Welcome, the kettle is on (INVENTED)", "Is the tea the green one? (INVENTED)"];
+const OTHER_SAID = "A different room entirely (INVENTED)";
+const w47Feed = () => ({
+  pinned: [], now: 1, earshot_m: 60, fade_minutes: 30, hearable_since: "2026-11-19T00:00:00.000Z", close_minutes: 30, close_minutes_deprecated: 30, settlement_since: "2026-11-19T06:00:00.000Z",
+  place_note: "invented", voices_note: "invented",
+  live: [w47Thread("t-selected", "the Rig Cafe (INVENTED)", [w47Voice("rig-ash", SELECTED_SAID[0], 1), w47Voice("rig-bay", SELECTED_SAID[1], 2)]), w47Thread("t-other", "Elsewhere (INVENTED)", [w47Voice("rig-cob", OTHER_SAID, 3)])],
+  closed: [], earlier: [], record: {},
+});
+
+test("WLD-216 · the fixture really has the recorded w47 key shape (root, thread, voice), with invented values only", () => {
+  const f = w47Feed();
+  assert.deepEqual(Object.keys(f), W47_ROOT_KEYS);
+  assert.deepEqual(Object.keys(f.live[0]), W47_THREAD_KEYS);
+  assert.deepEqual(Object.keys(f.live[0].voices[0]), W47_VOICE_KEYS);
+  assert.ok(JSON.stringify(f).includes("INVENTED"));
+});
+
+test("WLD-216 · the old office's plain list on a room read: the reader says 'plain', draws no error and no notice, and keeps no stale model; a circle read in that shape is still unavailable", async () => {
+  const states = [];
+  const host = element("div"); const sc = element("div"); sc.appendChild(host);
+  const reader = createCircleReader({ doc, host, source: { async room() { return w47Feed(); }, async circle() { return w47Feed(); } }, roomId: "t-selected", scroller: sc, onState: (s, d) => states.push([s, d?.reason ?? null]) });
+  await reader.showRoom(); await tick();
+  assert.deepEqual(states.at(-1), ["unavailable", "plain"], "told to the host as plain, not as a failed read");
+  assert.equal(reader.root.getAttribute("data-state"), "unavailable");
+  assert.equal(byAttr(reader.root, "data-notice").length, 0, "no 'could not read' notice");
+  assert.equal(byAttr(reader.root, "data-retry").length, 0, "no Try-again for something that did not fail");
+  assert.doesNotMatch(text(reader.root), /could not|couldn't|did not answer/i);
+  assert.equal(reader.root.children.length, 0, "the reader draws nothing of its own");
+  // a circle read answered in the old shape is not the same thing: there is no plain timeline of a circle
+  const c = harness({ circles: { "1|": w47Feed() } });
+  await c.reader.showCircle(1); await tick();
+  assert.equal(c.root.getAttribute("data-state"), "unavailable");
+  assert.equal(byAttr(c.root, "data-notice").length, 1, "a circle read in the old shape is still said as unavailable");
+});
+
+test("WLD-216 · the column keeps the selected conversation's plain transcript on the old office's answer, with no 'could not be read' sentence; refresh keeps it; another room's words never appear", async () => {
+  const { homeColumnModel, renderHomeColumn } = await import("../spectator/home-column.mjs");
+  const selected = w47Feed().live[0];
+  const blocks = selected.voices.map((v) => ({ type: "paragraph", spans: [{ type: "text", text: `${v.handle}: ${v.said}` }] }));
+  let asked = 0;
+  const source = { async room() { asked += 1; return w47Feed(); }, async circle() { return w47Feed(); } };
+  const host = element("div");
+  renderHomeColumn(doc, host, homeColumnModel({ handle: "the-town", kicker: "a conversation · live", title: "the Rig Cafe (INVENTED)", door: { blocks }, footerLink: { href: "/conversations/#t-selected", text: "all conversations →" }, reader: { roomId: "t-selected", source } }));
+  await tick(); await tick();
+  const body = find(host, (n) => n.className === "wv-homecol-body")[0];
+  const note = find(host, (n) => n.className === "wv-homecol-flatnote")[0];
+  assert.equal(body.hidden, false, "the plain transcript the map holds is shown");
+  assert.equal(note.hidden, true, "and no 'circles could not be read' sentence is over it");
+  for (const said of SELECTED_SAID) assert.ok(text(body).includes(said), `the selected conversation's words: ${said}`);
+  assert.equal(text(host).includes(OTHER_SAID), false, "another room's words never appear");
+  assert.equal(byAttr(host, "data-notice").length, 0, "the reader's own error presentation is gone");
+  assert.equal(find(host, (n) => n.className === "wv-homecol-all").length, 1, "the all-conversations footer is kept");
+  assert.equal(asked, 1);
+  // a refresh keeps it working (and reads again, the way it always did)
+  await host.__circleReader.refresh({ quiet: true }); await tick();
+  assert.equal(body.hidden, false); assert.equal(note.hidden, true);
+  assert.ok(asked >= 2, "the refresh asked the office again");
+  assert.equal(byAttr(host, "data-notice").length, 0);
+  // a REAL failure still gets the honest sentence (and the transcript stands in under it)
+  const down = element("div");
+  renderHomeColumn(doc, down, homeColumnModel({ handle: "the-town", kicker: "k", title: "t", door: { blocks }, reader: { roomId: "t-selected", source: { async room() { throw new Error("503"); }, async circle() { throw new Error("503"); } } } }));
+  await tick(); await tick();
+  assert.equal(find(down, (n) => n.className === "wv-homecol-flatnote")[0].hidden, false, "a failed read keeps its sentence");
+  assert.equal(byAttr(down, "data-notice", "unavailable").length, 1);
+  // and a real circles envelope is still the circles view, unchanged
+  const good = element("div");
+  renderHomeColumn(doc, good, homeColumnModel({ handle: "the-town", kicker: "k", title: "t", door: { blocks }, reader: { roomId: "t1", source: { async room() { return roomFind(); }, async circle() { return circle50101(); } } } }));
+  await tick(); await tick();
+  assert.equal(byAttr(good, "data-circle-stub").length, 3);
+  assert.equal(find(good, (n) => n.className === "wv-homecol-body")[0].hidden, true);
 });
 
 test("the column's reader slot: the reader mounts where the flat words stood; the flat words show only when the reader could not read, and say so", async () => {

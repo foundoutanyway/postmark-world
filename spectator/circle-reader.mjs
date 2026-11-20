@@ -860,6 +860,15 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     return false;
   };
   const whyOf = (answer) => String(answer?.defect ?? answer?.error ?? (answer && typeof answer === "object" ? NOT_SERVED : ""));
+  // WLD-216 (prod, 2026-11-19: "we couldn't read this … the office did not answer with the circles of this room"). An office from before POS-1035 ignores `?room=` and
+  // SUCCEEDS with its plain conversations list (`live` / `closed`), with no `error` and no `circles`. That is not a failed read: the host already holds the selected
+  // conversation's plain transcript, so the reader draws NOTHING of its own and says why (`reason: "plain"`); the host keeps (or shows) its plain timeline, with no
+  // error. Everything else stays what it was: an `error`, no answer, a non-object, or an object that is neither circles nor the plain list is "could not read".
+  const plainFeed = (answer) => {
+    if (!answer || typeof answer !== "object" || Array.isArray(answer) || answer.error) return false;
+    const f = unwrap(answer);
+    return !(f.circles && typeof f.circles === "object") && (Array.isArray(f.live) || Array.isArray(f.closed));
+  };
   async function showRoom(id) {
     if (id !== undefined && id !== null) state.roomId = id;
     state.view = "room"; state.pending = null; state.pages = []; state.circleId = null;
@@ -869,6 +878,7 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     let answer;
     try { answer = await source.room(state.roomId); } catch (e) { answer = { error: String(e?.message ?? e) }; }
     if (mine !== state.token) return;
+    if (plainFeed(answer)) { state.roomModel = null; clear(root); setState("unavailable", { reason: "plain" }); return; }
     if (refused(answer, "room")) { return failed(whyOf(answer)); }
     state.roomModel = modelOfRoom(answer);
     drawRoom(state.roomModel);
