@@ -3,23 +3,35 @@
 // Pure functions only: this opens no browser and no network, and never runs the audit. The audit itself is a
 // manual CLI (node tools/perf/world-page-audit.mjs); importing it runs nothing. What is pinned here is the part
 // that decides whether a row may be a baseline at all: a sample that measured the wrong place, did not actually
-// pan, lacks a measurement, failed its cold load or straddled two versions of the served town is INVALID, and an
-// invalid sample can never turn into a valid zero or a shorter median.
+// pan, lacks a measurement, failed its cold load or straddled two RENDERED FRAMES (World snapshot / Site release) is
+// INVALID, and an invalid sample can never turn into a valid zero or a shorter median. And the two rulings of the
+// 2026-11-21 fit: a page that never goes 2 s without a long task is a CENSORED observation of C that still counts as a
+// sample (never a failure, never a finite-subset median), and the town's freshness moving is provenance, not a reason
+// to refuse to combine samples.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  quantile, median, spread, quietFrom, frameGaps, longestTask, centredWithin, sameScale, dragMoved, sameVersion, versionOf,
-  sampleProblems, auditRow, repoPathOf, PLACES, MIN_CAMERA_WRITES, MIN_TRAVEL_PX,
+  quantile, median, spread, quietFrom, frameGaps, longestTask, windowTasks, observeInteractive, interactiveSummary, bytesCutoff,
+  centredWithin, sameScale, dragMoved, sameVersion, sameFrame, freshnessMoved, versionOf, FRAME_KEYS, FRESHNESS_KEYS,
+  sampleProblems, auditRow, repoPathOf, PLACES, MIN_CAMERA_WRITES, MIN_TRAVEL_PX, INTERACTIVE_BOUND_MS, QUIET_MS,
 } from "./perf/world-page-audit.mjs";
 
-const BUILD = { code_sha: "c", town_data_sha: "d", town_sha: "t", world_sha: "w", world_digest: "g", crossing: 323, world_settlement: "S183" };
+const BUILD = {
+  code_sha: "c", code_ref: "release/2026-w47.5", world_sha: "w", world_ref: "settlement/S183", world_settlement: "S183", world_digest: "g",
+  town_sha: "t", town_data_sha: "d", crossing: 323, town_index_as_of: "i",
+};
 const place = (over = {}) => ({ located: true, scale: 1.2, scale_ref: 1.2, scale_ok: true, camera_writes: 90, travel_px: 300, still_in_view: true, frame_p95_ms: 33, longest_task_ms: 0, long_tasks: 0, drawn_marks: 120, ...over });
 const sample = (over = {}) => ({
-  error: null, visibility: "visible", map_shown_ms: 9000, interactive_ms: 12000, bytes_cold_load_encoded: 4_000_000, failed_requests: [],
-  version_before: versionOf(BUILD), version_after: versionOf(BUILD), idle_busy_pct: 8, heap_after_gc_mib: 60, scale_ref: 1.2,
+  error: null, visibility: "visible", map_shown_ms: 9000, interactive_ms: 12000, interactive_censored: null, bytes_cold_load_encoded: 4_000_000, bytes_basis: "interactive", bytes_cutoff_ms: 12000,
+  failed_requests: [], version_before: versionOf(BUILD), version_after: versionOf(BUILD), idle_busy_pct: 8, heap_after_gc_mib: 60, scale_ref: 1.2,
   places: { town_centre: place(), spire: place() }, ...over,
 });
+/** a censored sample: C never reached inside the bound; everything else measured */
+const censored = (over = {}) => {
+  const obs = observeInteractive(Array.from({ length: 400 }, (_, i) => [9000 + i * 450, 120]), 9000);   // a long task every 450 ms for the whole bound
+  return sample({ interactive_ms: null, ...obs, bytes_basis: "observation_end", bytes_cutoff_ms: obs.interactive_observation.until_ms, ...over });
+};
 const TOWN = { ...BUILD, settlement: BUILD.world_settlement, marks: 3066, parcels: 195 };
 const row = (samples, official = true, town = TOWN) => auditRow({ samples, town, env: {}, official, at: "2026-11-20T00:00:00Z" });
 
@@ -56,13 +68,105 @@ test("a place is 'located' only when it is under the middle of the map", () => {
   assert.equal(dragMoved({ writes: 0, travelPx: 0 }), false);
 });
 
-test("a complete, well-placed, panned, single-version sample is valid, and three of them make a valid row with medians", () => {
+// ── C: exact, and censored ─────────────────────────────────────────────────────────────────────────────────
+
+test("C exact: a page that goes quiet inside the bound reads the same as before, and its observation is explicit", () => {
+  const r = observeInteractive([[9000, 300], [9500, 400], [20_000, 100]], 9000);
+  assert.equal(r.interactive_ms, 9900, "quiet from the end of the first burst (9500 + 400) to the next task");
+  assert.equal(r.interactive_censored, null);
+  assert.deepEqual([r.interactive_observation.from_ms, r.interactive_observation.until_ms, r.interactive_observation.bound_ms, r.interactive_observation.quiet_window_ms],
+    [9000, 9000 + INTERACTIVE_BOUND_MS, INTERACTIVE_BOUND_MS, QUIET_MS], "the bound is stated, by the page's clock, with the 2 s window");
+  assert.equal(r.interactive_observation.last_start_tried_ms, 9000 + INTERACTIVE_BOUND_MS - QUIET_MS, "the 2 s lookahead lies inside the bound");
+});
+
+test("C censored: no 2 s window inside the bound is `>N s (never quiet: K long tasks, L ms total in the window)`, with its bound, reason and counts", () => {
+  const lt = Array.from({ length: 400 }, (_, i) => [9000 + i * 450, 120]);                   // a task every 450 ms for 180 s
+  const r = observeInteractive(lt, 9000);
+  assert.equal(r.interactive_ms, null, "no number is invented");
+  const c = r.interactive_censored;
+  assert.equal(c.gt_ms, 9000 + INTERACTIVE_BOUND_MS - QUIET_MS, "C is more than the last start tried");
+  assert.equal(c.long_tasks, 400);
+  assert.equal(c.long_task_ms, 400 * 120);
+  assert.equal(c.text, `>187.0 s (never quiet: 400 long tasks, 48000 ms total in the window)`);
+  assert.match(c.reason, /no 2 s window without a long task began between map shown/);
+  assert.equal(r.interactive_observation.count, 400, "the window's long-task evidence is kept");
+  assert.equal(r.interactive_observation.longest.length, 5);
+});
+
+test("the lookahead is inside the bound: a quiet window that would only END after the bound is censored, not exact", () => {
+  // a task every 1.5 s keeps the page from ever being quiet for 2 s, up to +177 s; the last one ends at +177.1 s
+  const dense = Array.from({ length: 119 }, (_, i) => [9000 + i * 1500, 100]);                   // 9000 … 9000+177 000
+  const exact = observeInteractive(dense, 9000);
+  assert.equal(exact.interactive_ms, 9000 + 177_000 + 100, "quiet from +177.1 s; its 2 s window ends at +179.1 s, inside the 180 s bound");
+  // one more task at +178.4 s: the quiet could only begin at +178.5 s, so its 2 s window would end at +180.5 s, past the bound
+  const late = observeInteractive([...dense, [9000 + 178_400, 100]], 9000);
+  assert.equal(late.interactive_ms, null, "a window that would end after the bound is not seen: censored, not exact");
+  assert.equal(late.interactive_censored.gt_ms, 9000 + INTERACTIVE_BOUND_MS - QUIET_MS);
+});
+
+test("C across samples: exact medians are exact; one censored sample ranks above the exact ones and the middle stays exact; two censored make the median `>`", () => {
+  const ex = (ms) => ({ interactive_ms: ms, interactive_censored: null });
+  const ce = (gt) => ({ interactive_ms: null, interactive_censored: { gt_ms: gt, long_tasks: 10, long_task_ms: 1000, text: `>${gt / 1000} s` } });
+  const all = interactiveSummary([ex(30_000), ex(10_000), ex(20_000)]);
+  assert.equal(all.median, 20_000); assert.equal(all.n_censored, 0); assert.equal(all.median_censored, false);
+  const one = interactiveSummary([ex(30_000), ce(178_000), ex(10_000)]);
+  assert.equal(one.median, 30_000, "the censored sample is above every exact one, so the middle by rank is the larger exact");
+  assert.equal(one.max_censored, true); assert.equal(one.max, null); assert.equal(one.max_gt_ms, 178_000); assert.equal(one.n_censored, 1);
+  const two = interactiveSummary([ex(10_000), ce(178_000), ce(177_000)]);
+  assert.equal(two.median, null, "no finite-subset median");
+  assert.equal(two.median_censored, true); assert.equal(two.median_gt_ms, 177_000);
+  assert.match(two.text, /2 of 3 samples censored/);
+  const three = interactiveSummary([ce(178_000), ce(177_000), ce(179_000)]);
+  assert.equal(three.median_censored, true);
+  assert.equal(interactiveSummary([ex(1), { interactive_ms: null, interactive_censored: null }]), null, "a sample with neither is a gap: no summary at all");
+});
+
+test("the cold-load bytes name their cutoff: C when reached, the end of the observation when it was not", () => {
+  assert.deepEqual(bytesCutoff(sample()), { at_ms: 12000, basis: "interactive" });
+  const c = censored();
+  assert.deepEqual(bytesCutoff(c), { at_ms: 9000 + INTERACTIVE_BOUND_MS, basis: "observation_end" });
+  const r = row([sample(), censored(), sample()]);
+  assert.equal(r.metrics.bytes_cold_load_encoded.basis, "mixed");
+  assert.deepEqual(r.metrics.bytes_cold_load_encoded.cutoffs.map((x) => x.basis), ["interactive", "observation_end", "interactive"]);
+  assert.equal(row([censored(), censored(), censored()]).metrics.bytes_cold_load_encoded.basis, "observation_end");
+});
+
+test("windowTasks clips to the window and keeps the five longest", () => {
+  const w = windowTasks([[0, 500], [900, 200], [1500, 50], [3000, 100]], 1000, 2000);
+  assert.equal(w.count, 2, "the task ending at 500 and the one starting at 3000 are outside");
+  assert.equal(w.total_ms, 100 + 50, "the 900-1100 task counts only the 100 ms inside the window");
+  assert.equal(w.max_ms, 200);
+});
+
+// ── the rows ────────────────────────────────────────────────────────────────────────────────────────────────
+
+test("a complete, well-placed, panned, single-frame sample is valid, and three of them make a valid row with medians", () => {
   assert.deepEqual(sampleProblems(sample(), { official: true }), []);
   const r = row([sample({ map_shown_ms: 9000 }), sample({ map_shown_ms: 7000 }), sample({ map_shown_ms: 8000 })]);
   assert.equal(r.valid, true, r.invalid.join("; "));
   assert.equal(r.metrics.map_shown_ms.median, 8000);
   assert.deepEqual([r.metrics.map_shown_ms.min, r.metrics.map_shown_ms.max], [7000, 9000]);
   assert.equal(r.metrics.places.spire.pan_frame_p95_ms.median, 33);
+  assert.equal(r.metrics.interactive_ms.median, 12000, "exact C: the old behaviour, a plain median");
+  assert.equal(r.censored, false);
+  assert.deepEqual(Object.keys(r.frame), FRAME_KEYS, "the row says what frame it was measured on");
+});
+
+test("A CENSORED SAMPLE COUNTS: the row stays valid, keeps all three samples, and the other phases are real numbers", () => {
+  const r = row([sample(), censored(), sample()]);
+  assert.equal(r.valid, true, r.invalid.join("; "));
+  assert.equal(r.censored, true);
+  assert.equal(r.samples.length, 3, "the censored sample is in the three-sample result");
+  assert.equal(r.metrics.interactive_ms.n_censored, 1);
+  assert.equal(r.metrics.interactive_ms.median, 12000, "middle by rank is exact; no median over the finite subset");
+  assert.equal(r.metrics.idle_busy_pct.median, 8, "idle, heap, both pans and the bytes still ran and still count");
+  assert.equal(r.metrics.heap_after_gc_mib.median, 60);
+  assert.equal(r.metrics.places.town_centre.pan_frame_p95_ms.samples.length, 3);
+  const mostly = row([censored(), censored(), sample()]);
+  assert.equal(mostly.valid, true, mostly.invalid.join("; "));
+  assert.equal(mostly.metrics.interactive_ms.median, null);
+  assert.equal(mostly.metrics.interactive_ms.median_censored, true);
+  assert.equal(mostly.samples[0].interactive_censored.text.startsWith(">"), true);
 });
 
 test("FALSIFIERS — each of these makes the row INVALID, never a baseline", () => {
@@ -73,21 +177,29 @@ test("FALSIFIERS — each of these makes the row INVALID, never a baseline", () 
   };
   bad(sample({ places: { town_centre: place(), spire: place({ located: false }) } }), /spire: the place was not under the middle/);   // the wrong location
   bad(sample({ places: { town_centre: place({ camera_writes: 0, travel_px: 0 }), spire: place() } }), /town_centre: the drag did not move the camera/);   // no actual pan
+  bad(sample({ places: { town_centre: place({ camera_writes: 1, travel_px: 0 }), spire: place() } }), /town_centre: the drag did not move the camera \(1 writes, 0 px\)/);   // the 11-20 inert drags
   bad(sample({ places: { town_centre: place(), spire: place({ scale_ok: false, scale: 0.4 }) } }), /spire: the camera was not at the common scale/);
   bad(sample({ places: { town_centre: place(), spire: place({ still_in_view: false }) } }), /spire: the place had left the screen/);
   bad(sample({ places: { town_centre: place() } }), /spire: not measured/);                                                          // an unsupported / skipped measurement
   bad(sample({ map_shown_ms: null }), /the map was never shown/);                                                                   // a failed phase
-  bad(sample({ interactive_ms: null }), /never reached a 2 s stutter-free window/);
+  bad(sample({ interactive_ms: null, interactive_censored: null }), /neither measured nor censored/);                                // C with no value AND no censoring
+  bad(sample({ interactive_ms: null, interactive_censored: { gt_ms: NaN } }), /neither measured nor censored/);                      // a malformed censoring
   bad(sample({ error: "page.click: Timeout 30000ms exceeded." }), /phase failed/);                                                  // a missing selector
   bad(sample({ failed_requests: ["404 https://postmark.town/WORLD/world-state.json"] }), /failed requests/);                        // a failed cold load
   bad(sample({ bytes_cold_load_encoded: 0 }), /no cold-load bytes/);
+  bad(sample({ bytes_basis: undefined }), /byte cutoff is unstated/);
   bad(sample({ visibility: "hidden" }), /not visible/);
-  bad(sample({ version_after: versionOf({ ...BUILD, crossing: 324 }) }), /mixed version/);                                          // the town moved under the sample
+  bad(sample({ version_after: versionOf({ ...BUILD, world_sha: "w2" }) }), /mixed frame/);                                           // the World moved under the sample
+  bad(sample({ version_after: versionOf({ ...BUILD, code_sha: "c2" }) }), /mixed frame/);                                            // the Site release moved under the sample
   bad(sample({ version_before: null, version_after: null }), /build\.json was unavailable/);
   const r = row([sample(), sample(), sample({ idle_busy_pct: NaN })]);
   assert.equal(r.valid, false);
   assert.equal(r.metrics.idle_busy_pct, null, "a gap in one sample leaves the median null, it is not computed over two");
   assert.ok(r.invalid.some((m) => /no value for idle_busy_pct/.test(m)));
+  // a censored C does not excuse a truly failed phase beside it
+  const c = row([sample(), censored({ places: { town_centre: place({ camera_writes: 0, travel_px: 0 }), spire: place() } }), sample()]);
+  assert.equal(c.valid, false);
+  assert.ok(c.invalid.some((m) => /town_centre: the drag did not move the camera/.test(m)));
 });
 
 test("an unofficial run (another origin, other sample count) is flagged so; its version is not required", () => {
@@ -96,29 +208,41 @@ test("an unofficial run (another origin, other sample count) is flagged so; its 
   assert.equal(row([s], false).official, false);
 });
 
-test("stable samples from different versions cannot form one baseline, or disagree with its town context", () => {
-  const other = versionOf({ ...BUILD, town_sha: "other" });
-  const mixed = row([sample(), sample({ version_before: other, version_after: other }), sample()]);
-  assert.equal(mixed.valid, false);
-  assert.ok(mixed.invalid.some((m) => /mixed version across/.test(m)));
-  const staleTown = row([sample(), sample(), sample()], true, { ...TOWN, world_sha: "stale" });
-  assert.equal(staleTown.valid, false);
+// ── the comparator: the rendered frame, not the town's freshness ─────────────────────────────────────────────
+
+test("TOWN FRESHNESS ALONE DOES NOT INVALIDATE: town_sha, town_data_sha and the crossing may move; the World snapshot and Site release may not", () => {
+  const moved = versionOf({ ...BUILD, town_sha: "t2", town_data_sha: "d2", crossing: 324, town_index_as_of: "i2" });
+  assert.deepEqual(freshnessMoved(versionOf(BUILD), moved).sort(), [...FRESHNESS_KEYS].sort());
+  assert.equal(sameFrame(versionOf(BUILD), moved), true);
+  assert.equal(sameVersion(versionOf(BUILD), moved), true);
+  const s = sample({ version_after: moved, freshness_moved: freshnessMoved(versionOf(BUILD), moved) });
+  assert.deepEqual(sampleProblems(s, { official: true }), [], "a sample the town moved under is still valid");
+  const r = row([sample(), s, sample({ version_before: moved, version_after: moved })]);
+  assert.equal(r.valid, true, r.invalid.join("; "));
+  assert.equal(r.freshness_varied, true, "the row says the town moved, as provenance");
+  assert.equal(row([sample(), sample(), sample()]).freshness_varied, false);
+  // …but each key of the FRAME is a real change of the thing measured
+  for (const k of FRAME_KEYS) {
+    const other = versionOf({ ...BUILD, [k]: "x-" + k });
+    assert.equal(sameFrame(versionOf(BUILD), other), false, k);
+    const m = row([sample(), sample({ version_before: other, version_after: other }), sample()]);
+    assert.equal(m.valid, false, k);
+    assert.ok(m.invalid.some((x) => /mixed frame across the audit town and samples/.test(x)), k);
+  }
+  assert.equal(sameFrame(null, versionOf(BUILD)), false);
 });
 
-test("an official baseline requires complete town counts and versions, not matching missing values", () => {
-  for (const town of [null, { ...TOWN, marks: null }, { ...TOWN, parcels: null }, { ...TOWN, world_sha: null }]) {
+test("an official baseline requires a complete frame and town counts, not matching missing values", () => {
+  for (const town of [null, { ...TOWN, marks: null }, { ...TOWN, parcels: null }, { ...TOWN, world_sha: null }, { ...TOWN, code_ref: null }, { ...TOWN, world_ref: null }]) {
     const r = row([sample(), sample(), sample()], true, town);
     assert.equal(r.valid, false, JSON.stringify(town));
   }
-  const missing = versionOf({});
-  const r = row([sample({ version_before: missing, version_after: missing })], true, { marks: 3066, parcels: 195 });
-  assert.equal(r.valid, false);
-  assert.ok(r.invalid.some((m) => /version is incomplete/.test(m)));
+  // freshness is provenance: an audit town that lacks it (or differs from the samples on it) is not refused for that
+  assert.equal(row([sample(), sample(), sample()], true, { ...TOWN, town_sha: null, crossing: null }).valid, true);
 });
 
-test("versions compare on every key; the repo path of a served URL is only for what the repo serves", () => {
+test("versions compare on the frame; the repo path of a served URL is only for what the repo serves", () => {
   assert.equal(sameVersion(versionOf(BUILD), versionOf({ ...BUILD })), true);
-  assert.equal(sameVersion(versionOf(BUILD), versionOf({ ...BUILD, town_sha: "x" })), false);
   assert.equal(sameVersion(null, versionOf(BUILD)), false);
   assert.equal(repoPathOf("/world-engine/spectator/viewer.mjs?v=1"), "spectator/viewer.mjs");
   assert.equal(repoPathOf("/WORLD/world-state.json"), "WORLD/world-state.json");

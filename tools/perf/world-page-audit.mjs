@@ -9,6 +9,7 @@
 //   options: --origin URL (default https://postmark.town; any other origin is an UNOFFICIAL run, never a baseline row)
 //            --samples N (default 3; the audit's median is over these)   --cpu N (default 4: CPU slowed 4x)
 //            --world-path P (default /world/; the offline check against the repo's own spectator server uses /)
+//            --interactive-bound-s N (default 180; any other value is an UNOFFICIAL run)
 //
 // What it does, per sample (a FRESH, signed-out browser context each time; unmodified prod; no resident act, no
 // cookie or session set up, no response rewriting, no wrapped page functions, no clock shift — passive observers
@@ -21,11 +22,25 @@
 //
 // Definitions (units are in every key's name; every time is ms since the page's navigation began, performance.now()):
 //   bytes_cold_load_encoded   bytes on the wire (CDP encodedDataLength: headers + compressed body) of every request that
-//                             FINISHED before interactive_ms, all origins; a fresh context, so an empty cache.
+//                             FINISHED by the CUTOFF, all origins; a fresh context, so an empty cache. The cutoff is interactive_ms when
+//                             it was reached (bytes_basis "interactive"), and the END OF THE OBSERVATION WINDOW when it was not
+//                             (bytes_basis "observation_end"): the row names the basis per sample and says "mixed" when they differ.
 //   map_shown_ms              the first moment svg#map-svg exists AND at least one drawn mark (#wv-overlay [data-id]) is in
 //                             it, in a visible tab — the map is on screen with its marks, not merely attached.
-//   interactive_ms            the earliest moment at or after map_shown_ms from which NO long task (>= 50 ms, the Long Tasks
-//                             API) starts for the next 2000 ms. "Answers without stutter."
+//   interactive_ms            C. The earliest moment at or after map_shown_ms from which NO long task (>= 50 ms, the Long Tasks
+//                             API) starts for the next 2000 ms. "Answers without stutter." It is watched for INTERACTIVE_BOUND_MS
+//                             (180 s) of the page's clock after the map is shown, and a quiet window must END inside that bound, so the
+//                             2 s lookahead is inside it: the latest start tried is bound - 2 s. If no such window exists the sample is
+//                             CENSORED, not failed: interactive_ms is null and interactive_censored carries gt_ms (C is more than this),
+//                             the reason, and the counts, rendered as `>N s (never quiet: K long tasks, L ms total in the window)`.
+//                             interactive_observation keeps the window (from/until, bound, last start tried, count/total/max/five longest
+//                             tasks). A censored sample is a sample: bytes, both pans, idle and heap still run. The audit's value for C is the
+//                             median by rank over the three samples with every censored one ranking above every exact one: exact when the
+//                             middle sample is exact, `>` the censored bound when it is not — never the median of the exact subset.
+//   COMPARABILITY             rows compare on the rendered FRAME: Site release (code_sha, code_ref) and World snapshot (world_sha, world_ref,
+//                             world_settlement, world_digest). The town's freshness (town_sha, town_data_sha, crossing, town_index_as_of)
+//                             moves without changing what is rendered, so it rides as per-sample provenance (version_before/after,
+//                             freshness_moved) and never invalidates a sample. A frame change during or between samples does.
 //   idle_busy_pct             10 s with nothing touched: renderer main-thread task time / wall time (CDP TaskDuration), %.
 //   heap_after_gc_mib         JS heap in use after a forced garbage collection, at the end of the sample.
 //   pan_frame_p95_ms          95th percentile of the gaps between animation frames over the 10 s drag, at a place.
@@ -34,7 +49,7 @@
 // A sample is VALID only if every phase ran: no phase's selector missing, no failed request for the page's own
 // document or data, the place under the middle of the map, the camera at the same scale at both places, the camera
 // actually moved during the drag (>= MIN_CAMERA_WRITES writes, >= MIN_TRAVEL_PX of travel), the place still on screen after,
-// and the served version (build.json) the same before and after. Any invalid sample makes the row invalid
+// and the served FRAME (build.json) the same before and after. (C censored is not a failure: see above.) Any invalid sample makes the row invalid
 // (valid: false, with the reasons) and the exit code 2: an invalid row is never a baseline. A medians-of-zero cannot occur:
 // a missing number is null and invalidates the row.
 //
@@ -55,6 +70,12 @@ export const VIEWPORT = { width: 1366, height: 768 };
 export const IDLE_MS = 10000;
 export const PAN_MS = 10000;
 export const QUIET_MS = 2000;            // the stutter-free window that makes the page "interactive"
+// THE OBSERVATION BOUND for interactive_ms (WLD-222 fit): the page is watched for this long AFTER the map is shown, by the page's own
+// clock (not a count of polls). A quiet window must lie wholly inside it, so the 2 s lookahead is inside the bound: the latest start tried
+// is bound - 2 s. No such window = a CENSORED observation (interactive_ms is "more than" that), which still counts as a sample.
+export const INTERACTIVE_BOUND_MS = 180000;
+export const MAP_WAIT_MS = 120000;       // how long the map may take to show before the phase has failed (a real failure, not a censoring)
+export const SETTLE_CAP_MS = 20000;      // each "let the page rest" wait between inputs is capped; whether it rested is recorded, never assumed
 export const MIN_CAMERA_WRITES = 5;      // a drag that moved the camera fewer times than this was inert (a slowed page may write it rarely, never not at all)
 export const MIN_TRAVEL_PX = 60;         // …or moved it less far than this (CSS px of the map)
 export const SCALE_TOLERANCE = 0.06;     // both places are panned within 6 % of the same map scale
@@ -94,6 +115,52 @@ export function longestTask(longTasks, a, b) {
   const lt = longTasks.filter(([s, d]) => s + d >= a && s <= b);
   return { ms: lt.reduce((m, [, d]) => Math.max(m, d), 0), count: lt.length };
 }
+/** the long tasks inside [from,until]: how many touch it, how much task time lies inside it (clipped to the window), the longest, and the five longest as [start,ms]. */
+export function windowTasks(longTasks, from, until) {
+  const inside = longTasks.filter(([s, d]) => s < until && s + d > from);
+  const clipped = inside.map(([s, d]) => Math.min(s + d, until) - Math.max(s, from));
+  return {
+    count: inside.length, total_ms: Math.round(clipped.reduce((a, x) => a + x, 0)), max_ms: inside.reduce((m, [, d]) => Math.max(m, d), 0),
+    longest: [...inside].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([s, d]) => [Math.round(s), Math.round(d)]),
+  };
+}
+/** what a sample records about C, from the long tasks it saw: exact (the first quiet window) or censored (none inside the bound). */
+export function observeInteractive(longTasks, mapAt, { boundMs = INTERACTIVE_BOUND_MS, windowMs = QUIET_MS } = {}) {
+  const until = mapAt + boundMs;
+  const t = quietFrom(longTasks, mapAt, windowMs, until);            // `until` as "now": the window must END inside the bound
+  const obs = { from_ms: mapAt, until_ms: until, bound_ms: boundMs, quiet_window_ms: windowMs, last_start_tried_ms: until - windowMs, ...windowTasks(longTasks, mapAt, until) };
+  if (t !== null) return { interactive_ms: t, interactive_censored: null, interactive_observation: obs };
+  const gt = until - windowMs;
+  return {
+    interactive_ms: null, interactive_observation: obs,
+    interactive_censored: {
+      gt_ms: gt, reason: `no ${windowMs / 1000} s window without a long task began between map shown (${Math.round(mapAt)} ms) and ${Math.round(gt)} ms, inside the ${boundMs / 1000} s observation`,
+      long_tasks: obs.count, long_task_ms: obs.total_ms,
+      text: `>${(gt / 1000).toFixed(1)} s (never quiet: ${obs.count} long tasks, ${obs.total_ms} ms total in the window)`,
+    },
+  };
+}
+const censoredOk = (c) => !!c && Number.isFinite(c.gt_ms) && Number.isFinite(c.long_tasks) && Number.isFinite(c.long_task_ms);
+/** C across the samples, honestly. A censored sample is a value larger than every exact one (every exact C is inside the bound), so the
+ *  median of n by rank is exact when the middle sample is exact and censored (">") when it is not; it is never a median of the finite subset.
+ *  null when any sample has neither an exact value nor a well-formed censoring. */
+export function interactiveSummary(samples) {
+  const items = samples.map((s) => (Number.isFinite(s.interactive_ms) ? { exact: s.interactive_ms } : censoredOk(s.interactive_censored) ? { gt: s.interactive_censored.gt_ms, c: s.interactive_censored } : null));
+  if (!items.length || items.some((i) => i === null)) return null;
+  const order = [...items].sort((a, b) => ("exact" in a && "exact" in b ? a.exact - b.exact : "exact" in a ? -1 : "exact" in b ? 1 : a.gt - b.gt));
+  const mid = order[Math.min(order.length - 1, Math.floor(0.5 * (order.length - 1) + 0.5))], lo = order[0], hi = order[order.length - 1];
+  const nCens = items.filter((i) => "gt" in i).length;
+  const show = (i) => ("exact" in i ? `${Math.round(i.exact)} ms` : i.c.text);
+  return {
+    median: "exact" in mid ? mid.exact : null, median_censored: !("exact" in mid), median_gt_ms: "gt" in mid ? mid.gt : null,
+    min: "exact" in lo ? lo.exact : null, min_censored: !("exact" in lo), max: "exact" in hi ? hi.exact : null, max_censored: !("exact" in hi), max_gt_ms: "gt" in hi ? hi.gt : null,
+    n_censored: nCens, n: items.length,
+    samples: items.map((i) => ("exact" in i ? { ms: i.exact } : { censored: true, gt_ms: i.gt, long_tasks: i.c.long_tasks, long_task_ms: i.c.long_task_ms, text: i.c.text })),
+    text: `median ${show(mid)}${nCens ? `; ${nCens} of ${items.length} samples censored` : ""}`,
+  };
+}
+/** the cold-load byte cutoff for a sample: the moment C was reached, or — C censored — the end of the observation window. */
+export const bytesCutoff = (s) => (Number.isFinite(s.interactive_ms) ? { at_ms: s.interactive_ms, basis: "interactive" } : s.interactive_observation ? { at_ms: s.interactive_observation.until_ms, basis: "observation_end" } : null);
 /** is the rect's centre within `frac` of the pane's middle, each way (fractions of the pane's width and height)? */
 export function centredWithin(rect, pane, frac = 0.12) {
   if (!rect || !pane) return false;
@@ -103,10 +170,21 @@ export function centredWithin(rect, pane, frac = 0.12) {
 export const sameScale = (a, b, tol = SCALE_TOLERANCE) => Number.isFinite(a) && Number.isFinite(b) && b > 0 && Math.abs(a / b - 1) <= tol;
 /** an inert drag: the camera was written too few times or went too short a way. */
 export const dragMoved = ({ writes, travelPx }) => writes >= MIN_CAMERA_WRITES && travelPx >= MIN_TRAVEL_PX;
-export const VERSION_KEYS = ["code_sha", "town_data_sha", "town_sha", "world_sha", "world_digest", "crossing", "world_settlement"];
+// WHAT THE PAGE RENDERED vs HOW FRESH THE TOWN IS (WLD-222 fit, Wright 2026-11-21). The frame a sample was measured on is the
+// World code/snapshot and the Site release: the Site's release tag and code, the World sha and its settlement and digest. The town's
+// freshness — the town and its mail moving with town_sha and the crossing — changes between samples without changing what the page renders,
+// so it is kept as per-sample provenance and never decides whether samples may be combined. A change in the FRAME during a sample, or
+// between samples, is a change in the thing measured: it still cannot be silently combined.
+export const FRAME_KEYS = ["code_sha", "code_ref", "world_sha", "world_ref", "world_settlement", "world_digest"];
+export const FRESHNESS_KEYS = ["town_sha", "town_data_sha", "crossing", "town_index_as_of"];
+export const VERSION_KEYS = [...FRAME_KEYS, ...FRESHNESS_KEYS];
 export const versionOf = (build) => (build ? Object.fromEntries(VERSION_KEYS.map((k) => [k, build[k] ?? null])) : null);
-export const sameVersion = (a, b) => !!a && !!b && VERSION_KEYS.every((k) => a[k] === b[k]);
-const completeVersion = (v) => !!v && VERSION_KEYS.every((k) => v[k] !== null && v[k] !== undefined && v[k] !== "");
+/** the same rendered frame: every FRAME key equal (freshness is not compared). Null on either side is never the same. */
+export const sameFrame = (a, b) => !!a && !!b && FRAME_KEYS.every((k) => a[k] === b[k]);
+export const sameVersion = sameFrame;
+/** which freshness keys moved between two reads (provenance only). */
+export const freshnessMoved = (a, b) => (a && b ? FRESHNESS_KEYS.filter((k) => a[k] !== b[k]) : []);
+const completeFrame = (v) => !!v && FRAME_KEYS.every((k) => v[k] !== null && v[k] !== undefined && v[k] !== "");
 
 /** one sample's own verdict: the reasons it is not valid (empty = valid). `s` is what measureSample returns. */
 export function sampleProblems(s, { official }) {
@@ -114,10 +192,13 @@ export function sampleProblems(s, { official }) {
   if (s.error) bad.push(`phase failed: ${s.error}`);
   if (s.visibility !== "visible") bad.push(`tab was ${s.visibility}, not visible`);
   if (!Number.isFinite(s.map_shown_ms)) bad.push("the map was never shown");
-  if (!Number.isFinite(s.interactive_ms)) bad.push("the page never reached a 2 s stutter-free window");
+  // C is exact, or CENSORED with its bound and counts (a sample that never had a quiet window is a finding, not a failure); neither = a failed phase
+  if (!Number.isFinite(s.interactive_ms) && !censoredOk(s.interactive_censored)) bad.push("interactive time is neither measured nor censored with its bound");
   if (!(s.bytes_cold_load_encoded > 0)) bad.push("no cold-load bytes were read");
+  if (!s.bytes_basis) bad.push("the cold-load byte cutoff is unstated");
   if (s.failed_requests?.length) bad.push(`failed requests: ${s.failed_requests.slice(0, 3).join(", ")}`);
-  if (official && !sameVersion(s.version_before, s.version_after)) bad.push("the served version changed during the sample (mixed version)");
+  // the FRAME (World code/snapshot + Site release) may not move during a sample; the town's freshness (town_sha, crossing…) may, and is recorded
+  if (official && !sameFrame(s.version_before, s.version_after)) bad.push("the rendered World/Site frame changed during the sample (mixed frame)");
   if (official && !s.version_before) bad.push("build.json was unavailable, so the served version is unknown");
   for (const [k, p] of Object.entries(s.places ?? {})) {
     if (!p.located) bad.push(`${k}: the place was not under the middle of the map`);
@@ -136,9 +217,9 @@ export function auditRow({ samples, town, env, official, at }) {
   const invalid = samples.flatMap((s, i) => sampleProblems(s, { official }).map((m) => `sample ${i + 1}: ${m}`));
   if (official) {
     const version = versionOf(town ? { ...town, world_settlement: town.settlement } : null);
-    if (!completeVersion(version)) invalid.push("the audit town version is incomplete");
+    if (!completeFrame(version)) invalid.push("the audit town version is incomplete (the World/Site frame)");
     if (![town?.marks, town?.parcels].every((n) => Number.isInteger(n) && n >= 0)) invalid.push("the audit town size is unavailable");
-    if (samples.some((s) => !sameVersion(version, s.version_before) || !sameVersion(version, s.version_after))) invalid.push("mixed version across the audit town and samples");
+    if (samples.some((s) => !sameFrame(version, s.version_before) || !sameFrame(version, s.version_after))) invalid.push("mixed frame across the audit town and samples");
   }
   const pick = (f) => spread(samples.map(f));
   const place = (k, f) => pick((s) => s.places?.[k] ? f(s.places[k]) : NaN);
@@ -148,10 +229,12 @@ export function auditRow({ samples, town, env, official, at }) {
     pan_long_tasks: place(k, (p) => p.long_tasks),
     drawn_marks: place(k, (p) => p.drawn_marks),
   }]));
+  const bytes = pick((s) => s.bytes_cold_load_encoded);
+  const bases = [...new Set(samples.map((s) => s.bytes_basis))];
   const metrics = {
-    bytes_cold_load_encoded: pick((s) => s.bytes_cold_load_encoded),
+    bytes_cold_load_encoded: bytes && { ...bytes, basis: bases.length === 1 ? bases[0] : "mixed", cutoffs: samples.map((s) => ({ basis: s.bytes_basis, at_ms: s.bytes_cutoff_ms ?? null })) },
     map_shown_ms: pick((s) => s.map_shown_ms),
-    interactive_ms: pick((s) => s.interactive_ms),
+    interactive_ms: interactiveSummary(samples),
     idle_busy_pct: pick((s) => s.idle_busy_pct),
     heap_after_gc_mib: pick((s) => s.heap_after_gc_mib),
     places,
@@ -160,8 +243,13 @@ export function auditRow({ samples, town, env, official, at }) {
   const walk = (o, path) => { if (o === null) gaps.push(path); else if (o && typeof o === "object" && !("median" in o)) for (const [k, v] of Object.entries(o)) walk(v, path ? `${path}.${k}` : k); };
   walk(metrics, "");
   for (const g of gaps) invalid.push(`no value for ${g}`);
+  const fresh = new Set(samples.flatMap((s) => [s.version_before, s.version_after]).filter(Boolean).map((v) => JSON.stringify(FRESHNESS_KEYS.map((k) => v[k]))));
   return {
     kind: "world-page-audit", schema: 1, at, valid: invalid.length === 0, official, invalid,
+    // the comparator: the rendered frame is what rows are compared on; freshness rides along per sample and never decides comparability
+    frame: Object.fromEntries(FRAME_KEYS.map((k) => [k, (k === "world_settlement" ? town?.settlement : town?.[k]) ?? null])),
+    freshness_varied: fresh.size > 1,
+    censored: metrics.interactive_ms ? metrics.interactive_ms.n_censored > 0 : null,
     town, env, metrics,
     samples: samples.map(({ places: pl, ...rest }) => ({ ...rest, places: pl })),
   };
@@ -187,7 +275,7 @@ export async function readTown(origin) {
       parcels: Array.isArray(state?.parcels) ? state.parcels.length : (state?.parcels ? Object.keys(state.parcels).length : null),
       settlement: build?.world_settlement ?? null, crossing: build?.crossing ?? null,
       code_sha: build?.code_sha ?? null, town_data_sha: build?.town_data_sha ?? null, town_sha: build?.town_sha ?? null, world_sha: build?.world_sha ?? null,
-      world_digest: build?.world_digest ?? null, code_ref: build?.code_ref ?? null,
+      world_digest: build?.world_digest ?? null, code_ref: build?.code_ref ?? null, world_ref: build?.world_ref ?? null, town_index_as_of: build?.town_index_as_of ?? null,
     },
   };
 }
@@ -256,17 +344,20 @@ const bareGrab = (page) => page.evaluate(() => {
 });
 const drawnMarks = (page) => page.evaluate(() => new Set([...document.querySelectorAll("#wv-overlay [data-id]")].map((e) => e.getAttribute("data-id"))).size);
 
-async function settle(page, ms, cap) {
+/** wait until no long task has ended in the last `ms`, for at most `cap`; returns whether the page did rest (recorded, never assumed). Asks the page one number, not its whole history. */
+async function settle(page, ms, cap = SETTLE_CAP_MS) {
   const end = Date.now() + cap;
   while (Date.now() < end) {
-    const { lt } = await readPage(page); const now = await nowMs(page);
-    if (now - lt.reduce((m, [s, d]) => Math.max(m, s + d), 0) >= ms) return true;   // no long task has ended in the last `ms`
+    const since = await page.evaluate("(() => { const W = globalThis.__wpa; let e = 0; for (const [s, d] of W.lt) e = Math.max(e, s + d); return performance.now() - e; })()");
+    if (since >= ms) return true;
     await sleep(250);
   }
   return false;
 }
+/** C, asked of the page itself (quietFrom's own source runs there, over the page's own long-task list): the earliest quiet-window start, or null. */
+const quietInPage = (page, from, windowMs, until) => page.evaluate(`(${quietFrom.toString()})(globalThis.__wpa.lt, ${from}, ${windowMs}, Math.min(performance.now(), ${until}))`);
 
-async function measureSample(browser, origin, cpu, scaleRef, worldPath) {
+async function measureSample(browser, origin, cpu, scaleRef, worldPath, boundMs = INTERACTIVE_BOUND_MS) {
   const worldUrl = `${origin}${worldPath}`;
   const out ={ places: {}, failed_requests: [], error: null };
   const before = await readTown(origin);
@@ -292,16 +383,26 @@ async function measureSample(browser, origin, cpu, scaleRef, worldPath) {
     // 1 ── the cold load
     await page.goto(worldUrl, { waitUntil: "load" });
     out.visibility = await page.evaluate(() => document.visibilityState);
+    // the map: a real phase failure if it does not show inside MAP_WAIT_MS (by the wall clock)
     let mapAt = null;
-    for (let t = 0; t < 480 && mapAt === null; t++) { mapAt = (await readPage(page)).mapShownAt; if (mapAt === null) await sleep(250); }
+    for (const w0 = Date.now(); mapAt === null && Date.now() - w0 < MAP_WAIT_MS;) { mapAt = await page.evaluate("globalThis.__wpa.mapShownAt"); if (mapAt === null) await sleep(250); }
     out.map_shown_ms = mapAt;
-    if (mapAt === null) throw new Error("svg#map-svg with drawn marks never appeared");
+    if (mapAt === null) throw new Error(`svg#map-svg with drawn marks did not appear within ${MAP_WAIT_MS / 1000} s`);
+    // C: watched for INTERACTIVE_BOUND_MS of the page's clock after the map is shown, until the first 2 s with no long task (exact) or the bound (censored)
+    const until = mapAt + boundMs;
     let tti = null;
-    for (let t = 0; t < 480 && tti === null; t++) { const { lt } = await readPage(page); tti = quietFrom(lt, mapAt, QUIET_MS, await nowMs(page)); if (tti === null) await sleep(250); }
-    out.interactive_ms = tti;
-    if (tti === null) throw new Error("no 2 s stutter-free window followed the map");
-    // bytes of what finished by interactive_ms (the document's request start is the clock's zero, close to navigation start)
-    const done = [...reqs.values()].filter((r) => r.t1 !== undefined && docT0 !== null && (r.t1 - docT0) * 1000 <= tti + 1 && r.t0 >= docT0 - 0.001);
+    for (;;) {
+      tti = await quietInPage(page, mapAt, QUIET_MS, until);
+      if (tti !== null || (await nowMs(page)) >= until) break;
+      await sleep(250);
+    }
+    const seen = observeInteractive((await readPage(page)).lt, mapAt, { boundMs, windowMs: QUIET_MS });
+    // (the loop only decides when to stop looking; what is recorded is the same definition applied once to the page's whole long-task list)
+    Object.assign(out, seen);
+    // bytes of what finished by the cutoff: C when it was reached, else the end of the observation window (the document's request start is the clock's zero, close to navigation start)
+    const cutoff = bytesCutoff(out);
+    out.bytes_basis = cutoff.basis; out.bytes_cutoff_ms = cutoff.at_ms;
+    const done = [...reqs.values()].filter((r) => r.t1 !== undefined && docT0 !== null && (r.t1 - docT0) * 1000 <= cutoff.at_ms + 1 && r.t0 >= docT0 - 0.001);
     out.bytes_cold_load_encoded = done.reduce((a, r) => a + (r.bytes ?? 0), 0);
     out.requests_cold_load = done.length;
     out.bytes_by_type = {}; for (const r of done) out.bytes_by_type[r.type ?? "Other"] = (out.bytes_by_type[r.type ?? "Other"] ?? 0) + (r.bytes ?? 0);
@@ -321,7 +422,7 @@ async function measureSample(browser, origin, cpu, scaleRef, worldPath) {
       await page.waitForSelector(".wv-tour:not([hidden])", { state: "detached", timeout: 15000 }).catch(() => { throw new Error("the tour did not close after skip"); });
     }
     await page.mouse.move(4, 4);
-    await settle(page, 1500, 30000);
+    out.settled_after_skip = await settle(page, 1500);
 
     // 3 ── idle: nothing touched for 10 s
     const m0 = await metrics();
@@ -332,7 +433,7 @@ async function measureSample(browser, origin, cpu, scaleRef, worldPath) {
     // 4 ── the two places, one drag each
     for (const [key, place] of Object.entries(PLACES)) {
       const rec = { id: place.id };
-      await settle(page, 1500, 60000);      // the page has let go of the last drag before the next hand reaches for the search box
+      rec.settled_before = await settle(page, 1500);      // whether the page had let go of the last input before the next hand reached for it (a page that never rests is measured anyway)
       // the common scale FIRST, wheeling over bare painting (a picked place opens a column over the map, and a wheel
       // there scrolls the column, not the map): the first place takes one notch in (the fit view is the zoom-out limit);
       // the second is brought to that. The search then centres the place without changing the zoom.
@@ -354,7 +455,7 @@ async function measureSample(browser, origin, cpu, scaleRef, worldPath) {
       await sleep(1500);
       cam = await camera(page);
       rec.scale = cam.scale; rec.scale_ref = scaleRef.value; rec.scale_ok = sameScale(cam.scale, scaleRef.value);
-      await settle(page, 1500, 30000);
+      rec.settled_after_pick = await settle(page, 1500);
       const standing = () => page.evaluate(() => document.querySelector(".wv-spectator-coordinate")?.textContent?.trim() ?? "");
       rec.standing = await standing();
       rec.located = centredWithin(await placeRect(page, place.id), await paneRect(page)) || !!place.standing?.test(rec.standing);
@@ -416,24 +517,25 @@ async function measureSample(browser, origin, cpu, scaleRef, worldPath) {
   }
   const after = await readTown(origin);
   out.version_after = after.version;
+  out.freshness_moved = freshnessMoved(out.version_before, out.version_after);   // provenance: the town moved under the sample (not the frame)
   return out;
 }
 
-export async function runAudit({ origin = PROD, samples = 3, cpu = 4, worldPath = "/world/" } = {}) {
+export async function runAudit({ origin = PROD, samples = 3, cpu = 4, worldPath = "/world/", boundMs = INTERACTIVE_BOUND_MS } = {}) {
   const require = createRequire(join(REPO, "package.json"));
   const pw = require("playwright");
   const pwVersion = JSON.parse(readFileSync(join(dirname(require.resolve("playwright/package.json")), "package.json"), "utf8")).version;
-  const official = origin === PROD && samples === 3 && cpu === 4 && pwVersion === PINNED_PLAYWRIGHT;
+  const official = origin === PROD && samples === 3 && cpu === 4 && pwVersion === PINNED_PLAYWRIGHT && boundMs === INTERACTIVE_BOUND_MS;
   const browser = await pw.chromium.launch({ headless: true, args: ["--disable-renderer-backgrounding", "--disable-background-timer-throttling", "--disable-backgrounding-occluded-windows"] });
   const started = Date.now();
   const served = await readTown(origin);
   const scaleRef = { value: null };
   const list = [];
   const chromium = browser.version();
-  try { for (let i = 0; i < samples; i++) list.push(await measureSample(browser, origin, cpu, scaleRef, worldPath)); }
+  try { for (let i = 0; i < samples; i++) list.push(await measureSample(browser, origin, cpu, scaleRef, worldPath, boundMs)); }
   finally { await browser.close(); }
   const env = {
-    origin, cpu_throttle: cpu, samples, viewport: VIEWPORT, signed_in: false, idle_ms: IDLE_MS, pan_ms: PAN_MS, quiet_window_ms: QUIET_MS,
+    origin, cpu_throttle: cpu, samples, viewport: VIEWPORT, signed_in: false, idle_ms: IDLE_MS, pan_ms: PAN_MS, quiet_window_ms: QUIET_MS, interactive_bound_ms: boundMs, settle_cap_ms: SETTLE_CAP_MS, map_wait_ms: MAP_WAIT_MS,
     playwright: pwVersion, playwright_pinned: PINNED_PLAYWRIGHT, chromium, node: process.version, duration_s: Math.round((Date.now() - started) / 1000),
   };
   return auditRow({ samples: list, town: served.town, env, official, at: new Date().toISOString() });
@@ -475,7 +577,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   if (process.argv.includes("--backfill-bytes")) {
     for (const row of backfillBytes()) console.log(JSON.stringify(row));
   } else {
-    const row = await runAudit({ origin: arg("--origin", PROD).replace(/\/$/, ""), samples: Number(arg("--samples", 3)), cpu: Number(arg("--cpu", 4)), worldPath: arg("--world-path", "/world/") });
+    const row = await runAudit({ origin: arg("--origin", PROD).replace(/\/$/, ""), samples: Number(arg("--samples", 3)), cpu: Number(arg("--cpu", 4)), worldPath: arg("--world-path", "/world/"), boundMs: Number(arg("--interactive-bound-s", INTERACTIVE_BOUND_MS / 1000)) * 1000 });
     console.log(JSON.stringify(row));
     if (!row.valid) { console.error(`INVALID ROW — not a baseline. ${row.invalid.length} problem(s):\n  ` + row.invalid.join("\n  ")); process.exitCode = 2; }
   }
