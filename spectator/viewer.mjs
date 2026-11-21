@@ -57,7 +57,7 @@ import { createHomeColumn, homeHandleForParcel, isParcelMark, HOME_COLUMN_CSS } 
 import { homeOf, homesOnParcel } from "../tools/where-is.mjs";
 // WHAT A MARK IS, AS ICONS (Darko, playground sitting 2026-10-15): the closed
 // vocabulary, its one-line meanings and its three renderings live in one file.
-import { markIcons, iconSVG, iconsHTML, creatureClassesOf, thingClassesOf, MARK_ICON_CSS, MARK_ICONS } from "./mark-icons.mjs";
+import { markIcons, markWhat, iconSVG, iconsHTML, creatureClassesOf, thingClassesOf, MARK_ICON_CSS, MARK_ICONS } from "./mark-icons.mjs";
 // LOGOS v2 part 2 on the page (POS-678): what a holder holds, who carries what,
 // and the say card's numbers, each from the office's own reads.
 import { holderLines, residentHoldLines, handsLines, holdingParts, heldWords, sayCardNote, thingKindLedger, isThingId } from "./holdings.mjs";
@@ -509,7 +509,12 @@ export function viewerFilterControls(options = {}) {
 //
 //   whose   my marks  — the household's owned OR backed marks: the existing "just mine" set (isMine), unchanged
 //           my drafts — the household's unpublished marks (state.draftIds, the grey ones)
-//   type    parcels   — a mark of kind `parcel`
+//   layers  (CORE-147, Darko 2026-11-21 09:18 EST: "make the filters a dropdown that's icon-based … let the user click icons on and off, corresponding to
+//           those on the map"; Wright 14:31Z: content only) one icon switch for each kind of world CONTENT the map draws as an icon or a shape: the mark kinds
+//           (the very `what` icon a mark wears: parcels, places, things, doors, dungeons, stairs, vehicles, creatures), the residents (with their walking
+//           lines) and the speech bubbles (the conversation badges). On = drawn, as today; off = hidden from the map, the list and the pick. Terrain, the
+//           grid, the mists and the selection / hover / walk-preview feedback have no switch. This REPLACES the old text "parcels" chip (a parcel is the
+//           `home` switch) and the 💬 button in the map's controls (the speech bubbles are one of these switches: one control, one state).
 //   size    longer side, in METRES, under or above a typed number: the mark's own extent in world units, so a camera zoom never changes it
 //   sort    by type   — reorders the Telling list only: no geometry, no canonical order, no hiding
 //
@@ -518,8 +523,31 @@ export function viewerFilterControls(options = {}) {
 // in the panel is that same chip.
 export const DISPLAY_SIZE_MODES = Object.freeze(["under", "above"]);
 
+/**
+ * THE LAYER SWITCHES, in the dropdown's order. `icon` is a key of MARK_ICONS (mark-icons.mjs): the same glyph the map draws for that thing (a resident is
+ * the round frame on two stubby legs, `inside`; a speech bubble is the conversation badge's `conversation`; a parcel is the house, `home`). A mark kind's key
+ * IS its `markWhat` result, so the switch and the pip can never disagree about what a mark is; nothing here invents a kind (no facilities, no biomes).
+ * `kind` says what the switch governs: "mark" (a `markWhat` kind), "residents" or "bubbles".
+ */
+export const DISPLAY_LAYERS = Object.freeze([
+  { key: "residents", icon: "inside", kind: "residents", label: "residents", meaning: "Residents, and the walking lines of the ones walking." },
+  { key: "conversation", icon: "conversation", kind: "bubbles", label: "speech bubbles", meaning: "Speech bubbles: the conversation badges." },
+  { key: "home", icon: "home", kind: "mark", label: "parcels", meaning: "Parcels: households' ground." },
+  { key: "place", icon: "place", kind: "mark", label: "places", meaning: "Places: marks set down on the ground." },
+  { key: "thing", icon: "thing", kind: "mark", label: "things", meaning: "Things: objects in the world." },
+  { key: "door", icon: "door", kind: "mark", label: "doors", meaning: "Doors: entering one takes you somewhere else." },
+  { key: "dungeon", icon: "dungeon", kind: "mark", label: "dungeons", meaning: "Dungeons: places with their own floors and rooms." },
+  { key: "stairs", icon: "stairs", kind: "mark", label: "stairs", meaning: "Stairs: ways between floors." },
+  { key: "vehicle", icon: "vehicle", kind: "mark", label: "vehicles", meaning: "Vehicles: they move, and you can ride them." },
+  { key: "creature", icon: "creature", kind: "mark", label: "creatures", meaning: "Creatures: something alive that answers what you do near it." },
+]);
+const LAYER_BY_KEY = new Map(DISPLAY_LAYERS.map((l) => [l.key, l]));
+/** The mark kinds a switch can hide (a `markWhat` key). */
+export const DISPLAY_MARK_KINDS = Object.freeze(DISPLAY_LAYERS.filter((l) => l.kind === "mark").map((l) => l.key));
+const offKeys = (sel) => (Array.isArray(sel?.off) ? sel.off : []);
+
 export function emptyDisplaySelection() {
-  return { mine: false, drafts: false, parcels: false, sizeMode: "under", sizeM: null, sortByType: false };
+  return { mine: false, drafts: false, off: [], sizeMode: "under", sizeM: null, sortByType: false };
 }
 
 /** The typed number: plain digits (a thousands comma and one decimal point allowed), never negative; null when it is not one. */
@@ -538,20 +566,24 @@ export function markLongerSideM(mark) {
   return Math.max(ok(w) ? w : 0, ok(h) ? h : 0);
 }
 
-/** Does the selection HIDE anything? (Sorting alone hides nothing.) */
+/** Does the selection HIDE any MARK? (Sorting alone hides nothing; neither does switching the residents or the speech bubbles off: those are not marks.) */
 export function displaySelectionHides(sel) {
-  return !!(sel && (sel.mine || sel.drafts || sel.parcels || (sel.sizeM !== null && sel.sizeM !== undefined)));
+  return !!(sel && (sel.mine || sel.drafts || offKeys(sel).some((k) => DISPLAY_MARK_KINDS.includes(k)) || (sel.sizeM !== null && sel.sizeM !== undefined)));
 }
 
-/** One mark against the selection: every group with a choice must pass; `mine` and `drafts` are OR'd. */
-export function markInDisplaySelection(mark, sel, { isMine = () => false, isDraft = () => false } = {}) {
+/**
+ * One mark against the selection: every group with a choice must pass; `mine` and `drafts` are OR'd. `whatOf(mark)` is the mark's `markWhat` key (the icon
+ * it wears), or null for a mark that wears none (a class declaration, a predicate: not drawn as an icon, so it has no switch and is never hidden by one).
+ */
+export function markInDisplaySelection(mark, sel, { isMine = () => false, isDraft = () => false, whatOf = () => null } = {}) {
   if (!displaySelectionHides(sel)) return true;
   if (!mark) return false;
   if (sel.mine || sel.drafts) {
     const whose = (sel.mine && isMine(mark)) || (sel.drafts && isDraft(mark));
     if (!whose) return false;
   }
-  if (sel.parcels && mark.kind !== "parcel") return false;
+  const what = whatOf(mark);
+  if (what && offKeys(sel).includes(what)) return false;
   if (sel.sizeM !== null && sel.sizeM !== undefined) {
     const side = markLongerSideM(mark);
     if (sel.sizeMode === "above" ? !(side > sel.sizeM) : !(side < sel.sizeM)) return false;
@@ -559,25 +591,43 @@ export function markInDisplaySelection(mark, sel, { isMine = () => false, isDraf
   return true;
 }
 
-/** The removable chips for what is chosen, in the panel's order: `{ key, label }`. */
-export function displaySelectionChips(sel) {
+/** Is a switch off in this selection? (The speech bubbles are the page's own remembered layer, not part of the selection: pass `bubblesOn`.) */
+export const layerIsOff = (sel, key, { bubblesOn = true } = {}) => (key === "conversation" ? !bubblesOn : offKeys(sel).includes(key));
+
+/** Does the page show anything less than today's page? (A mark hidden, the residents or the speech bubbles off, a size, whose.) Sorting alone does not. */
+export function displaySelectionActive(sel, { bubblesOn = true } = {}) {
+  return displaySelectionHides(sel) || offKeys(sel).includes("residents") || !bubblesOn;
+}
+
+/** The removable chips for what is chosen, in the panel's order: `{ key, label }`. A switched-off layer is a chip too ("no parcels"), removing it turns it back on. */
+export function displaySelectionChips(sel, { bubblesOn = true } = {}) {
   const out = [];
   if (sel?.drafts) out.push({ key: "drafts", label: "my drafts" });
   if (sel?.mine) out.push({ key: "mine", label: "my marks" });
-  if (sel?.parcels) out.push({ key: "parcels", label: "parcels" });
+  for (const layer of DISPLAY_LAYERS) {
+    if (layerIsOff(sel, layer.key, { bubblesOn })) out.push({ key: layer.key === "conversation" ? "bubbles" : `off:${layer.key}`, label: `no ${layer.label}` });
+  }
   if (sel && sel.sizeM !== null && sel.sizeM !== undefined) out.push({ key: "size", label: `${sel.sizeMode === "above" ? "above" : "under"} ${sel.sizeM} m` });
   return out;
 }
 
-/** The selection with one choice removed (a chip's ✕); unknown keys change nothing. Pure: returns a new object. */
+/** The selection with one choice removed (a chip's ✕); unknown keys change nothing ("bubbles" is the page's own layer: the caller turns it back on). Pure: returns a new object. */
 export function clearDisplayChoice(sel, key) {
-  const next = { ...emptyDisplaySelection(), ...sel };
+  const next = { ...emptyDisplaySelection(), ...sel, off: [...offKeys(sel)] };
   if (key === "mine") next.mine = false;
   else if (key === "drafts") next.drafts = false;
-  else if (key === "parcels") next.parcels = false;
+  else if (typeof key === "string" && key.startsWith("off:")) next.off = next.off.filter((k) => k !== key.slice(4));
   else if (key === "size") next.sizeM = null;
   else if (key === "sort") next.sortByType = false;
   return next;
+}
+
+/** The selection with one layer switch flipped (an icon's click). Only a known switch changes anything; the speech bubbles are the page's own layer, so they are not here. */
+export function toggleDisplayLayer(sel, key) {
+  const layer = LAYER_BY_KEY.get(key);
+  if (!layer || layer.kind === "bubbles") return { ...emptyDisplaySelection(), ...sel, off: [...offKeys(sel)] };
+  const off = offKeys(sel);
+  return { ...emptyDisplaySelection(), ...sel, off: off.includes(key) ? off.filter((k) => k !== key) : [...off, key] };
 }
 
 /** The sort key of "sort by type": the record's own kind, then its class, then its id (stable). */
@@ -593,17 +643,27 @@ export function sortByDisplayType(marks) {
  * renderer builds it from the selection and what it knows of the reader. `signedIn` = a resident's household is known (my marks / my drafts need one);
  * `newOn` = the existing "new" chip; `counts` = { shown, total } over the marks the page holds.
  */
-export function displayControlsHTML({ sel = emptyDisplaySelection(), signedIn = false, newOn = false, open = false, counts = null } = {}) {
-  const chips = displaySelectionChips(sel);
-  const hiding = displaySelectionHides(sel);
+export function displayControlsHTML({ sel = emptyDisplaySelection(), signedIn = false, newOn = false, open = false, counts = null, present = null, bubblesOn = true } = {}) {
+  const chips = displaySelectionChips(sel, { bubblesOn });
+  const hiding = displaySelectionActive(sel, { bubblesOn });
   const n = chips.length + (sel.sortByType ? 1 : 0) + (newOn ? 1 : 0);
+  // THE ICON SWITCHES (CORE-147): one button per layer the map draws, the glyph the map itself draws, the word a label under it. The residents and the
+  // speech bubbles are always offered; a mark kind is offered when the page holds at least one mark of that kind (`present`, null = every kind), so no
+  // switch exists for a kind that is not in the world. aria-pressed + the lit/dim look + the word "on"/"off" say the state three ways.
+  const presentSet = present === null ? null : new Set(present);
+  const layerBtn = (layer) => {
+    const off = layerIsOff(sel, layer.key, { bubblesOn });
+    return `<button type="button" class="wv-dlayer${off ? " is-off" : " on"}" data-dsel-layer="${layer.key}" aria-pressed="${off ? "false" : "true"}" title="${esc(layer.meaning)}">`
+      + `<span class="wv-ic ic-${layer.icon}" aria-hidden="true"></span><span class="wv-dlayer-l">${esc(layer.label)}</span><span class="wv-dlayer-s">${off ? "off" : "on"}</span></button>`;
+  };
+  const layers = DISPLAY_LAYERS.filter((l) => l.kind !== "mark" || presentSet === null || presentSet.has(l.key) || offKeys(sel).includes(l.key)).map(layerBtn).join("");
   const pressed = (on) => `aria-pressed="${on ? "true" : "false"}"`;
   const fchip = (attrs, label, on, disabled = false, title = "") =>
     `<button type="button" class="wv-fchip${on ? " on" : ""}" ${attrs} ${pressed(on)}${disabled ? ` disabled title="${esc(title)}"` : ""}>${label}</button>`;
   const need = "sign in as a resident to choose your own marks";
   const countLine = counts && hiding ? `${counts.shown} of ${counts.total} shown` : "";
   const opener = `<button type="button" class="ctl wv-filters-open" aria-haspopup="dialog" aria-expanded="${open ? "true" : "false"}" aria-controls="wv-dpanel" `
-    + `title="choose which marks the map and the list show">`
+    + `title="choose what the map shows: its icons (residents, speech bubbles, each kind of mark), whose marks, how big">`
     + `<span class="wv-filters-glyph" aria-hidden="true">⛃</span><span class="wv-filters-word">Filters</span>`
     + `${n ? `<span class="wv-filters-n" aria-label="${n} chosen">${n}</span>` : ""}</button>`;
   const strip = hiding
@@ -614,13 +674,11 @@ export function displayControlsHTML({ sel = emptyDisplaySelection(), signedIn = 
     : "";
   const panel = `<div class="wv-dpanel" id="wv-dpanel" role="dialog" aria-label="Show on the map"${open ? "" : " hidden"}>`
     + `<div class="wv-dhead"><span>SHOW ON THE MAP</span><button type="button" class="wv-dlink" data-dsel-clear${(hiding || sel.sortByType) ? "" : " disabled"}>clear all</button></div>`
+    + `<div class="wv-dgrp"><div class="wv-dk">ON THE MAP <em>· tap an icon to show or hide it</em></div><div class="wv-dlayers" role="group" aria-label="What the map draws">${layers}</div></div>`
     + `<div class="wv-dgrp"><div class="wv-dk">WHOSE <em>· pick any</em></div><div class="wv-dchips">`
     + fchip(`data-dsel="mine"`, "my marks", !!sel.mine, !signedIn, need)
     + fchip(`data-dsel="drafts"`, "my drafts", !!sel.drafts, !signedIn, need)
     + fchip(`data-dsel="new"`, "new", !!newOn)
-    + `</div></div>`
-    + `<div class="wv-dgrp"><div class="wv-dk">TYPE</div><div class="wv-dchips">`
-    + fchip(`data-dsel="parcels"`, "parcels", !!sel.parcels)
     + `</div></div>`
     + `<div class="wv-dgrp"><div class="wv-dk">SIZE <em>· longer side, in metres</em></div><div class="wv-dsize">`
     + `<span class="wv-dseg" role="group" aria-label="under or above">`
@@ -6854,6 +6912,19 @@ ${WV_ENTER_CSS}
 .wv-dgrp { margin:.6rem 0; }
 .wv-dk { font-size:.64rem; letter-spacing:.1em; color:var(--dim); margin-bottom:.3rem; }
 .wv-dk em { color:var(--amber-dark); font-style:normal; letter-spacing:0; }
+/* THE ICON SWITCHES (CORE-147): each is the glyph the map draws for that thing (the masked .wv-ic, in its own ink), the word a label under it, lit when on and
+   dimmed with a struck-through word when off; a thumb-sized target (3.4rem) at every width */
+.wv-dlayers { display:grid; grid-template-columns:repeat(auto-fill, minmax(4.6rem, 1fr)); gap:6px; }
+.wv-dlayer { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-height:3.4rem; padding:6px 4px; font:inherit; cursor:pointer;
+  border:1px solid var(--amber); border-radius:10px; background:rgba(232,197,106,.08); color:var(--paper); }
+.wv-dlayer .wv-ic { width:22px; height:22px; }
+.wv-dlayer-l { font-size:.68rem; line-height:1.15; text-align:center; }
+.wv-dlayer-s { font-size:.58rem; letter-spacing:.1em; text-transform:uppercase; color:var(--amber); }
+.wv-dlayer:hover { border-color:var(--paper); }
+.wv-dlayer.is-off { border-color:var(--line); background:transparent; color:var(--dim); }
+.wv-dlayer.is-off .wv-ic { opacity:.35; }
+.wv-dlayer.is-off .wv-dlayer-l { text-decoration:line-through; }
+.wv-dlayer.is-off .wv-dlayer-s { color:var(--dim); }
 .wv-dchips { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
 .wv-dsize { display:flex; align-items:center; gap:.5rem; font-size:.74rem; color:var(--dim); }
 .wv-dseg { display:inline-flex; border:1px solid var(--line); border-radius:999px; overflow:hidden; }
@@ -6871,6 +6942,7 @@ ${WV_ENTER_CSS}
   .wv-dfilter-host.is-open .wv-dstrip { display:none; }   /* the sheet already says what is chosen */
   .wv-dgrp { margin:.4rem 0; }
   .wv-dhint { display:none; }
+  .wv-dlayers { grid-template-columns:repeat(3, 1fr); }   /* the icons first, three to a row, each a thumb-sized target */
 }
 .wv-mine-tail { margin-top:4px; }
 .wv-mine-empty { margin:10px 0; font-style:italic; }
@@ -7971,7 +8043,8 @@ const MARKUP = `
                the rail no longer offers them. -->
           <button type="button" class="ctl wv-outsider-toggle" aria-pressed="false" hidden aria-label="view as an outsider"
             title="view as an outsider: the world as a stranger sees it, as if your household owned nothing (read-only)">👁</button>
-          <button class="ctl wv-map-convo" aria-label="conversations" title="where the town is talking — one badge per conversation, kept for the settlement; hover for the words, click to read it">💬</button>
+          <!-- THE 💬 BUTTON IS GONE (CORE-147, Darko 2026-11-21: "move the speech bubbles inside the filters"): the speech bubbles are one switch in the
+               Filters panel, one control and one state (the remembered, on-by-default layer it always was). -->
           <button type="button" class="ctl wv-tour-open" aria-label="Take the tour"
             title="a short tour of the world">?</button>
           </div>
@@ -9557,7 +9630,12 @@ export function mountViewer(appEl) {
   // ancestor suppression), the containing-mark pick (toldHere) and the Telling's own cards and feeds (displayKeep). So an invisible non-match can neither
   // be drawn, listed, hovered nor take a click that belongs to a smaller match.
   const displayHides = () => displaySelectionHides(state.display);
-  const shownByDisplay = (m) => !displayHides() || markInDisplaySelection(byId.get(m?.id) ?? m, state.display, { isMine, isDraft });
+  // the icon a mark wears is the switch it answers to: `markWhat`, the very function the pip and the column read (CORE-147), asked with the page's own classes
+  const whatOfMark = (m) => markWhat(m, { cls: classToken(instanceClassOf(m)), creatureClasses: creatureClasses(), thingClasses: thingClasses() });
+  const shownByDisplay = (m) => !displayHides() || markInDisplaySelection(byId.get(m?.id) ?? m, state.display, { isMine, isDraft, whatOf: whatOfMark });
+  // the layers that are not marks: the residents (with their walking lines) and the speech bubbles have a switch of their own and no mark to ask
+  const residentsOff = () => (state.display?.off ?? []).includes("residents");
+  const creaturesOff = () => (state.display?.off ?? []).includes("creature");
   /** `base` (the older just-mine keep, or null) AND the display selection; null when neither applies. */
   const displayKeep = (base = null) => (displayHides() ? (m) => (!base || base(m)) && shownByDisplay(m) : base);
   /** The radial with the non-matches taken out: the standpoint's frame (`within`) and every band. A read-named mark the page could not describe cannot be
@@ -9723,10 +9801,27 @@ export function mountViewer(appEl) {
   // and rebuilds the Telling and the painting from the one selection. Keyboard: the chips and the number are real buttons and a real field; Escape closes
   // the panel and puts focus back on the opener.
   const parseHTML = (html) => { const t = document.createElement("template"); t.innerHTML = String(html).trim(); return t.content.firstElementChild; };
+  // the speech bubbles' state is the page's own remembered layer (`convoVisible`), read safely because the panel can be drawn before the map is
+  const bubblesVisible = () => { try { return convoVisible; } catch { return true; } };
+  // THE MARK KINDS THE WORLD HOLDS (so a switch is offered only for a kind that exists), by the icon each mark wears; kept per record epoch
+  let presentKindsAt = null, presentKindsSet = [];
+  function presentLayerKinds() {
+    let live = 0;
+    try { live = liveCreatures.size; } catch { /* the creatures are not set up yet */ }
+    const stamp = `${worldEpoch}:${live ? 1 : 0}`;
+    if (presentKindsAt !== stamp) {
+      const seen = new Set();
+      for (const m of allMarks()) { const w = m?.id && m.at ? whatOfMark(m) : null; if (w && DISPLAY_MARK_KINDS.includes(w)) seen.add(w); }
+      if (live) seen.add("creature");   // a live creature wears the same diamond
+      presentKindsSet = [...seen];
+      presentKindsAt = stamp;
+    }
+    return presentKindsSet;
+  }
   function focusKeyOf(el) {
     if (!el || !root.contains(el)) return null;
     if (el.matches?.(".wv-filters-open")) return ".wv-filters-open";
-    for (const attr of ["data-dsel", "data-dsel-mode", "data-dsel-remove", "data-dsel-clear", "data-dsel-close", "data-dsel-size"]) {
+    for (const attr of ["data-dsel", "data-dsel-layer", "data-dsel-mode", "data-dsel-remove", "data-dsel-clear", "data-dsel-close", "data-dsel-size"]) {
       if (el.hasAttribute?.(attr)) return `[${attr}${el.getAttribute(attr) ? `="${el.getAttribute(attr)}"` : ""}]`;
     }
     return null;
@@ -9737,7 +9832,7 @@ export function mountViewer(appEl) {
     const hides = displayHides();
     const marks = hides ? allMarks().filter((m) => m?.id && m.at && Number.isFinite(Number(m.at.x))) : [];
     const counts = hides ? { shown: marks.filter(shownByDisplay).length, total: marks.length } : null;
-    const ui = displayControlsHTML({ sel: state.display, signedIn: identityResolved(), newOn: state.markFilter === "new", open: state.displayOpen, counts });
+    const ui = displayControlsHTML({ sel: state.display, signedIn: identityResolved(), newOn: state.markFilter === "new", open: state.displayOpen, counts, present: presentLayerKinds(), bubblesOn: bubblesVisible() });
     const focusKey = panel ? focusKeyOf(document.activeElement) : null;
     opener.replaceWith(parseHTML(ui.opener));
     host.querySelector(".wv-dstrip")?.remove();
@@ -9751,13 +9846,36 @@ export function mountViewer(appEl) {
     if (focusKey) $(root, focusKey)?.focus?.();
   }
   function applyDisplay({ panel = true } = {}) {
-    // a mark the selection now hides is no longer on the page: its selection and hover are put away
-    const hidden = (id) => !!id && displayHides() && !shownByDisplay(byId.get(id));
+    // a mark the selection now hides is no longer on the page: its selection and hover are put away. So is a resident, or a live creature, whose layer is
+    // switched off (CORE-147): what is hidden can neither stay selected nor answer a hover.
+    const hidden = (id) => {
+      if (!id) return false;
+      if (walkerHandleFromHoverId(id)) return residentsOff();
+      if (isCreatureId(id)) return creaturesOff();
+      return displayHides() && !shownByDisplay(byId.get(id));
+    };
     const cur = markInteraction.getState();
     if (hidden(cur.selectedId)) markInteraction.select(null);
     if (hidden(cur.hoveredId)) markInteraction.hover(null);
     syncDisplayControls({ panel });
     const y = window.scrollY; renderTelling(); window.scrollTo(0, y);
+    drawWalkers();   // the residents' layer follows its switch (a no-op before the map is mounted); the creatures ride the painting's own redraw above
+  }
+  /** One icon switch (CORE-147). The mark kinds and the residents are part of the display selection; the speech bubbles are the page's own remembered layer. */
+  function toggleLayer(key) {
+    if (key === "conversation") { setBubbles(!bubblesVisible()); return; }
+    if (!DISPLAY_LAYERS.some((l) => l.key === key)) return;
+    state.display = toggleDisplayLayer(state.display, key);
+    applyDisplay();
+  }
+  /** The speech bubbles on or off: ONE state, the one the 💬 button used to be (remembered, on by default); the layer and its clicks follow it. */
+  function setBubbles(on) {
+    const want = !!on;
+    if (want !== bubblesVisible()) {
+      if (mapCtx?.toggleConvo) mapCtx.toggleConvo();             // the layer, its washes, the polling and the remembered choice, together
+      else { convoVisible = want; convoStore(want); }             // no map yet: the remembered choice still moves
+    }
+    syncDisplayControls();
   }
   function openDisplayPanel() {
     state.displayOpen = true;
@@ -9774,15 +9892,21 @@ export function mountViewer(appEl) {
     if (key === "new") state.markFilter = state.markFilter === "new" ? "everything" : "new";   // the existing chip, one state
     else if (key === "mine") state.display = { ...state.display, mine: !state.display.mine };
     else if (key === "drafts") state.display = { ...state.display, drafts: !state.display.drafts };
-    else if (key === "parcels") state.display = { ...state.display, parcels: !state.display.parcels };
     else if (key === "sort") state.display = { ...state.display, sortByType: !state.display.sortByType };
     else return;
     applyDisplay();
   }
-  /** all-clear: today's unfiltered page (the "new" chip, which is the older Telling chip, goes back to everything too). */
+  /** all-clear: today's unfiltered page (the "new" chip, which is the older Telling chip, goes back to everything too; every layer switch is on again, the speech bubbles included). */
   function clearDisplay() {
     state.display = emptyDisplaySelection();
     if (state.markFilter === "new") state.markFilter = "everything";
+    if (!bubblesVisible()) setBubbles(true);
+    applyDisplay();
+  }
+  /** A chip's ✕ (CORE-147: a switched-off layer is a chip; "bubbles" is the speech bubbles' own layer). */
+  function removeDisplayChoice(key) {
+    if (key === "bubbles") { setBubbles(true); return; }
+    state.display = clearDisplayChoice(state.display, key);
     applyDisplay();
   }
   let sizeTyping = null;
@@ -11686,6 +11810,7 @@ export function mountViewer(appEl) {
     // walkers, in the same screen-space shape the mark snap already eats, each
     // where the draw puts it (WLD-94: liveBody, never the poll's row)
     function screenWalkerCandidates() {
+      if (residentsOff()) return [];   // a hidden resident is no target (CORE-147)
       const matrix = svg.getScreenCTM();
       if (!matrix) return [];
       return walkerCandidatesAt(walkState.walkers, { bodyOf: liveBody, toScreen: (w) => {
@@ -11963,7 +12088,7 @@ export function mountViewer(appEl) {
     mapCtx.refit();
     if (lastRadial) drawOverlay(lastRadial);
     // the conversations layer is on by default (POS-779), so it loads with the map, not on a first click
-    $(root, ".wv-map-convo")?.classList.toggle("on", convoVisible); // the lit button follows the layer, remembered or default
+    syncDisplayControls();   // the speech bubbles' switch (in the Filters panel since CORE-147) follows the layer, remembered or default
     if (convoVisible) Promise.resolve().then(() => loadConversations()).then(drawConversations).catch(() => {});
   }
   // What the painting draws: the field of view, plus all of yours whether it holds
@@ -13871,7 +13996,9 @@ export function mountViewer(appEl) {
     const tier = drawTier();
     const bounds = drawnBounds();
     // each body where its declared walk puts it now (row 69)
-    const inView = sceneWalkerSet({ walkers: (walkState.walkers ?? []).map(liveBody), manifest, roomId: sceneRoomId, marks: draw.marks });
+    // THE RESIDENTS' SWITCH (CORE-147): off, no body is drawn, no walking line, no housemate chevron (those read the bodies drawn) and no click or hover
+    // reaches one (screenWalkerCandidates). The acting resident's own marker (the standpoint dot) is the viewer's selection feedback and stays.
+    const inView = residentsOff() ? [] : sceneWalkerSet({ walkers: (walkState.walkers ?? []).map(liveBody), manifest, roomId: sceneRoomId, marks: draw.marks });
     const drawnWalkers = inView.filter((w) => pointInDrawnBounds(w, bounds));
     // ONE BODY, ONE MARKER (POS-93), ASKED OF THE BODIES DRAWN (#2848 (a),
     // 2026-09-17). This asked the walker LIST: jetto-of-starforge was in it, so
@@ -13888,7 +14015,7 @@ export function mountViewer(appEl) {
     // still holds: indoors the map is the room.
     const bodies = inView.filter((w) => isOwnHandle(w.handle) || pointInDrawnBounds(w, bounds));
     // under every body, at both tiers: a route is ground, not a person
-    const paths = walkPathsSVG();
+    const paths = residentsOff() ? "" : walkPathsSVG();
     // …then the TIER. At town width a face is eleven pixels of photograph with
     // its own clip path, and the 09-09 record has 1,550 of them; what a reader
     // at that zoom can actually read is WHERE PEOPLE ARE. So beyond the engine's
@@ -15900,7 +16027,7 @@ export function mountViewer(appEl) {
     "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='" + creatureSilhouette(kind).d + "'/></svg>") + "\")";
   function liveCreatureGlyphs(px, tier) {
     if (Date.now() - liveCreaturesAt > CREATURES_REFRESH_MS) loadLiveCreatures();
-    if (!liveCreatures.size) return "";
+    if (!liveCreatures.size || creaturesOff()) return "";   // the creatures' switch (CORE-147): off draws none, and the hit scan (it reads these glyphs) finds none
     // indoors, only the creatures inside the room (the roof rule)
     const room = sceneRoomId ? byId.get(sceneRoomId) : null;
     const box = room?.at && room.extent ? rect(room) : null;
@@ -17218,8 +17345,10 @@ export function mountViewer(appEl) {
     if (dsel) { if (!dsel.disabled) toggleDisplayChoice(dsel.dataset.dsel); return; }
     const dmode = e.target.closest("[data-dsel-mode]");
     if (dmode) { state.display = { ...state.display, sizeMode: dmode.dataset.dselMode === "above" ? "above" : "under" }; applyDisplay(); return; }
+    const dlayer = e.target.closest("[data-dsel-layer]");
+    if (dlayer) { toggleLayer(dlayer.dataset.dselLayer); return; }
     const dremove = e.target.closest("[data-dsel-remove]");
-    if (dremove) { state.display = clearDisplayChoice(state.display, dremove.dataset.dselRemove); applyDisplay(); return; }
+    if (dremove) { removeDisplayChoice(dremove.dataset.dselRemove); return; }
     const dclear = e.target.closest("[data-dsel-clear]");
     if (dclear) { if (!dclear.disabled) clearDisplay(); return; }
     if (e.target.closest("[data-dsel-close]")) { closeDisplayPanel({ refocus: true }); return; }
@@ -17351,8 +17480,6 @@ export function mountViewer(appEl) {
     const fbtn = e.target.closest(".wv-map-follow");
     if (fbtn) { if (!mapCtx) return; mapCtx.follow = !mapCtx.follow; fbtn.classList.toggle("on", mapCtx.follow); if (mapCtx.follow) mapCtx.lockOn(); return; }
     if (e.target.closest(".wv-outsider-toggle")) { toggleOutsider(); return; }
-    const cvbtn = e.target.closest(".wv-map-convo");
-    if (cvbtn) { if (!mapCtx?.toggleConvo) return; cvbtn.classList.toggle("on", !!mapCtx.toggleConvo()); return; }
     if (e.target.closest("[data-root-mark]")) { selectMark(chipMarkId(), { scrollCell: true }); return; }
     if (e.target.closest(".wv-walk-cancel")) { clearSelectionAndDestination(); return; }
     if (e.target.closest(".wv-telling-toggle")) {

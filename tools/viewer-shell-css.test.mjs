@@ -87,11 +87,13 @@ import { MARK_ICON_CSS } from "../spectator/mark-icons.mjs";
 // digests it is checked against: 94d56a41… (107135 bytes) on the POS-945 merge-base, ed771ead… (107711 bytes, the pin above) on this main,
 // and 37ddf8f8… (107954 bytes, the pin the reviewed head 6f4c906a carried) on that head. A line diff of the masked texts, main to the merge,
 // is exactly the 8 `.wv-bymail*` lines and none removed, the same 8 lines the reviewed head added over its own base.
-const PINNED_MASKED_STYLE_SHA256 = "bb3ebfded41772ebc00939428283c0f612595af1e23eda8707d03e7826a775a1";
+const PINNED_MASKED_STYLE_SHA256 = "f5f3a7045743f0b79fec4deea60b2b607d5a898340bfbb1d2373601cae5330aa";
 // RE-PINNED IN CORE-127 (World viewer filters, PR #417), an INTENDED change to STYLE: the display-filter opener, its desktop popover and
 // its 390 px sheet (`.wv-filters-open`, `.wv-dpanel`, `.wv-dstrip`, `.wv-dfilter-host`) add 4075 bytes of CSS and nothing else moved (a line
 // diff of the masked texts, main 6928feab to the head, is added lines only).
-const PINNED_MASKED_STYLE_BYTES = 112605;
+// RE-PINNED AGAIN IN CORE-147 (the icon dropdown, Darko 2026-11-21), an INTENDED change to STYLE: the icon switches' CSS (`.wv-dlayers`, `.wv-dlayer*`, the phone
+// sheet's three columns) adds 1276 bytes on top of CORE-127's, added lines only (the 💬 button was markup, not STYLE).
+const PINNED_MASKED_STYLE_BYTES = 113881;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";
