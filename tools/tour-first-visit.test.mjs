@@ -76,7 +76,7 @@ const readTour = (page) => page.evaluate(() => {
       const v = q(".wv-tour-visual"); if (!v || v.hidden) return null;
       const r = v.getBoundingClientRect(), c = q(".wv-tour-card").getBoundingClientRect(), svg = v.querySelector("svg"), sr = svg?.getBoundingClientRect() ?? null;
       const within = (b, o) => !!o && b.x >= o.x - 0.5 && b.right <= o.right + 0.5 && b.y >= o.y - 0.5 && b.bottom <= o.bottom + 0.5;
-      const walker = v.querySelector(".wv-walker-frame");
+      const walker = v.querySelector(".wv-walker-far:not(.moving) > .wv-walker-frame");
       return { w: r.width, h: r.height, insideCard: within(r, c), svgW: sr?.width ?? 0, svgH: sr?.height ?? 0,
         labels: [...v.querySelectorAll("svg text")].map((t) => t.textContent), labelsInside: [...v.querySelectorAll("svg text")].every((t) => within(t.getBoundingClientRect(), sr)),
         walkers: v.querySelectorAll(".wv-walker-frame").length, movers: v.querySelectorAll(".wv-walker-far.moving").length, leg: !!v.querySelector(".wv-walk-leg"), legDash: getComputedStyle(v.querySelector(".wv-walk-leg") ?? v).strokeDasharray,
