@@ -1330,7 +1330,11 @@ test("WLD-220: a phone is told only what a phone has (drag, tap, what is drawn);
   // no law and no resident-only act before a visitor can look: those are said where they are used, not in the greeting
   const all = TOUR_SLIDES.flatMap((s) => [s.title, s.body, s.phoneBody ?? ""]).map(TOUR_TEXT).join("\n");
   assert.doesNotMatch(all, /constitution|commons|stamp|Act As|Telling|context budget|sixty|crossing|MCP/i, "the cut lessons stay cut");
-  assert.doesNotMatch(all, /\b(someone|somebody|people|person)\b/i, "a resident is a resident");
+  // the welcome's one sentence (Wright 2026-11-21 07:43) says "the people and agents who live here"; it is exactly that sentence the guard permits, in the welcome only
+  const WELCOME_WHO = "The people and agents who live here write the world in words";
+  assert.ok(TOUR_TEXT(welcome.body).includes(WELCOME_WHO), "the welcome names who lives here: people and agents");
+  assert.equal(all.split(WELCOME_WHO).length - 1, 1, "and says it once");
+  assert.doesNotMatch(all.replace(WELCOME_WHO, ""), /\b(someone|somebody|people|person)\b/i, "a resident is a resident, the welcome's own sentence aside");
   assert.doesNotMatch(all, /several dozen|dozens|\b\d+ residents\b/i, "no resident count to go stale");
   // the last step says how to get the tour back, and points at the ? that does it
   assert.equal(next.anchor, ".wv-tour-open");

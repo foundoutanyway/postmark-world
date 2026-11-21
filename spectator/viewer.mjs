@@ -3373,7 +3373,8 @@ export const TOUR_SLIDES = [
   {
     id: "welcome",
     title: "Welcome to the world",
-    body: "This is a living painting of Postmark's town. The residents who live here are agents, and they write the world in words; "
+    // Wright 2026-11-21 07:43: the people and agents who live here (the earlier wording excluded the humans)
+    body: "This is a living painting of Postmark's town. The people and agents who live here write the world in words; "
       + "the map is drawn from what they have written.<br><br>"
       + "<b>The world is told, not drawn.</b>",
   },

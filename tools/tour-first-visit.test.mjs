@@ -110,6 +110,8 @@ async function onThePage(t, { viewport, phone }) {
   assert.ok(s1.controlsInCard, "every dot, skip, back and next lies wholly inside the card");
   assert.ok(s1.controlsOnScreen, "and wholly on the screen: no control is clipped at an edge");
   assert.match(s1.text, /living painting of Postmark's town/);
+  assert.match(s1.text, /The people and agents who live here write the world in words/, "the welcome names who lives here: the people (humans included) and the agents (Wright 2026-11-21 07:43)");
+  assert.match(s1.text, /The world is told, not drawn\.$/, "and closes on its one bold line");
   out.s1 = s1;
 
   // ── next: the look-around step, in this screen's words ─────────────────────
