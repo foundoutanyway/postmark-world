@@ -1266,13 +1266,14 @@ test("the tour walks forward, back, and off the end", () => {
   assert.equal(tourProgress(99, 8), "8 / 8");
 });
 
-// WLD-220 (Darko 2026-11-20: "straight and to the point for someone visiting the page for the first time"): the first-visit deck is THREE short steps
-// (what this is; how to look around; where to go next and how the ? brings it back). The old floor of six slides and the 80-character body were
-// written for the eight-slide teaching deck; what protects a first visitor now is that the deck STAYS short and plain, so these are the falsifiers.
+// WLD-220 (Darko 2026-11-20: "straight and to the point for someone visiting the page for the first time"): the first-visit deck is a few short steps
+// (what this is; what the map's figures mean [Darko 2026-11-21 09:12: houses are parcels, green figures are residents, a dotted line is a resident walking now;
+// every picture and shape is a mark an agent made]; how to look around; where to go next and how the ? brings it back). The old floor of six slides and the
+// 80-character body were written for the eight-slide teaching deck; what protects a first visitor now is that the deck STAYS short and plain, so these are the falsifiers.
 const TOUR_TEXT = (html) => html.replace(/<[^>]*>/g, "");
-test("the first-visit deck is three short steps; every slide is complete, and its anchor is a class the viewer really writes", async () => {
-  assert.equal(TOUR_SLIDES.length, 3, "three short steps: a fourth is a lesson, and the cut ones are reachable where they are used");
-  assert.deepEqual(TOUR_SLIDES.map((s) => s.id), ["welcome", "explore", "next"]);
+test("the first-visit deck is five short steps; every slide is complete, and its anchor is a class the viewer really writes", async () => {
+  assert.equal(TOUR_SLIDES.length, 5, "five short steps: a sixth is a lesson, and the cut ones are reachable where they are used");
+  assert.deepEqual(TOUR_SLIDES.map((s) => s.id), ["welcome", "parcels", "marks", "explore", "next"]);
   const ids = new Set();
   const anchors = [];
   for (const slide of TOUR_SLIDES) {
@@ -1309,7 +1310,7 @@ test("the first-visit deck is three short steps; every slide is complete, and it
 });
 
 test("WLD-220: a phone is told only what a phone has (drag, tap, what is drawn); a first visitor is not walked through law or a resident's acts; the ? is how it comes back", async () => {
-  const [welcome, explore, next] = TOUR_SLIDES;
+  const [welcome, parcels, marks, explore, next] = TOUR_SLIDES;
   // the phone's own words exist for the two slides that name an input, and say drag and tap, never a wheel, a hover or a click
   for (const slide of [explore, next]) {
     assert.equal(typeof slide.phoneBody, "string", `${slide.id} carries the phone's words`);
@@ -1346,11 +1347,46 @@ test("WLD-220: a phone is told only what a phone has (drag, tap, what is drawn);
     assert.deepEqual(links(next[key]), [{ tag: '<a href="/docs/">', text: "the docs" }], `the last step's ${key} links /docs/ once, plainly`);
     assert.match(TOUR_TEXT(next[key]), /Read more in the docs\.$/, `${key} ends on the link, said plainly`);
   }
-  for (const slide of [welcome, explore]) for (const key of ["body", "phoneBody"]) assert.deepEqual(links(slide[key] ?? ""), [], `${slide.id}.${key} links nothing`);
+  for (const slide of [welcome, parcels, marks, explore]) for (const key of ["body", "phoneBody"]) assert.deepEqual(links(slide[key] ?? ""), [], `${slide.id}.${key} links nothing`);
   // the renderer chooses the phone's words on a phone and nowhere else
   assert.match(source, /\$\(el, "\.wv-tour-body"\)\.innerHTML = onPhone\(\) && slide\.phoneBody \? slide\.phoneBody : slide\.body;/);
   // the greeting is unchanged: spectators each load, a resident once, never reset by this deck
   assert.match(source, /if \(readTourSeen\(localStore, tourWho\(\)\)\) return;\s*greetedThisLoad = true;\s*openTour\(0\);/);
+});
+
+test("WLD-220 (Darko 2026-11-21 09:12 EST, via Wright): the two map-meaning cards say every ruled meaning, in order, after the welcome and before Look around, and are true to what the viewer draws", async () => {
+  const [welcome, parcels, marks, explore] = TOUR_SLIDES;
+  assert.deepEqual(TOUR_SLIDES.slice(0, 4).map((s) => s.id), ["welcome", "parcels", "marks", "explore"], "the two new cards sit after the welcome and before Look around");
+  // the welcome and Look around are the ones already accepted, unchanged
+  assert.ok(TOUR_TEXT(welcome.body).includes("The people and agents who live here write the world in words"));
+  assert.match(TOUR_TEXT(explore.body), /Drag to move, scroll to zoom\./);
+  assert.match(TOUR_TEXT(explore.phoneBody), /Drag to move\./);
+  // card 1: the houses are parcels, where residents live; the green figures are residents; a dotted line means that resident is walking right now
+  const p = TOUR_TEXT(parcels.body);
+  assert.match(p, /\bhouse\b.*\bparcel\b.*\bwhere residents live\b/i, "a house is a parcel, where residents live");
+  assert.match(p, /\bgreen figures\b.*\bresidents\b/i, "the green figures are the residents");
+  assert.match(p, /\bdotted line\b.*\bresident is walking right now\b/i, "a dotted line means that resident is walking right now");
+  assert.match(parcels.body, /<b>house<\/b>[^]*<b>parcel<\/b>[^]*<b>green figures<\/b>[^]*<b>dotted line<\/b>/, "each meaning is set in bold, once, in the order Darko said them");
+  // card 2: every picture and shape on the map is a mark, made by an agent
+  const m = TOUR_TEXT(marks.body);
+  assert.match(m, /\bEvery picture and every shape on the map is a mark, made by an agent\b/);
+  assert.match(marks.body, /<b>picture<\/b>[^]*<b>shape<\/b>[^]*<b>mark<\/b>/);
+  // both are the same words on a phone and a desktop, so they name no input and no control a phone lacks, and teach nothing a visitor cannot see
+  for (const slide of [parcels, marks]) {
+    assert.equal(slide.phoneBody, undefined, `${slide.id}: one wording, nothing in it names an input`);
+    assert.equal(slide.anchor, undefined, `${slide.id}: no anchor (every rail anchor is hidden on a phone; the card simply centres)`);
+    assert.equal(slide.stage, undefined);
+    assert.doesNotMatch(TOUR_TEXT(slide.body), /click|tap|drag|scroll|zoom|hover|wheel|Act As|Telling|stamp|sign in/i, `${slide.id} names no input and no resident-only control`);
+  }
+  // true to the map (the three source facts the words stand on): a home IS "a household's parcel of ground"; a resident is drawn GREEN as a round frame on two legs;
+  // a resident who is MOVING is given a dashed leg from where they are to where they are going (movers only).
+  const { readFile } = await import("node:fs/promises");
+  const icons = await readFile(new URL("../spectator/mark-icons.mjs", import.meta.url), "utf8");
+  assert.match(icons, /home: \{ kind: "what", label: "home", meaning: "A home: a household's parcel of ground\."/);
+  assert.match(icons, /green is a resident \(sovereign green\)/);
+  const source = await readFile(new URL("../spectator/viewer.mjs", import.meta.url), "utf8");
+  assert.match(source, /if \(moving\)\s*s \+= `<line x1="\$\{now\.x\}" y1="\$\{now\.y\}" x2="\$\{dest\.x\}" y2="\$\{dest\.y\}" class="wv-walk-leg"\/>`/, "a moving resident has the dashed leg");
+  assert.match(source, /\.wv-walk-leg \{[^}]*stroke-dasharray:5 4;/, "and it is dashed");
 });
 
 test("the tour is remembered against the resident, not the browser", () => {

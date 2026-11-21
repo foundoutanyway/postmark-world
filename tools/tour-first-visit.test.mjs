@@ -3,7 +3,8 @@
 //
 //   node --test tools/tour-first-visit.test.mjs
 //
-// The deck is three short steps (what this is / look around / where to go next, and the ? brings it back). What the source tests (viewer-axes.test.mjs) cannot say
+// The deck is five short steps (what this is / houses and residents / everything is a mark [Darko 2026-11-21 09:12, the two map-meaning cards] / look around / where to
+// go next, and the ? brings it back). What the source tests (viewer-axes.test.mjs) cannot say
 // is whether the deck WORKS on the page a visitor gets: that it greets a spectator, that next / back / a dot / done / skip each do their one job on the shorter deck,
 // that the ? reopens it, that every control and the whole card sit inside the screen (a clipped next is the CORE-54 finding), that a phone is told drag and tap and a
 // desktop its wheel, and that the page underneath comes back intact. The real viewer, served by the real server (the existing page-test rig, tools/page-machine.mjs),
@@ -103,12 +104,12 @@ async function onThePage(t, { viewport, phone }) {
   const out = {};
   await settle();
 
-  // ── step 1 of 3: the greeting, whole on the screen ─────────────────────────
+  // ── step 1 of 5: the greeting, whole on the screen ─────────────────────────
   const s1 = await readTour(page);
   assert.equal(s1.phone, !!phone);
-  assert.equal(s1.kicker, "The World · 1 / 3");
+  assert.equal(s1.kicker, "The World · 1 / 5");
   assert.equal(s1.title, "Welcome to the world");
-  assert.equal(s1.dots, 3, "one dot a step");
+  assert.equal(s1.dots, 5, "one dot a step");
   assert.equal(s1.onDot, 0);
   assert.equal(s1.next, "next");
   assert.equal(s1.backDisabled, true, "nothing before the first step");
@@ -120,14 +121,35 @@ async function onThePage(t, { viewport, phone }) {
   assert.match(s1.text, /The world is told, not drawn\.$/, "and closes on its one bold line");
   out.s1 = s1;
 
+  // ── next: Darko's two map-meaning cards (2026-11-21 09:12 EST), the same words on both screens ──
+  await press(".wv-tour-next");
+  const sp = await readTour(page);
+  assert.equal(sp.kicker, "The World · 2 / 5");
+  assert.equal(sp.title, "Houses and residents");
+  assert.equal(sp.onDot, 1);
+  assert.equal(sp.backDisabled, false);
+  assert.ok(sp.cardOnScreen && sp.controlsInCard && sp.controlsOnScreen, `step 2 fits whole: ${JSON.stringify({ card: sp.cardOnScreen, inCard: sp.controlsInCard, onScreen: sp.controlsOnScreen, geometry: sp.geometry })}`);
+  assert.match(sp.text, /Each house on the map is a parcel: ground where residents live\. The little green figures are the residents\./);
+  assert.match(sp.text, /A dotted line from one means that resident is walking right now\.$/);
+  assert.doesNotMatch(sp.text, /click|tap|drag|scroll|zoom|hover|wheel/i, "no input is named: a phone reads the same words");
+  out.sp = sp;
+  await press(".wv-tour-next");
+  const sm = await readTour(page);
+  assert.equal(sm.kicker, "The World · 3 / 5");
+  assert.equal(sm.title, "Everything is a mark");
+  assert.equal(sm.onDot, 2);
+  assert.ok(sm.cardOnScreen && sm.controlsInCard && sm.controlsOnScreen, `step 3 fits whole: ${JSON.stringify({ card: sm.cardOnScreen, inCard: sm.controlsInCard, onScreen: sm.controlsOnScreen, geometry: sm.geometry })}`);
+  assert.match(sm.text, /^Every picture and every shape on the map is a mark, made by an agent: a sentence the world keeps\.$/);
+  out.sm = sm;
+
   // ── next: the look-around step, in this screen's words ─────────────────────
   await press(".wv-tour-next");
   const s2 = await readTour(page);
-  assert.equal(s2.kicker, "The World · 2 / 3");
+  assert.equal(s2.kicker, "The World · 4 / 5");
   assert.equal(s2.title, "Look around");
-  assert.equal(s2.onDot, 1);
+  assert.equal(s2.onDot, 3);
   assert.equal(s2.backDisabled, false);
-  assert.ok(s2.cardOnScreen && s2.controlsInCard && s2.controlsOnScreen, `step 2 fits whole: ${JSON.stringify({ card: s2.cardOnScreen, inCard: s2.controlsInCard, onScreen: s2.controlsOnScreen, geometry: s2.geometry })}`);
+  assert.ok(s2.cardOnScreen && s2.controlsInCard && s2.controlsOnScreen, `step 4 fits whole: ${JSON.stringify({ card: s2.cardOnScreen, inCard: s2.controlsInCard, onScreen: s2.controlsOnScreen, geometry: s2.geometry })}`);
   if (phone) {
     assert.match(s2.text, /Drag to move\./);
     assert.match(s2.text, /\btap\b/);
@@ -138,15 +160,15 @@ async function onThePage(t, { viewport, phone }) {
   }
   out.s2 = s2;
 
-  // ── back, then a dot to the last step, which says done ─────────────────────
+  // ── back (to the marks card), then a dot to the last step, which says done ─
   await press(".wv-tour-back");
-  assert.equal((await readTour(page)).kicker, "The World · 1 / 3", "back returns to the first step");
-  await press('.wv-tour-dot[data-tour-to="2"]');
+  assert.equal((await readTour(page)).kicker, "The World · 3 / 5", "back returns one step");
+  await press('.wv-tour-dot[data-tour-to="4"]');
   const s3 = await readTour(page);
-  assert.equal(s3.kicker, "The World · 3 / 3", "a dot jumps");
+  assert.equal(s3.kicker, "The World · 5 / 5", "a dot jumps");
   assert.equal(s3.title, "Where to go next");
   assert.equal(s3.next, "done", "the last step finishes");
-  assert.ok(s3.cardOnScreen && s3.controlsInCard && s3.controlsOnScreen, "step 3 fits whole");
+  assert.ok(s3.cardOnScreen && s3.controlsInCard && s3.controlsOnScreen, "step 5 (the last) fits whole");
   assert.match(s3.text, /\? opens this tour again/);
   if (phone) { assert.match(s3.text, /\btap a badge\b/); assert.doesNotMatch(s3.text, /click/i); } else assert.match(s3.text, /\bclick a badge\b/);
   out.s3 = s3;
@@ -183,7 +205,7 @@ async function onThePage(t, { viewport, phone }) {
   await press(".wv-tour-open");
   await page.waitForSelector(".wv-tour-card", { state: "visible", timeout: 10_000 });
   const again = await readTour(page);
-  assert.equal(again.kicker, "The World · 1 / 3", "the ? reopens the tour at its first step");
+  assert.equal(again.kicker, "The World · 1 / 5", "the ? reopens the tour at its first step");
   assert.ok(again.cardOnScreen && again.controlsInCard && again.controlsOnScreen);
 
   // ── skip closes it too, and the same page is there ─────────────────────────
@@ -195,10 +217,10 @@ async function onThePage(t, { viewport, phone }) {
   return out;
 }
 
-test("the page, on a phone (390 x 844, touch): three steps, each control whole on the screen, drag and tap, done / ? / skip", async (t) => {
+test("the page, on a phone (390 x 844, touch): five steps (the two map-meaning cards among them), each control whole on the screen, drag and tap, done / ? / skip", async (t) => {
   await onThePage(t, { viewport: { width: 390, height: 844 }, phone: true });
 });
 
-test("the page, on a desktop (1440 x 900): the same three steps in the cursor's words", async (t) => {
+test("the page, on a desktop (1440 x 900): the same five steps in the cursor's words", async (t) => {
   await onThePage(t, { viewport: { width: 1440, height: 900 }, phone: false });
 });

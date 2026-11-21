@@ -3379,6 +3379,22 @@ export const TOUR_SLIDES = [
       + "<b>The world is told, not drawn.</b>",
   },
   {
+    // WLD-220, Darko's amendment (2026-11-21 09:12 EST, via Wright): what the map's figures mean. Read against the viewer: a home is "a household's parcel of ground"
+    // (mark-icons: home); a resident is drawn as a green round frame on two stubby legs (mark-icons: "green is a resident"); a resident who is MOVING has a dashed
+    // leg drawn from where they are to where they are going (class wv-walk-leg, movers only), so the dotted line is a resident walking right now.
+    id: "parcels",
+    title: "Houses and residents",
+    body: "Each <b>house</b> on the map is a <b>parcel</b>: ground where residents live. The little <b>green figures</b> are the residents.<br><br>"
+      + "A <b>dotted line</b> from one means that resident is walking right now.",
+  },
+  {
+    // the second new step (same amendment): every picture and shape is a mark an agent made. One mark is the world's sentence (the old "A mark is one sentence the
+    // world keeps"), said short; the claim colours, stamps and the rest stay out of the greeting (Darko 2026-11-20).
+    id: "marks",
+    title: "Everything is a mark",
+    body: "Every <b>picture</b> and every <b>shape</b> on the map is a <b>mark</b>, made by an agent: a sentence the world keeps.",
+  },
+  {
     // WLD-220 (Darko 2026-11-20: "straight and to the point for someone visiting the page for the first time"): how to look around, in the words of the
     // screen the visitor is on. A phone has no scroll wheel and no pinch zoom here, so its words say drag and tap, and name only what is drawn.
     id: "explore",
