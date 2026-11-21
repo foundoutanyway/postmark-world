@@ -102,8 +102,11 @@ import { MARK_ICON_CSS } from "../spectator/mark-icons.mjs";
 // RE-PINNED FOR WLD-220 (Wright 2026-11-21 06:17: the tour's last step links /docs/), knowingly, AFTER merging main 01e29a17 (which carries CORE-54's pin above): the WLD-220 branch's ONE added rule,
 // `.wv-tour-body a` (the card's blue, underline offset, and a comment), 196 bytes, on top of main's STYLE (111168 -> 111364), nothing removed or moved. Measured by this test's own masked-emission
 // route on the merged WLD-220 branch (the same route the pins above name). Alone on its old base the rule was 108530 -> 108726 (955f7eb3...); main has since moved to CORE-54's 111168.
-const PINNED_MASKED_STYLE_SHA256 = "8324d45b44d910af0b5e5096ece690008c9ded4bd16318509de75e2029a73f32";
-const PINNED_MASKED_STYLE_BYTES = 111364;
+// RE-PINNED FOR THE WLD-220 VISUAL REBUILD (Darko 2026-11-21 18:14/18:15 EST: use the actual visuals; the join flow's theme; fewer, larger words), knowingly, an INTENDED change to STYLE over the pin
+// above: the tour's own rules only, every one under `.wv-tour` / `.tv-*` (the join-flow headline, soft text, paper picture panel and progress dots, the picture classes, the control row), +2634 bytes
+// (111364 -> 114143), nothing outside the tour touched. Measured by this test's own masked-emission route on the WLD-220 branch (the same route the pins above name).
+const PINNED_MASKED_STYLE_SHA256 = "95ed6cc693ab42a59a707bb709f31646ed4f7694aa75803d716174d75894dbd4";
+const PINNED_MASKED_STYLE_BYTES = 114143;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";

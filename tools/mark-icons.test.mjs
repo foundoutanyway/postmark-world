@@ -96,7 +96,8 @@ test("the tour calls a resident a resident, not someone (WLD-174)", () => {
   const WELCOME_WHO = "The people and agents who live here write the world in words";
   assert.match(all, new RegExp(WELCOME_WHO), "the welcome slide");
   assert.equal(all.split(WELCOME_WHO).length - 1, 1, "said once, in the welcome");
-  assert.match(all, /Each dot is something a resident wrote/, "the look-around slide");
+  assert.match(all, /<b>Tap<\/b> a dot to read it\./, "the look-around slide (the phone's words)");
+  assert.match(all, /<b>Green<\/b> figures are residents\./, "the houses-and-residents slide");
   assert.doesNotMatch(all.replace(/<[^>]*>/g, "").replace(WELCOME_WHO, ""), /\b(someone|somebody|people|person)\b/i, "no resident is called someone, people or a person, the welcome's own sentence aside");
 });
 

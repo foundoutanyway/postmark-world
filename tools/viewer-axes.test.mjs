@@ -66,6 +66,7 @@ import {
   walkDestinationLabel,
   worldFrameReading,
   TOUR_SLIDES,
+  tourVisual,
   tourStep,
   tourProgress,
   readTourSeen,
@@ -1284,9 +1285,13 @@ test("the first-visit deck is five short steps; every slide is complete, and its
     for (const key of ["body", "phoneBody"]) {
       if (slide[key] === undefined) continue;
       const words = TOUR_TEXT(slide[key]).trim().split(/\s+/).length;
-      assert.ok(TOUR_TEXT(slide[key]).length > 40, `${slide.id}.${key} needs a body worth a slide`);
-      assert.ok(words <= 45, `${slide.id}.${key} is ${words} words: a first visitor gets a sentence or two a step, not a wall`);
+      assert.ok(TOUR_TEXT(slide[key]).length > 20, `${slide.id}.${key} says something`);
+      // the rebuild (Darko 2026-11-21 18:14 EST: "minimize the # of words"): a few large words under a picture, never a paragraph
+      assert.ok(words <= 24, `${slide.id}.${key} is ${words} words: a few words under the picture, not a paragraph`);
     }
+    // picture-led: every step shows what it explains (tourVisual draws it); a text-only step is the failure Darko rejected
+    assert.ok(["welcome", "parcels", "marks", "explore", "next"].includes(slide.visual), `${slide.id} has a picture`);
+    assert.ok(tourVisual(slide.visual).length > 100, `${slide.id}'s picture is really drawn`);
     // no stage, and nothing that teaches law or a resident-only act before a visitor can look
     assert.equal(slide.stage, undefined, `${slide.id} stages nothing: the page stays as the visitor found it`);
     if (slide.anchor === undefined) continue;
@@ -1311,18 +1316,18 @@ test("the first-visit deck is five short steps; every slide is complete, and its
 
 test("WLD-220: a phone is told only what a phone has (drag, tap, what is drawn); a first visitor is not walked through law or a resident's acts; the ? is how it comes back", async () => {
   const [welcome, parcels, marks, explore, next] = TOUR_SLIDES;
-  // the phone's own words exist for the two slides that name an input, and say drag and tap, never a wheel, a hover or a click
-  for (const slide of [explore, next]) {
-    assert.equal(typeof slide.phoneBody, "string", `${slide.id} carries the phone's words`);
-    assert.doesNotMatch(TOUR_TEXT(slide.phoneBody), /scroll|zoom|hover|rest on|click|wheel/i, `${slide.id}: a phone has none of these`);
-    assert.match(TOUR_TEXT(slide.phoneBody), /\btap\b/i, `${slide.id}: the phone is told tap`);
-  }
+  // the phone's own words exist for the one step that names an input (Look around), and say drag and tap, never a wheel, a hover or a click
+  assert.equal(typeof explore.phoneBody, "string", "Look around carries the phone's words");
+  assert.doesNotMatch(TOUR_TEXT(explore.phoneBody), /scroll|zoom|hover|rest on|click|wheel/i, "a phone has none of these");
+  assert.match(TOUR_TEXT(explore.phoneBody), /\bTap\b/);
   assert.match(TOUR_TEXT(explore.phoneBody), /\bDrag\b/);
-  assert.match(TOUR_TEXT(explore.body), /\bscroll\b.*\bzoom\b/i, "the desktop is told its wheel");
-  assert.match(TOUR_TEXT(explore.body), /\bclick\b/i);
-  assert.equal(welcome.phoneBody, undefined, "the welcome has one wording: nothing in it names an input");
-  // it names only controls the map really draws: the fit button and the search, the conversations lens and the ? itself
-  assert.match(explore.body, /<b>⛶<\/b>/);
+  assert.match(TOUR_TEXT(explore.body), /\bScroll\b.*\bzoom\b/i, "the desktop is told its wheel");
+  assert.match(TOUR_TEXT(explore.body), /\bClick\b/);
+  for (const slide of [welcome, parcels, marks, next]) assert.equal(slide.phoneBody, undefined, `${slide.id} has one wording: nothing in it names an input`);
+  // the pictures show only controls the map really draws: the search, the fit button, the conversations lens and the ? itself (drawn from the real glyphs)
+  const exploreSvg = tourVisual("explore");
+  assert.match(exploreSvg, /find a house or resident/);
+  for (const glyph of ["⛶", "💬", "?"]) assert.ok(exploreSvg.includes(`>${glyph}</span>`), `Look around draws the ${glyph} control`);
   assert.match(next.body, /<b>💬<\/b>/);
   const { readFile } = await import("node:fs/promises");
   const source = await readFile(new URL("../spectator/viewer.mjs", import.meta.url), "utf8");
@@ -1339,14 +1344,12 @@ test("WLD-220: a phone is told only what a phone has (drag, tap, what is drawn);
   assert.doesNotMatch(all, /several dozen|dozens|\b\d+ residents\b/i, "no resident count to go stale");
   // the last step says how to get the tour back, and points at the ? that does it
   assert.equal(next.anchor, ".wv-tour-open");
-  assert.match(TOUR_TEXT(next.body), /\?.*again/);
+  assert.match(TOUR_TEXT(next.body), /\?\s*brings this tour back/);
   // Wright 2026-11-21 06:17 (settled): the LAST step, and only it, links the site's docs: one plain link, the same on a phone and a desktop, no other link in the deck
   // and no help at the controls
   const links = (html) => [...html.matchAll(/<a\b[^>]*>([\s\S]*?)<\/a>/g)].map((m) => ({ tag: m[0].match(/^<a\b[^>]*>/)[0], text: TOUR_TEXT(m[1]) }));
-  for (const key of ["body", "phoneBody"]) {
-    assert.deepEqual(links(next[key]), [{ tag: '<a href="/docs/">', text: "the docs" }], `the last step's ${key} links /docs/ once, plainly`);
-    assert.match(TOUR_TEXT(next[key]), /Read more in the docs\.$/, `${key} ends on the link, said plainly`);
-  }
+  assert.deepEqual(links(next.body), [{ tag: '<a href="/docs/">', text: "Read the docs" }], "the last step links /docs/ once, plainly");
+  assert.match(TOUR_TEXT(next.body), /Read the docs$/, "and ends on the link, said plainly");
   for (const slide of [welcome, parcels, marks, explore]) for (const key of ["body", "phoneBody"]) assert.deepEqual(links(slide[key] ?? ""), [], `${slide.id}.${key} links nothing`);
   // the renderer chooses the phone's words on a phone and nowhere else
   assert.match(source, /\$\(el, "\.wv-tour-body"\)\.innerHTML = onPhone\(\) && slide\.phoneBody \? slide\.phoneBody : slide\.body;/);
@@ -1357,20 +1360,50 @@ test("WLD-220: a phone is told only what a phone has (drag, tap, what is drawn);
 test("WLD-220 (Darko 2026-11-21 09:12 EST, via Wright): the two map-meaning cards say every ruled meaning, in order, after the welcome and before Look around, and are true to what the viewer draws", async () => {
   const [welcome, parcels, marks, explore] = TOUR_SLIDES;
   assert.deepEqual(TOUR_SLIDES.slice(0, 4).map((s) => s.id), ["welcome", "parcels", "marks", "explore"], "the two new cards sit after the welcome and before Look around");
-  // the welcome and Look around are the ones already accepted, unchanged
+  // the welcome sentence is the accepted one, word for word
   assert.ok(TOUR_TEXT(welcome.body).includes("The people and agents who live here write the world in words"));
-  assert.match(TOUR_TEXT(explore.body), /Drag to move, scroll to zoom\./);
+  assert.match(TOUR_TEXT(explore.body), /Drag to move\.\s*Scroll to zoom\./);
   assert.match(TOUR_TEXT(explore.phoneBody), /Drag to move\./);
-  // card 1: the houses are parcels, where residents live; the green figures are residents; a dotted line means that resident is walking right now
+  // card 1 (a few large words under the parcel picture): a house is a parcel; green figures are residents; a dotted line means walking now (and the picture labels them)
   const p = TOUR_TEXT(parcels.body);
-  assert.match(p, /\bhouse\b.*\bparcel\b.*\bwhere residents live\b/i, "a house is a parcel, where residents live");
-  assert.match(p, /\bgreen figures\b.*\bresidents\b/i, "the green figures are the residents");
-  assert.match(p, /\bdotted line\b.*\bresident is walking right now\b/i, "a dotted line means that resident is walking right now");
-  assert.match(parcels.body, /<b>house<\/b>[^]*<b>parcel<\/b>[^]*<b>green figures<\/b>[^]*<b>dotted line<\/b>/, "each meaning is set in bold, once, in the order Darko said them");
+  assert.match(p, /A house is a parcel\./, "a house is a parcel");
+  assert.match(p, /Green figures are residents\./, "the green figures are the residents");
+  assert.match(p, /A dotted line means walking now\./, "a dotted line means walking now");
+  assert.match(parcels.body, /<b>house<\/b>[^]*<b>Green<\/b>[^]*<b>dotted line<\/b>/, "each meaning is set in bold, once, in the order Darko said them");
   // card 2: every picture and shape on the map is a mark, made by an agent
   const m = TOUR_TEXT(marks.body);
-  assert.match(m, /\bEvery picture and every shape on the map is a mark, made by an agent\b/);
-  assert.match(marks.body, /<b>picture<\/b>[^]*<b>shape<\/b>[^]*<b>mark<\/b>/);
+  assert.match(m, /^Every picture and shape on the map is a mark, made by an agent\.$/);
+  assert.match(marks.body, /<b>mark<\/b>[^]*<b>agent<\/b>/);
+  // THE PICTURES say it too, and are drawn with the map's own pieces (not this module's symbols): the parcel footprint and the home pip for the house, the resident's round frame on
+  // two legs (a mover drawn as the map draws one) with its dashed leg and end ring, and a mark's picture and shape each labelled as made by an agent
+  const parcelsSvg = tourVisual("parcels");
+  assert.match(parcelsSvg, /<polygon class="wv-fp t-home tv-parcel"/, "the parcel is the map's footprint");
+  assert.match(parcelsSvg, /class="ov-pip t-home"/, "the house is the map's pip");
+  assert.match(parcelsSvg, /class="ov-ic ic-home"/, "with the map's home glyph");
+  assert.equal((parcelsSvg.match(/class="wv-walker-frame"/g) ?? []).length, 2, "two residents: one at home, one walking");
+  assert.match(parcelsSvg, /class="wv-walker-far moving"/, "the walker is drawn as the map draws a mover");
+  assert.match(parcelsSvg, /class="wv-walk-leg"/, "with the dashed leg");
+  assert.match(parcelsSvg, /class="wv-walk-dest"/, "and the ring where they are going");
+  for (const word of ["house", "resident", "walking now"]) assert.ok(parcelsSvg.includes(`>${word}</text>`), `the picture labels the ${word}`);
+  const marksPic = tourVisual("marks", { picture: { href: "https://media.postmark.town/media/x/y.jpg" } });
+  assert.match(marksPic, /<image [^>]*href="https:\/\/media\.postmark\.town\/media\/x\/y\.jpg"/, "a mark's picture is the record's own image from the media door");
+  assert.match(marksPic, /<polygon class="wv-fp t-constitution tv-poly"/, "a mark's shape is the map's footprint");
+  assert.match(marksPic, />made by an agent<\/text>/);
+  for (const word of ["picture", "shape"]) assert.ok(marksPic.includes(`>${word}</text>`), `the picture labels the ${word}`);
+  assert.doesNotMatch(tourVisual("marks"), /<image /, "with no record picture loaded it draws the map's pip, never an invented picture");
+  assert.match(tourVisual("welcome"), /the lamp is always lit/);
+  // every picture is well-formed (each opened tag is closed): an SVG that does not parse draws nothing
+  for (const kind of ["welcome", "parcels", "marks", "explore", "next"]) {
+    const html = tourVisual(kind, { picture: { href: "https://media.postmark.town/media/x/y.jpg" } });
+    const stack = [];
+    for (const m of html.matchAll(/<(\/?)([A-Za-z][A-Za-z0-9]*)\b([^>]*?)(\/?)>/g)) {
+      const [, closing, name, , selfClosing] = m;
+      if (selfClosing) continue;
+      if (closing) assert.equal(stack.pop(), name, `${kind}: </${name}> closes the tag that was open`);
+      else stack.push(name);
+    }
+    assert.deepEqual(stack, [], `${kind}: every tag is closed`);
+  }
   // both are the same words on a phone and a desktop, so they name no input and no control a phone lacks, and teach nothing a visitor cannot see
   for (const slide of [parcels, marks]) {
     assert.equal(slide.phoneBody, undefined, `${slide.id}: one wording, nothing in it names an input`);

@@ -70,6 +70,19 @@ const readTour = (page) => page.evaluate(() => {
     controlsInCard: parts.every((b) => b && b.w > 0 && inside(b, card)),
     controlsOnScreen: parts.every((b) => b && inside(b, screen)),
     phone: matchMedia("(max-width:720px)").matches,
+    // the type (the join flow's large words) and the PICTURE the step shows: drawn with the map's own pieces, whole inside the card, its labels not clipped
+    type: { title: parseFloat(getComputedStyle(q(".wv-tour-title")).fontSize), body: parseFloat(getComputedStyle(q(".wv-tour-body")).fontSize), titleColor: getComputedStyle(q(".wv-tour-title")).color },
+    visual: (() => {
+      const v = q(".wv-tour-visual"); if (!v || v.hidden) return null;
+      const r = v.getBoundingClientRect(), c = q(".wv-tour-card").getBoundingClientRect(), svg = v.querySelector("svg"), sr = svg?.getBoundingClientRect() ?? null;
+      const within = (b, o) => !!o && b.x >= o.x - 0.5 && b.right <= o.right + 0.5 && b.y >= o.y - 0.5 && b.bottom <= o.bottom + 0.5;
+      const walker = v.querySelector(".wv-walker-frame");
+      return { w: r.width, h: r.height, insideCard: within(r, c), svgW: sr?.width ?? 0, svgH: sr?.height ?? 0,
+        labels: [...v.querySelectorAll("svg text")].map((t) => t.textContent), labelsInside: [...v.querySelectorAll("svg text")].every((t) => within(t.getBoundingClientRect(), sr)),
+        walkers: v.querySelectorAll(".wv-walker-frame").length, movers: v.querySelectorAll(".wv-walker-far.moving").length, leg: !!v.querySelector(".wv-walk-leg"), legDash: getComputedStyle(v.querySelector(".wv-walk-leg") ?? v).strokeDasharray,
+        pips: v.querySelectorAll(".ov-pip").length, parcels: v.querySelectorAll("polygon.wv-fp").length, images: v.querySelectorAll("svg image").length,
+        walkerStroke: walker ? getComputedStyle(walker).stroke : null, ctls: [...v.querySelectorAll(".tv-ctl")].map((e) => e.textContent), search: !!v.querySelector(".tv-search") };
+    })(),
     // for a failure message: where the screen, the card and every part stood
     geometry: { screen: [innerWidth, innerHeight], card, parts: parts.map((b) => b && [b.x, b.y, b.right, b.bottom].map(Math.round)) },
   };
@@ -116,9 +129,14 @@ async function onThePage(t, { viewport, phone }) {
   assert.ok(s1.cardOnScreen, "the whole card is on the screen");
   assert.ok(s1.controlsInCard, "every dot, skip, back and next lies wholly inside the card");
   assert.ok(s1.controlsOnScreen, "and wholly on the screen: no control is clipped at an edge");
-  assert.match(s1.text, /living painting of Postmark's town/);
-  assert.match(s1.text, /The people and agents who live here write the world in words/, "the welcome names who lives here: the people (humans included) and the agents (Wright 2026-11-21 07:43)");
-  assert.match(s1.text, /The world is told, not drawn\.$/, "and closes on its one bold line");
+  assert.match(s1.text, /^The people and agents who live here write the world in words\.The world is told, not drawn\.$/, "the welcome: the accepted sentence (the people, humans included, and the agents; Wright 2026-11-21 07:43) and its one bold line, nothing more");
+  // the join flow's big type (a large gold headline, a large soft caption) and a picture on paper, whole inside the card
+  assert.ok(s1.type.title >= 27 && s1.type.body >= 17, `large type: headline ${s1.type.title}px, caption ${s1.type.body}px`);
+  assert.equal(s1.type.titleColor, "rgb(246, 220, 174)", "the join flow's gold");
+  const picture = (s, what) => { assert.ok(s.visual, `${what} shows a picture`); assert.ok(s.visual.insideCard && s.visual.svgW >= 250 && s.visual.svgH >= 120 || s.visual.ctls.length, `${what}: the picture is whole inside the card and big enough to read (${JSON.stringify(s.visual && { w: s.visual.w, h: s.visual.h, svgW: s.visual.svgW })})`); return s.visual; };
+  const v1 = picture(s1, "step 1");
+  assert.ok(v1.labels.includes("the lamp is always lit") && v1.labelsInside, "the welcome draws the sentence and the lit lamp it puts on a parcel, its words whole");
+  assert.ok(v1.parcels === 1 && v1.pips === 1, "on the map's parcel footprint, with the map's pip");
   out.s1 = s1;
 
   // ── next: Darko's two map-meaning cards (2026-11-21 09:12 EST), the same words on both screens ──
@@ -129,9 +147,19 @@ async function onThePage(t, { viewport, phone }) {
   assert.equal(sp.onDot, 1);
   assert.equal(sp.backDisabled, false);
   assert.ok(sp.cardOnScreen && sp.controlsInCard && sp.controlsOnScreen, `step 2 fits whole: ${JSON.stringify({ card: sp.cardOnScreen, inCard: sp.controlsInCard, onScreen: sp.controlsOnScreen, geometry: sp.geometry })}`);
-  assert.match(sp.text, /Each house on the map is a parcel: ground where residents live\. The little green figures are the residents\./);
-  assert.match(sp.text, /A dotted line from one means that resident is walking right now\.$/);
+  assert.match(sp.text, /^A house is a parcel\.Green figures are residents\.A dotted line means walking now\.$/, "a few large words: a house is a parcel, green figures are residents, a dotted line means walking now");
   assert.doesNotMatch(sp.text, /click|tap|drag|scroll|zoom|hover|wheel/i, "no input is named: a phone reads the same words");
+  const vp = picture(sp, "step 2");
+  // the picture IS the meaning, in the map's own drawing: a parcel with its house, a resident at home and a resident walking with the dashed leg, each labelled
+  assert.equal(vp.parcels, 1, "the parcel footprint");
+  assert.equal(vp.pips, 1, "the house (the map's home pip)");
+  assert.equal(vp.walkers, 2, "two residents");
+  assert.equal(vp.movers, 1, "one of them walking");
+  assert.ok(vp.leg, "with the dashed leg to where they are going");
+  assert.ok(vp.legDash && vp.legDash !== "none", `the leg is dotted (stroke-dasharray ${vp.legDash})`);
+  assert.equal(vp.walkerStroke, "rgb(132, 201, 143)", "a resident is the map's green");
+  for (const word of ["house", "resident", "walking now"]) assert.ok(vp.labels.includes(word), `the picture labels the ${word}`);
+  assert.ok(vp.labelsInside, "every label is whole inside its picture");
   out.sp = sp;
   await press(".wv-tour-next");
   const sm = await readTour(page);
@@ -139,7 +167,13 @@ async function onThePage(t, { viewport, phone }) {
   assert.equal(sm.title, "Everything is a mark");
   assert.equal(sm.onDot, 2);
   assert.ok(sm.cardOnScreen && sm.controlsInCard && sm.controlsOnScreen, `step 3 fits whole: ${JSON.stringify({ card: sm.cardOnScreen, inCard: sm.controlsInCard, onScreen: sm.controlsOnScreen, geometry: sm.geometry })}`);
-  assert.match(sm.text, /^Every picture and every shape on the map is a mark, made by an agent: a sentence the world keeps\.$/);
+  assert.match(sm.text, /^Every picture and shape on the map is a mark, made by an agent\.$/);
+  const vm = picture(sm, "step 3");
+  // a mark's picture (the record's own image when one is loaded, else the map's pip) and a mark's shape (the map's footprint), each labelled, and said to be an agent's
+  assert.ok(vm.images === 1 || vm.pips >= 2, `a picture mark is drawn (${vm.images} images, ${vm.pips} pips)`);
+  assert.equal(vm.parcels, 1, "and a shape mark (a footprint)");
+  for (const word of ["picture", "shape", "made by an agent"]) assert.ok(vm.labels.includes(word), `the picture labels: ${word}`);
+  assert.ok(vm.labelsInside);
   out.sm = sm;
 
   // ── next: the look-around step, in this screen's words ─────────────────────
@@ -151,13 +185,13 @@ async function onThePage(t, { viewport, phone }) {
   assert.equal(s2.backDisabled, false);
   assert.ok(s2.cardOnScreen && s2.controlsInCard && s2.controlsOnScreen, `step 4 fits whole: ${JSON.stringify({ card: s2.cardOnScreen, inCard: s2.controlsInCard, onScreen: s2.controlsOnScreen, geometry: s2.geometry })}`);
   if (phone) {
-    assert.match(s2.text, /Drag to move\./);
-    assert.match(s2.text, /\btap\b/);
+    assert.match(s2.text, /^Drag to move\.Tap a dot to read it\.$/);
     assert.doesNotMatch(s2.text, /scroll|zoom|click|hover/i, "a phone is not told a wheel or a cursor");
   } else {
-    assert.match(s2.text, /scroll to zoom/);
-    assert.match(s2.text, /\bclick\b/);
+    assert.match(s2.text, /^Drag to move\.Scroll to zoom\.Click a dot to read it\.$/);
   }
+  const v2 = picture(s2, "step 4");
+  assert.ok(v2.search && v2.ctls.join("") === "⛶💬?", `the map's own search and its fit, conversations and tour buttons are drawn (${v2.ctls.join(" ")})`);
   out.s2 = s2;
 
   // ── back (to the marks card), then a dot to the last step, which says done ─
@@ -169,12 +203,13 @@ async function onThePage(t, { viewport, phone }) {
   assert.equal(s3.title, "Where to go next");
   assert.equal(s3.next, "done", "the last step finishes");
   assert.ok(s3.cardOnScreen && s3.controlsInCard && s3.controlsOnScreen, "step 5 (the last) fits whole");
-  assert.match(s3.text, /\? opens this tour again/);
-  if (phone) { assert.match(s3.text, /\btap a badge\b/); assert.doesNotMatch(s3.text, /click/i); } else assert.match(s3.text, /\bclick a badge\b/);
+  assert.match(s3.text, /^💬 is where the town is talking\.\? brings this tour back\.Read the docs$/);
+  const v3 = picture(s3, "step 5");
+  assert.ok(v3.ctls.join("") === "💬?", "the conversations and tour buttons, drawn large");
   out.s3 = s3;
 
   // ── the last step's one link, /docs/ (Wright 2026-11-21 06:17): whole on the screen, keyboard-usable, and the tour's own click handling does not swallow it ──
-  assert.match(s3.text, /Read more in the docs\.$/);
+  assert.match(s3.text, /Read the docs$/);
   const link = await page.evaluate(() => {
     const a = document.querySelector('.wv-tour-body a'); if (!a) return null;
     const card = document.querySelector(".wv-tour-card").getBoundingClientRect(), r = a.getBoundingClientRect();
@@ -186,7 +221,7 @@ async function onThePage(t, { viewport, phone }) {
   assert.ok(link, "the last step has a link");
   assert.equal(link.count, 1, "one link, and no other in the tour");
   assert.equal(link.href, "/docs/");
-  assert.equal(link.text, "the docs");
+  assert.equal(link.text, "Read the docs");
   assert.ok(link.whole, "the link lies wholly on the screen and inside the card");
   assert.ok(link.focusable, "a keyboard reaches it (it takes focus)");
   assert.ok(link.underline.includes("underline") || link.color !== link.body, `the link reads as a link (underline ${link.underline}, colour ${link.color} against the body's ${link.body})`);

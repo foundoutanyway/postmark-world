@@ -219,8 +219,10 @@ test("wiring: the closure is gone, and the one call site passes the looked-up ro
 // CREATURE_CSS and both of its neighbours are untouched.
 // RE-PINNED FOR WLD-220 (the tour's last step links /docs/), after merging main 01e29a17: the branch's ONE rule, `.wv-tour-body a`, 196 bytes on top of main's 111168 (-> 111364), nothing removed or
 // moved; tools/viewer-shell-css.test.mjs carries the account. CREATURE_CSS and both of its neighbours are untouched.
-const PINNED_MASKED_STYLE_SHA256 = "8324d45b44d910af0b5e5096ece690008c9ded4bd16318509de75e2029a73f32";
-const PINNED_MASKED_STYLE_BYTES = 111364;
+// RE-PINNED FOR THE WLD-220 VISUAL REBUILD (the tour's join-flow theme and picture rules, all under .wv-tour / .tv-*): +2634 bytes (111364 -> 113998), nothing outside the tour touched;
+// tools/viewer-shell-css.test.mjs carries the account. CREATURE_CSS and both of its neighbours are untouched.
+const PINNED_MASKED_STYLE_SHA256 = "95ed6cc693ab42a59a707bb709f31646ed4f7694aa75803d716174d75894dbd4";
+const PINNED_MASKED_STYLE_BYTES = 114143;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";

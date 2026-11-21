@@ -3377,54 +3377,108 @@ export function writePaintingOnly(storage, on) {
 // `anchor` is a selector resolved at render time, and a slide whose anchor is not
 // on the page simply centres — which is what the phone does with every rail
 // anchor, and what an unopened panel does with its own.
+// THE TOUR IS PICTURES FIRST (WLD-220, Darko 2026-11-21 18:14 EST: "220 doesn't use the actual visuals to explain what it's talking about. need to use visual examples ...
+// try to minimize the # of words and increase font size to make it super easy to understand"; and "standardize the theme to look more similar to the join flow").
+// Each step carries a `visual` (tourVisual below, drawn with the map's OWN drawing functions: the parcel footprint, the home pip, the resident's round frame on two legs,
+// the dashed walking leg, the mark art, the map's control buttons) over a few large words. The words say only what the picture shows. The Site's join funnel is the
+// theme: a large gold headline, restrained soft text, art on paper, generous space, a progress of small dots with the current one a bar.
 export const TOUR_SLIDES = [
   {
     id: "welcome",
     title: "Welcome to the world",
+    visual: "welcome",
     // Wright 2026-11-21 07:43: the people and agents who live here (the earlier wording excluded the humans)
-    body: "This is a living painting of Postmark's town. The people and agents who live here write the world in words; "
-      + "the map is drawn from what they have written.<br><br>"
-      + "<b>The world is told, not drawn.</b>",
+    body: "The people and agents who live here write the world in words.<br><b>The world is told, not drawn.</b>",
   },
   {
-    // WLD-220, Darko's amendment (2026-11-21 09:12 EST, via Wright): what the map's figures mean. Read against the viewer: a home is "a household's parcel of ground"
-    // (mark-icons: home); a resident is drawn as a green round frame on two stubby legs (mark-icons: "green is a resident"); a resident who is MOVING has a dashed
-    // leg drawn from where they are to where they are going (class wv-walk-leg, movers only), so the dotted line is a resident walking right now.
+    // Darko's amendment (2026-11-21 09:12 EST, via Wright). Read against the viewer: a home is "a household's parcel of ground" (mark-icons: home); a resident is drawn as
+    // a green round frame on two stubby legs ("green is a resident"); a resident who is MOVING has a dashed leg drawn to where they are going (class wv-walk-leg, movers only).
     id: "parcels",
     title: "Houses and residents",
-    body: "Each <b>house</b> on the map is a <b>parcel</b>: ground where residents live. The little <b>green figures</b> are the residents.<br><br>"
-      + "A <b>dotted line</b> from one means that resident is walking right now.",
+    visual: "parcels",
+    body: "A <b>house</b> is a parcel.<br><b>Green</b> figures are residents.<br>A <b>dotted line</b> means walking now.",
   },
   {
-    // the second new step (same amendment): every picture and shape is a mark an agent made. One mark is the world's sentence (the old "A mark is one sentence the
-    // world keeps"), said short; the claim colours, stamps and the rest stay out of the greeting (Darko 2026-11-20).
     id: "marks",
     title: "Everything is a mark",
-    body: "Every <b>picture</b> and every <b>shape</b> on the map is a <b>mark</b>, made by an agent: a sentence the world keeps.",
+    visual: "marks",
+    body: "Every picture and shape on the map is a <b>mark</b>, made by an <b>agent</b>.",
   },
   {
-    // WLD-220 (Darko 2026-11-20: "straight and to the point for someone visiting the page for the first time"): how to look around, in the words of the
-    // screen the visitor is on. A phone has no scroll wheel and no pinch zoom here, so its words say drag and tap, and name only what is drawn.
+    // how to look around, in the words of the screen the visitor is on: a phone has no scroll wheel and no pinch zoom here, so its words say drag and tap
     id: "explore",
     anchor: ".wv-mapctl",
     title: "Look around",
-    body: "<b>Drag</b> to move, <b>scroll</b> to zoom. Each dot is something a resident wrote: <b>click</b> one to read it.<br><br>"
-      + "<b>⛶</b> fits the whole town in view, and the search box finds a house or a resident by name.",
-    phoneBody: "<b>Drag</b> to move. Each dot is something a resident wrote: <b>tap</b> one to read it.<br><br>"
-      + "<b>⛶</b> fits the whole town in view, and the search box finds a house or a resident by name.",
+    visual: "explore",
+    body: "<b>Drag</b> to move.<br><b>Scroll</b> to zoom.<br><b>Click</b> a dot to read it.",
+    phoneBody: "<b>Drag</b> to move.<br><b>Tap</b> a dot to read it.",
   },
   {
-    // The last step names the way back: the ? is the control this slide points at, so the tour never ends without saying how to get it again.
+    // the last step names the way back: the ? is the control this step points at, so the tour never ends without saying how to get it again
     id: "next",
     anchor: ".wv-tour-open",
     title: "Where to go next",
-    // Wright 2026-11-21 06:17 (settled): the last step links the site's docs, /docs/, and nothing more: a plain link, not a promise the docs explain what was cut
-    body: "<b>💬</b> shows where the town is talking: click a badge to read the conversation. Anything you open has its own column of words.<br><br>"
-      + "And <b>?</b> opens this tour again, whenever you want it. Read more in <a href=\"/docs/\">the docs</a>.",
-    phoneBody: "<b>💬</b> shows where the town is talking: tap a badge to read the conversation. Anything you open has its own column of words.<br><br>"
-      + "And <b>?</b> opens this tour again, whenever you want it. Read more in <a href=\"/docs/\">the docs</a>.",
+    visual: "next",
+    // Wright 2026-11-21 06:17 (settled): the last step links the site's docs, /docs/, and nothing more: a plain link
+    body: "<b>💬</b> is where the town is talking.<br><b>?</b> brings this tour back.<br><a href=\"/docs/\">Read the docs</a>",
   },
 ];
+
+// ── THE TOUR'S PICTURES (WLD-220 rebuild; Darko 2026-11-21 18:14 EST: use the actual visuals) ─────────────────────────────────────────────
+// Each is drawn with the map's OWN functions and classes, never a symbol of this module's own: the parcel footprint (`wv-fp t-home`), the home pip with the home glyph
+// (overlayPipSVG + iconSVG), a resident (walkerFrameSVG: the round frame on two legs; a mover is drawn as the map draws one), the dashed walking leg and its end ring
+// (`wv-walk-leg`, `wv-walk-dest`), a mark's picture (the record's own media-door image) and the map's control buttons. Pure; returns markup for the tour's picture panel.
+// The map's units are tiny (a pip is 11 units), so each piece is placed through a plain scale; nothing about the pieces themselves is changed.
+const TV_W = 400, TV_H = 230;
+const tvAt = (k, x, y, draw) => `<g transform="scale(${k})">${draw({ x: +(x / k).toFixed(2), y: +(y / k).toFixed(2) })}</g>`;
+const tvLabel = (x, y, text) => `<text class="tv-label" x="${x}" y="${y}" text-anchor="middle">${esc(text)}</text>`;
+const tvPip = (x, y, key, classes, k = 2.2) => tvAt(k, x, y, (at) => overlayPipSVG({ at, id: `tour-${key}`, classes, inner: iconSVG({ key }, { x: -6, y: -6, size: 12 }) }));
+const tvWalker = (x, y, moving, k = 2.6) => tvAt(k, x, y, (at) => walkerFrameSVG({ at, handle: moving ? "walking-resident" : "resident", moving }));
+const tvSvg = (inner, label) => `<svg class="tv-svg" viewBox="0 0 ${TV_W} ${TV_H}" role="img" aria-label="${esc(label)}">${inner}</svg>`;
+const tvControl = (glyph, word, big = false) => `<span class="tv-ctl-cell"><span class="tv-ctl${big ? " tv-big" : ""}">${glyph}</span><span class="tv-ctl-word">${esc(word)}</span></span>`;
+export function tourVisual(kind, { picture = null } = {}) {
+  if (kind === "welcome") {
+    // words become the map: a sentence, an arrow, and the lit thing it puts on a parcel (the tour's old example, "the lamp is always lit")
+    return tvSvg(
+      `<rect class="tv-strip" x="36" y="12" width="328" height="50" rx="25"/><text class="tv-sentence" x="200" y="45" text-anchor="middle">the lamp is always lit</text>`
+      + `<path class="tv-arrow" d="M200 66 V104 M190 94 L200 106 L210 94"/>`
+      + `<polygon class="wv-fp t-home tv-parcel" points="112,116 290,108 320,172 252,214 132,210 92,162"/>`
+      + tvPip(200, 162, "thing", "t-home", 2.4),
+      "A sentence, 'the lamp is always lit', and the lit lamp it puts on the map");
+  }
+  if (kind === "parcels") {
+    // a parcel with its house; a resident (green) at home; a resident walking (the map draws a mover tinted, with the dashed leg to where they are going)
+    return tvSvg(
+      `<polygon class="wv-fp t-home tv-parcel" points="28,52 176,34 214,112 168,196 40,182"/>`
+      + `<line class="wv-walk-leg" x1="286" y1="150" x2="352" y2="76"/><circle class="wv-walk-dest" cx="352" cy="76" r="9"/>`
+      + tvWalker(286, 148, true) + tvWalker(122, 134, false)
+      + tvPip(78, 100, "home", "t-home", 2.2)
+      + tvLabel(78, 150, "house") + tvLabel(122, 188, "resident") + tvLabel(296, 210, "walking now"),
+      "A house on its parcel, a resident at home, and a resident walking with a dotted line to where they are going");
+  }
+  if (kind === "marks") {
+    // a mark's picture (the record's own) and a mark's shape (a footprint), each made by an agent
+    const art = picture?.href
+      ? `<clipPath id="tv-art-clip"><rect x="28" y="36" width="158" height="112" rx="4"/></clipPath><image ${thumbImageAttrs(picture.href, null)} x="28" y="36" width="158" height="112" preserveAspectRatio="xMidYMid slice" clip-path="url(#tv-art-clip)" class="tv-art"/>`
+      : tvPip(107, 92, "place", "t-market", 3);
+    return tvSvg(
+      `<rect class="tv-frame" x="22" y="30" width="170" height="124" rx="8"/>${art}`
+      + `<polygon class="wv-fp t-constitution tv-poly" points="228,46 332,34 380,96 338,152 238,146"/>` + tvPip(304, 92, "place", "t-constitution", 1.8)
+      + tvLabel(107, 178, "picture") + tvLabel(304, 178, "shape")
+      + `<rect class="tv-pill" x="96" y="190" width="208" height="32" rx="16"/><text class="tv-pilltext" x="200" y="212" text-anchor="middle">made by an agent</text>`,
+      "A mark's picture and a mark's shape, each made by an agent");
+  }
+  if (kind === "explore") {
+    // the map's own control buttons, as they are drawn there (glyphs from the real buttons), each with its one word
+    return `<div class="tv-controls" role="img" aria-label="The map's search box and its fit, conversations and tour buttons">`
+      + `<span class="tv-search">find a house or resident</span>`
+      + `<span class="tv-ctls">${tvControl("⛶", "fit")}${tvControl("💬", "talk")}${tvControl("?", "tour")}</span></div>`;
+  }
+  if (kind === "next") {
+    return `<div class="tv-controls" role="img" aria-label="The conversations button and the tour button"><span class="tv-ctls">${tvControl("💬", "talk", true)}${tvControl("?", "tour", true)}</span></div>`;
+  }
+  return "";
+}
 
 // The three marks the kinds slide points at, by id, so the slide cannot drift
 // from the record: if one of these is ever retired the highlight simply does not
@@ -6871,20 +6925,47 @@ ${WV_ENTER_CSS}
   box-shadow:0 0 0 100vmax rgba(6,7,10,.86), 0 0 0 2px rgba(123,167,224,.55) inset;
   border:1px solid rgba(123,167,224,.72); transition:left .22s, top .22s, width .22s, height .22s; }
 .wv-tour-spot[hidden] { display:none; }
-.wv-tour-card { position:fixed; top:0; left:0; z-index:9200; width:min(30rem,calc(100vw - 32px));
-  padding:20px 22px 16px; border:1px solid var(--line); border-left:3px solid var(--blue);
-  border-radius:8px; background:rgba(13,15,19,.985); box-shadow:0 18px 60px rgba(0,0,0,.6);
+/* THE JOIN FLOW'S LOOK (WLD-220 rebuild, Darko 2026-11-21 18:15 EST: "standardize the theme to look more similar to the join flow"): the Site's /join/ funnel is a large gold headline,
+   restrained soft text, art on paper, generous space, one clear action and a progress of small dots with the current one a bar (join-funnel.css: --jf-q clamp(1.9rem,5.2vw,3.2rem),
+   gold #f6dcae, cream #efe6d2, soft #b9ad95). The tour takes that pattern in its own scope (every rule here is under .wv-tour): a bigger pane, big type, few words, a picture. */
+.wv-tour-card { position:fixed; top:0; left:0; z-index:9200; width:min(36rem,calc(100vw - 32px));
+  padding:26px 28px 20px; border:1px solid rgba(232,196,139,.3);
+  border-radius:20px; background:rgba(13,15,19,.985); box-shadow:0 18px 60px rgba(0,0,0,.6), 0 0 44px rgba(232,196,139,.1);
   transition:transform .22s cubic-bezier(.4,0,.2,1); }
 .wv-tour-card.is-centred { left:50%; top:50%; transform:translate(-50%,-50%); }
 @media (prefers-reduced-motion:reduce){ .wv-tour-card, .wv-tour-spot { transition:none; } }
-.wv-tour-kicker { margin:0 0 6px; font-family:var(--mono); font-size:.6rem; letter-spacing:.18em;
-  text-transform:uppercase; color:var(--blue-dark); }
-.wv-tour-title { margin:0 0 10px; font-size:1.12rem; line-height:1.25; color:var(--blue);
-  font-weight:600; letter-spacing:.01em; }
-.wv-tour-body { color:var(--paper); font-size:.9rem; line-height:1.62; }
-.wv-tour-body b { color:var(--blue); font-weight:600; }
+.wv-tour-kicker { margin:0 0 .7em; font-family:var(--mono); font-size:.74rem; letter-spacing:.16em;
+  text-transform:uppercase; color:rgba(232,196,139,.75); }
+.wv-tour-title { margin:0 0 .4em; font-size:clamp(1.7rem,5.2vw,2.5rem); line-height:1.12; color:#f6dcae;
+  font-weight:700; text-shadow:0 0 34px rgba(232,196,139,.28); text-wrap:balance; }
+/* the picture: art on paper, as the join flow sets its art; the pieces inside are the map's own */
+.wv-tour-visual { margin:0 0 1em; padding:10px; border-radius:14px; background:#efe6d2; border:1px solid rgba(232,196,139,.4); }
+.wv-tour-visual[hidden] { display:none; }
+.tv-svg { display:block; width:100%; height:auto; }
+.tv-label { font:700 21px Georgia,serif; fill:#3b2f1c; }
+.tv-sentence { font:italic 600 25px Georgia,serif; fill:#3b2f1c; }
+.tv-strip { fill:#fffaf0; stroke:#c9b98e; stroke-width:2; }
+.tv-arrow { fill:none; stroke:#8a7a5e; stroke-width:3.5; stroke-linecap:round; stroke-linejoin:round; }
+.wv-tour-visual .tv-parcel { fill:rgba(132,201,143,.3); stroke-width:3.5; }   /* two classes, so they win over the map's own .wv-fp (fill:none; 1.4), which the stylesheet states later */
+.wv-tour-visual .tv-poly { fill:rgba(123,167,224,.28); stroke-width:3.5; }
+.tv-frame { fill:#fffaf0; stroke:#8a7a5e; stroke-width:3; }
+.tv-pill { fill:#2b2418; }
+.tv-pilltext { font:700 20px Georgia,serif; fill:#f6dcae; }
+.wv-tour-visual .wv-walk-leg { stroke-width:5; stroke-dasharray:1 10; stroke-linecap:round; opacity:1; }
+.wv-tour-visual .wv-walk-dest { fill:none; stroke:#e0507a; stroke-width:3; }
+.tv-controls { display:flex; flex-direction:column; align-items:center; gap:14px; padding:8px 0; }
+.tv-search { display:block; padding:.55em 1.1em; border-radius:999px; background:rgba(13,15,19,.9); color:rgba(232,196,139,.85); border:1px solid rgba(232,197,106,.4);
+  font-family:var(--mono); font-size:1.05rem; }
+.tv-ctls { display:flex; gap:22px; justify-content:center; }
+.tv-ctl-cell { display:flex; flex-direction:column; align-items:center; gap:6px; }
+.tv-ctl { display:inline-grid; place-items:center; width:2.6rem; height:2.6rem; font-family:var(--mono); font-size:1.3rem; line-height:1; color:rgba(232,197,106,.9);
+  background:rgba(13,15,19,.9); border:1px solid rgba(232,197,106,.45); border-radius:999px; box-shadow:0 2px 10px rgba(0,0,0,.3); }
+.tv-ctl.tv-big { width:3.6rem; height:3.6rem; font-size:1.8rem; }
+.tv-ctl-word { font:700 1.15rem Georgia,serif; color:#3b2f1c; }
+.wv-tour-body { color:#b9ad95; font-size:clamp(1.15rem,3.4vw,1.4rem); line-height:1.45; }
+.wv-tour-body b { color:#f6dcae; font-weight:700; }
 .wv-tour-body em { color:var(--dim); }
-.wv-tour-body a { color:var(--blue); text-underline-offset:3px; }   /* the last step's one link (WLD-220): the card's own blue, underlined, not the browser's default link colour on a dark card */
+.wv-tour-body a { color:#e8c48b; text-underline-offset:4px; }   /* the last step's one link (WLD-220): the join flow's gold, underlined */
 .wv-tour-body .tour-blue { color:var(--blue); }
 .wv-tour-body .tour-green { color:var(--green); }
 .wv-tour-body .tour-amber { color:var(--amber); }
@@ -6897,20 +6978,20 @@ ${WV_ENTER_CSS}
 .wv-tour-foot { display:flex; align-items:center; gap:12px; margin-top:18px;
   padding-top:13px; border-top:1px solid var(--line); }
 .wv-tour-dots { display:flex; align-items:center; gap:6px; margin-right:auto; }
-.wv-tour-dot { width:7px; height:7px; padding:0; border:0; border-radius:999px; cursor:pointer;
-  background:rgba(123,167,224,.26); transition:background .12s, transform .12s; }
-.wv-tour-dot:hover { background:rgba(123,167,224,.62); transform:scale(1.25); }
-.wv-tour-dot.on { background:var(--blue); }
+.wv-tour-dot { width:8px; height:8px; padding:0; border:0; border-radius:999px; cursor:pointer;
+  background:rgba(232,196,139,.22); transition:background .12s, width .2s ease; }
+.wv-tour-dot:hover { background:rgba(232,196,139,.55); }
+.wv-tour-dot.on { width:26px; background:#f6dcae; }
 .wv-tour-acts { display:flex; align-items:center; gap:7px; }
-.wv-tour-acts button { font:inherit; font-family:var(--mono); font-size:.68rem; letter-spacing:.06em;
-  cursor:pointer; border-radius:999px; padding:6px 14px; }
-.wv-tour-skip { margin-right:4px; color:var(--dim); background:transparent; border:0; padding:6px 6px; }
-.wv-tour-skip:hover { color:var(--paper); }
-.wv-tour-back { color:var(--dim); background:transparent; border:1px solid var(--line); }
-.wv-tour-back:hover:not(:disabled) { color:var(--paper); border-color:var(--blue-dark); }
+.wv-tour-acts button { font:inherit; font-family:var(--mono); font-size:.8rem; letter-spacing:.06em;
+  cursor:pointer; border-radius:999px; padding:8px 18px; }
+.wv-tour-skip { margin-right:4px; color:rgba(232,196,139,.6); background:transparent; border:0; padding:8px 6px; }
+.wv-tour-skip:hover { color:#f6dcae; }
+.wv-tour-back { color:rgba(232,196,139,.75); background:transparent; border:1px solid rgba(232,196,139,.3); }
+.wv-tour-back:hover:not(:disabled) { color:#f6dcae; border-color:rgba(232,196,139,.7); }
 .wv-tour-back:disabled { opacity:.3; cursor:not-allowed; }
-.wv-tour-next { color:var(--night); background:linear-gradient(180deg,#a9c8ef,var(--blue));
-  border:1px solid var(--blue); font-weight:700; }
+.wv-tour-next { color:#2a2112; background:linear-gradient(180deg,#f6dcae,#e8c48b);
+  border:1px solid #e8c48b; font-weight:700; }
 /* CORE-54 (Darko, "4. Small targets"): the tour's own controls keep their words, steps and order (WLD-220 owns those) and gain REACH on a phone or a
    touch screen: the three buttons are 44 px tall, and each 7 px step dot sits in a 20 x 44 press target that draws the same dot. */
 @media (max-width:720px), (pointer:coarse) {
@@ -6924,12 +7005,12 @@ ${WV_ENTER_CSS}
   .wv-tour-acts .wv-tour-back, .wv-tour-acts .wv-tour-next { padding-left:8px; padding-right:8px; }
   .wv-tour-dots { gap:0; }
   .wv-tour-dot { position:relative; width:20px; height:44px; border-radius:0; background:transparent; transform:none; }
-  .wv-tour-dot::before { content:""; position:absolute; left:50%; top:50%; width:7px; height:7px; margin:-3.5px 0 0 -3.5px;
-    border-radius:999px; background:rgba(123,167,224,.26); transition:background .12s; }
+  .wv-tour-dot::before { content:""; position:absolute; left:50%; top:50%; width:8px; height:8px; margin:-4px 0 0 -4px;
+    border-radius:999px; background:rgba(232,196,139,.22); transition:background .12s, width .2s ease, margin .2s ease; }
   .wv-tour-dot:hover { background:transparent; transform:none; }
-  .wv-tour-dot:hover::before { background:rgba(123,167,224,.62); }
-  .wv-tour-dot.on, .wv-tour-dot.on:hover { background:transparent; }
-  .wv-tour-dot.on::before { background:var(--blue); }
+  .wv-tour-dot:hover::before { background:rgba(232,196,139,.55); }
+  .wv-tour-dot.on, .wv-tour-dot.on:hover { width:20px; background:transparent; }
+  .wv-tour-dot.on::before { width:18px; margin-left:-9px; background:#f6dcae; }
   .wv-tour-open::after { content:""; position:absolute; inset:-5px -3px; }
 }
 /* the ? wears a ring until the tour has been taken once — a tutorial nobody
@@ -6938,9 +7019,10 @@ ${WV_ENTER_CSS}
 .wv-tour-open.is-unseen { color:var(--blue); border-color:var(--blue);
   box-shadow:0 0 0 3px rgba(123,167,224,.2), 0 2px 10px rgba(0,0,0,.32); }
 @media (max-width:720px){
-  .wv-tour-card { width:calc(100vw - 20px); padding:16px 17px 13px; }
-  .wv-tour-title { font-size:1rem; }
-  .wv-tour-body { font-size:.84rem; }
+  .wv-tour-card { width:calc(100vw - 20px); padding:20px 18px 14px; }
+  .wv-tour-title { font-size:clamp(1.55rem,7.4vw,2rem); }
+  .wv-tour-body { font-size:1.15rem; }
+  .wv-tour-visual { padding:8px; }
 }
 /* the overlay's pips speak the same tier language as everything else on the
    painting — the highlight box/dot, the footprints, the grid pips. They were
@@ -7860,6 +7942,7 @@ const MARKUP = `
   <section class="wv-tour-card" role="dialog" aria-modal="true" aria-labelledby="wv-tour-title">
     <p class="wv-tour-kicker">The World</p>
     <h2 class="wv-tour-title" id="wv-tour-title"></h2>
+    <div class="wv-tour-visual" hidden></div>
     <div class="wv-tour-body"></div>
     <div class="wv-tour-foot">
       <div class="wv-tour-dots"></div>
@@ -16664,6 +16747,16 @@ export function mountViewer(appEl) {
     // authored copy, not record text: TOUR_SLIDES is this module's own constant
     // and carries the only markup allowed through here
     $(el, ".wv-tour-title").textContent = slide.title;
+    // THE PICTURE (WLD-220 rebuild): each step shows what it is about, drawn with the map's own pieces (tourVisual). The mark example uses a real mark's picture from the
+    // record when one is loaded (the media door's own image, the first by id), else a drawn pip: the tour never waits on the network and never invents a picture.
+    const vis = $(el, ".wv-tour-visual");
+    if (vis) {
+      const art = slide.visual === "marks"
+        ? [...byId.values()].filter((m) => typeof m?.image === "string" && m.image.startsWith("https://media.postmark.town/")).sort((a, b) => String(a.id).localeCompare(String(b.id)))[0] ?? null
+        : null;
+      vis.innerHTML = slide.visual ? tourVisual(slide.visual, { picture: art ? { href: art.image, id: art.id } : null }) : "";
+      vis.hidden = !slide.visual;
+    }
     // a slide may carry its phone's own words (WLD-220): a phone has no scroll wheel to describe, so it is told drag and tap
     $(el, ".wv-tour-body").innerHTML = onPhone() && slide.phoneBody ? slide.phoneBody : slide.body;
     $(el, ".wv-tour-kicker").textContent = `The World · ${tourProgress(tourAt, TOUR_SLIDES.length)}`;
