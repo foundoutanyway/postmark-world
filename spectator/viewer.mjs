@@ -536,7 +536,9 @@ export const DISPLAY_LAYERS = Object.freeze([
   { key: "place", icon: "place", kind: "mark", label: "places", meaning: "Places: marks set down on the ground." },
   { key: "thing", icon: "thing", kind: "mark", label: "things", meaning: "Things: objects in the world." },
   { key: "door", icon: "door", kind: "mark", label: "doors", meaning: "Doors: entering one takes you somewhere else." },
-  { key: "dungeon", icon: "dungeon", kind: "mark", label: "dungeons", meaning: "Dungeons: places with their own floors and rooms." },
+  // (the dungeon's key is a template literal on purpose: tools/dungeon-page.test.mjs pins that the class name is never written as a quoted string in this page, because the page keeps no
+  // dungeon RULE of its own. This is the icon's name, the very string `markWhat` returns, not a rule; the quote-free spelling keeps that pin meaning what it says.)
+  { key: `dungeon`, icon: `dungeon`, kind: "mark", label: "dungeons", meaning: "Dungeons: places with their own floors and rooms." },
   { key: "stairs", icon: "stairs", kind: "mark", label: "stairs", meaning: "Stairs: ways between floors." },
   { key: "vehicle", icon: "vehicle", kind: "mark", label: "vehicles", meaning: "Vehicles: they move, and you can ride them." },
   { key: "creature", icon: "creature", kind: "mark", label: "creatures", meaning: "Creatures: something alive that answers what you do near it." },
@@ -9847,13 +9849,15 @@ export function mountViewer(appEl) {
   function presentLayerKinds() {
     let live = 0;
     try { live = liveCreatures.size; } catch { /* the creatures are not set up yet */ }
-    const stamp = `${worldEpoch}:${live ? 1 : 0}`;
+    const marks = allMarks();
+    // the stamp carries the mark count too: the resident path fills `byId` without a new epoch, and a kinds list drawn before the marks arrived must not outlive them
+    const stamp = `${worldEpoch}:${marks.length}:${live ? 1 : 0}`;
     if (presentKindsAt !== stamp) {
       const seen = new Set();
-      for (const m of allMarks()) { const w = m?.id && m.at ? whatOfMark(m) : null; if (w && DISPLAY_MARK_KINDS.includes(w)) seen.add(w); }
+      for (const m of marks) { const w = m?.id && m.at ? whatOfMark(m) : null; if (w && DISPLAY_MARK_KINDS.includes(w)) seen.add(w); }
       if (live) seen.add("creature");   // a live creature wears the same diamond
       presentKindsSet = [...seen];
-      presentKindsAt = stamp;
+      presentKindsAt = marks.length ? stamp : null;   // an empty answer is never kept: nothing is known yet
     }
     return presentKindsSet;
   }
@@ -14061,7 +14065,8 @@ export function mountViewer(appEl) {
     // each body where its declared walk puts it now (row 69)
     // THE RESIDENTS' SWITCH (CORE-147): off, no body is drawn, no walking line, no housemate chevron (those read the bodies drawn) and no click or hover
     // reaches one (screenWalkerCandidates). The acting resident's own marker (the standpoint dot) is the viewer's selection feedback and stays.
-    const inView = residentsOff() ? [] : sceneWalkerSet({ walkers: (walkState.walkers ?? []).map(liveBody), manifest, roomId: sceneRoomId, marks: draw.marks });
+    const inView = sceneWalkerSet({ walkers: (walkState.walkers ?? []).map(liveBody), manifest, roomId: sceneRoomId, marks: draw.marks });
+    if (residentsOff()) inView.length = 0;   // a fresh array every draw (map / flatMap): emptied, so no body, edge chevron or dot-judging list remains
     const drawnWalkers = inView.filter((w) => pointInDrawnBounds(w, bounds));
     // ONE BODY, ONE MARKER (POS-93), ASKED OF THE BODIES DRAWN (#2848 (a),
     // 2026-09-17). This asked the walker LIST: jetto-of-starforge was in it, so

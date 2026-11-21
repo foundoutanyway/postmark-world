@@ -220,9 +220,9 @@ test("wiring: the closure is gone, and the one call site passes the looked-up ro
 // RE-PINNED AGAIN IN CORE-147 (the icon dropdown, Darko 2026-11-21), an INTENDED change to STYLE: the icon switches' CSS (`.wv-dlayers`, `.wv-dlayer*`, the phone
 // sheet's three columns) adds 1276 bytes on top of CORE-127's, added lines only (the 💬 button was markup, not STYLE).
 // MERGED WITH main 01e29a17 (CORE-147 branch): the byte count is the sum of the three additive changes (111168 + 4075 + 1276 = 116519; the merge was line-clean in
-// STYLE). THE DIGEST BELOW IS NOT YET MEASURED on the merged tree: it is still the pre-merge CORE-147 digest (f5f3a704…), kept as a deliberate placeholder because no
-// test or script was run locally in this phase; the Actions run of this test prints the actual digest, which replaces it in the next commit.
-const PINNED_MASKED_STYLE_SHA256 = "f5f3a7045743f0b79fec4deea60b2b607d5a898340bfbb1d2373601cae5330aa";
+// STYLE). The digest below was MEASURED by this test's own masked-emission route in Actions (suite run 44918656235 on 67166758, which printed it as the actual
+// value, 116519 bytes passing); it is the same digest tools/viewer-shell-css.test.mjs measures. It replaces the pre-merge CORE-147 digest f5f3a704….
+const PINNED_MASKED_STYLE_SHA256 = "64a4512359d241be17115a28ab6f5bed55ee866a1bc5860d4195dd1dd15d1322";
 const PINNED_MASKED_STYLE_BYTES = 116519;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";

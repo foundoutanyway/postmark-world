@@ -106,9 +106,9 @@ import { MARK_ICON_CSS } from "../spectator/mark-icons.mjs";
 // 20 px plus skip/back/next at 192 px did not fit the ~160 px beside them). One media block gains 6 lines / 571 bytes (110597 -> 111168), nothing removed or changed: the foot may wrap, the
 // actions sit 4 px apart and right-aligned, skip's padding 6 px and back/next 8 px a side (each still at least 44 px wide and 44 px tall). Measured by this test's own masked-emission route.
 // MERGED WITH main 01e29a17 (CORE-147 branch): the byte count is the sum of the three additive changes (111168 + 4075 + 1276 = 116519; the merge was line-clean in
-// STYLE). THE DIGEST BELOW IS NOT YET MEASURED on the merged tree: it is still the pre-merge CORE-147 digest (f5f3a704…), kept as a deliberate placeholder because no
-// test or script was run locally in this phase; the Actions run of this test prints the actual digest, which replaces it in the next commit.
-const PINNED_MASKED_STYLE_SHA256 = "f5f3a7045743f0b79fec4deea60b2b607d5a898340bfbb1d2373601cae5330aa";
+// STYLE). The digest below was MEASURED by this test's own masked-emission route in Actions (suite run 44918656235 on 67166758, tests "emitted bytes", which printed
+// it as the actual value, 116519 bytes passing); main's own digest d8d98631… (111168 bytes) is the base. It replaces the pre-merge CORE-147 digest f5f3a704….
+const PINNED_MASKED_STYLE_SHA256 = "64a4512359d241be17115a28ab6f5bed55ee866a1bc5860d4195dd1dd15d1322";
 const PINNED_MASKED_STYLE_BYTES = 116519;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";

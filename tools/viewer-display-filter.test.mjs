@@ -179,7 +179,7 @@ test("source: the speech bubbles are ONE control in the Filters panel (the 💬 
   assert.match(src, /data-dsel-layer="\$\{layer\.key\}"/, "the icon switch markup");
   assert.match(src, /const dlayer = e\.target\.closest\("\[data-dsel-layer\]"\);\s*if \(dlayer\) \{ toggleLayer\(dlayer\.dataset\.dselLayer\); return; \}/, "its one click route");
   assert.match(src, /function setBubbles\(on\)[\s\S]*?mapCtx\.toggleConvo\(\)/, "the speech bubbles move through the layer's own toggle (layer, washes, polling, remembered choice)");
-  assert.match(src, /const inView = residentsOff\(\) \? \[\] : sceneWalkerSet\(/, "the residents' draw");
+  assert.match(src, /const inView = sceneWalkerSet\(\{[^\n]*\n\s*if \(residentsOff\(\)\) inView\.length = 0;/, "the residents' draw");
   assert.match(src, /const paths = residentsOff\(\) \? "" : walkPathsSVG\(\);/, "and their walking lines");
   assert.match(src, /function screenWalkerCandidates\(\) \{\s*if \(residentsOff\(\)\) return \[\];/, "and their hit scan");
   assert.match(src, /if \(!liveCreatures\.size \|\| creaturesOff\(\)\) return "";/, "the creatures' draw (the hit scan reads these glyphs)");
@@ -426,12 +426,12 @@ test("CORE-147: THE ICON SWITCHES in the real viewer: the residents and the spee
       stored: (() => { try { return localStorage.getItem(Object.keys(localStorage).find((k) => /convo/i.test(k)) ?? "") } catch { return null; } })(),
       strip: document.querySelector(".wv-dstrip")?.innerText.replace(/\s+/g, " ") ?? "",
     }));
+    await click(page, ".wv-filters-open"); await page.waitForTimeout(300);   // the kinds the world holds are read when the panel is opened
     const today = await state();
     assert.ok(today.bodies > 0, "the acting resident's body is on the map");
     assert.equal(today.convoShown, true, "the speech bubbles are on by default: today's view");
     assert.deepEqual([today.pressed.residents, today.pressed.conversation, today.pressed.home, today.pressed.place], ["true", "true", "true", "true"]);
     assert.equal(today.strip, "", "nothing is hidden: no strip");
-    await click(page, ".wv-filters-open"); await page.waitForTimeout(300);
 
     // the residents off: no body, no walking line, no chevron; the viewer's own standpoint marker (selection feedback) stays; the marks and the list are untouched
     const marksBefore = await marksOnMap(page);
