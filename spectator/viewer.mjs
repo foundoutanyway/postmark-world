@@ -536,9 +536,9 @@ export const DISPLAY_LAYERS = Object.freeze([
   { key: "place", icon: "place", kind: "mark", label: "places", meaning: "Places: marks set down on the ground." },
   { key: "thing", icon: "thing", kind: "mark", label: "things", meaning: "Things: objects in the world." },
   { key: "door", icon: "door", kind: "mark", label: "doors", meaning: "Doors: entering one takes you somewhere else." },
-  // (the dungeon's key is a template literal on purpose: tools/dungeon-page.test.mjs pins that the class name is never written as a quoted string in this page, because the page keeps no
-  // dungeon RULE of its own. This is the icon's name, the very string `markWhat` returns, not a rule; the quote-free spelling keeps that pin meaning what it says.)
-  { key: `dungeon`, icon: `dungeon`, kind: "mark", label: "dungeons", meaning: "Dungeons: places with their own floors and rooms." },
+  // (this entry is the ONE place the page spells the dungeon's name: the icon catalog's key, the very string `markWhat` returns, with the glyph it wears. A label, not a dungeon rule:
+  // tools/dungeon-page.test.mjs names this exact entry as its single allowed exception and still bans every other spelling.)
+  { key: "dungeon", icon: "dungeon", kind: "mark", label: "dungeons", meaning: "Dungeons: places with their own floors and rooms." },
   { key: "stairs", icon: "stairs", kind: "mark", label: "stairs", meaning: "Stairs: ways between floors." },
   { key: "vehicle", icon: "vehicle", kind: "mark", label: "vehicles", meaning: "Vehicles: they move, and you can ride them." },
   { key: "creature", icon: "creature", kind: "mark", label: "creatures", meaning: "Creatures: something alive that answers what you do near it." },
@@ -595,6 +595,18 @@ export function markInDisplaySelection(mark, sel, { isMine = () => false, isDraf
 
 /** Is a switch off in this selection? (The speech bubbles are the page's own remembered layer, not part of the selection: pass `bubblesOn`.) */
 export const layerIsOff = (sel, key, { bubblesOn = true } = {}) => (key === "conversation" ? !bubblesOn : offKeys(sel).includes(key));
+
+/** The memo of "which mark kinds does the world hold": the answer is kept until something it was computed from moves, and an empty one (no marks yet) is never kept.
+ *  The stamp is the record epoch, the mark count, whether a creature is live, and how many kinds the page has learned are things (a close look teaches one later, and a
+ *  mark first read as a place becomes a thing, with the epoch and the count unchanged: the same invalidation `thingClasses()` has). Pure; the caller supplies the compute. */
+export function presentKindsMemo() {
+  let at = null, held = [];
+  return ({ epoch = 0, count = 0, live = 0, things = 0 } = {}, compute) => {
+    const stamp = `${epoch}:${count}:${live ? 1 : 0}:${things}`;
+    if (at !== stamp) { held = compute(); at = count ? stamp : null; }
+    return held;
+  };
+}
 
 /** Does the page show anything less than today's page? (A mark hidden, the residents or the speech bubbles off, a size, whose.) Sorting alone does not. */
 export function displaySelectionActive(sel, { bubblesOn = true } = {}) {
@@ -2991,7 +3003,7 @@ export function groupChooserIds(ids = [], { isWalker = () => false, kindOf = () 
   for (const id of ids ?? []) {
     if (isWalker(id)) residents.push(id);
     else if (isCreature(id)) creatures.push(id);
-    else if (isConvoChoiceId(id)) conversations.push(id);   // a wash under the 💬 lens (18:06)
+    else if (isConvoChoiceId(id)) conversations.push(id);   // a wash under the speech-bubbles layer (18:06)
     else if (kindOf(id) === "parcel") parcels.push(id);
     else others.push(id);
   }
@@ -9844,22 +9856,20 @@ export function mountViewer(appEl) {
   const parseHTML = (html) => { const t = document.createElement("template"); t.innerHTML = String(html).trim(); return t.content.firstElementChild; };
   // the speech bubbles' state is the page's own remembered layer (`convoVisible`), read safely because the panel can be drawn before the map is
   const bubblesVisible = () => { try { return convoVisible; } catch { return true; } };
-  // THE MARK KINDS THE WORLD HOLDS (so a switch is offered only for a kind that exists), by the icon each mark wears; kept per record epoch
-  let presentKindsAt = null, presentKindsSet = [];
+  // THE MARK KINDS THE WORLD HOLDS (so a switch is offered only for a kind that exists), by the icon each mark wears; kept until the record epoch, the mark count, a live
+  // creature, or the number of kinds the page has learned are things moves (the same invalidation `thingClasses()` uses, since a thing class is what `markWhat` reads)
+  const presentKindsOnce = presentKindsMemo();
   function presentLayerKinds() {
-    let live = 0;
+    let live = 0, things = 0;
     try { live = liveCreatures.size; } catch { /* the creatures are not set up yet */ }
+    try { things = thingKinds.size; } catch { /* the thing kinds are not set up yet */ }
     const marks = allMarks();
-    // the stamp carries the mark count too: the resident path fills `byId` without a new epoch, and a kinds list drawn before the marks arrived must not outlive them
-    const stamp = `${worldEpoch}:${marks.length}:${live ? 1 : 0}`;
-    if (presentKindsAt !== stamp) {
+    return presentKindsOnce({ epoch: worldEpoch, count: marks.length, live, things }, () => {
       const seen = new Set();
       for (const m of marks) { const w = m?.id && m.at ? whatOfMark(m) : null; if (w && DISPLAY_MARK_KINDS.includes(w)) seen.add(w); }
       if (live) seen.add("creature");   // a live creature wears the same diamond
-      presentKindsSet = [...seen];
-      presentKindsAt = marks.length ? stamp : null;   // an empty answer is never kept: nothing is known yet
-    }
-    return presentKindsSet;
+      return [...seen];
+    });
   }
   function focusKeyOf(el) {
     if (!el || !root.contains(el)) return null;
@@ -11223,7 +11233,7 @@ export function mountViewer(appEl) {
     convoLayer.setAttribute("id", "wv-convo-layer");
     convoLayer.style.pointerEvents = "none";
     // ON by default since POS-779 (Darko 2026-10-24): a conversation is one thread per place per
-    // settlement now, so one badge each, and "there will be less bubbles now". The 💬 button still hides it.
+    // settlement now, so one badge each, and "there will be less bubbles now". The speech-bubbles switch (in the Filters panel) still hides it.
     convoLayer.style.display = convoVisible ? "" : "none";
     // (appended below, after the walkers: a badge floats over the speakers it names, POS-779)
     const overlay = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -11954,7 +11964,7 @@ export function mountViewer(appEl) {
       const reach = snapRadiusFor(e.pointerType);          // CORE-54: a finger reaches 22 px, a cursor 18 (same ranking, same chooser)
       const here = clickablesAtPoint({ x: e.clientX, y: e.clientY },
         { people: [...screenWalkerCandidates(), ...screenCreatureCandidates()], marks: screenMarkCandidates() }, reach);
-      // …and with the 💬 lens up, every wash the point is in (Darko 18:06, call A):
+      // …and with the speech-bubbles layer on, every wash the point is in (Darko 18:06, call A):
       // alone it opens its thread, as ever; with anything else it is one more entry
       const washes = (() => {
         const wp = worldPointForEvent(e);
@@ -11975,7 +11985,7 @@ export function mountViewer(appEl) {
       // Darko 2026-10-24), so it must not eat the walk: a reader who can act
       // opens the thread only by clicking the badge's own disc, and a click on
       // the ground beside it walks as ever; a spectator keeps the easy reach.
-      // Hidden (the 💬 button), the badges are gone and every click means what
+      // Hidden (the speech-bubbles switch in the Filters panel), the badges are gone and every click means what
       // it meant before the layer existed.
       {
         const wp = worldPointForEvent(e);
@@ -13354,7 +13364,7 @@ export function mountViewer(appEl) {
   const CONVO_KEY = "pm.world.conversations";
   const convoStored = () => { try { const v = globalThis.localStorage?.getItem(CONVO_KEY); return v === "off" ? false : v === "on" ? true : null; } catch { return null; } };
   const convoStore = (on) => { try { globalThis.localStorage?.setItem(CONVO_KEY, on ? "on" : "off"); } catch { /* the choice just does not persist */ } };
-  let convoVisible = convoStored() ?? true;  // on by default since POS-779 (upper-right 💬 hides it); hidden draws nothing, hits nothing, fetches nothing
+  let convoVisible = convoStored() ?? true;  // on by default since POS-779 (its switch is in the Filters panel since CORE-147; it was the upper-right 💬 button); hidden draws nothing, hits nothing, fetches nothing
   async function loadConversations() {
     try {
       const r = await fetch(officeUrl("/world/conversations"), { credentials: "same-origin" });
@@ -19336,7 +19346,7 @@ export function mountViewer(appEl) {
       // already painted as monograms by then, and this is what puts the pictures
       // on them. Never awaited: the map is not allowed to wait on a nicety.
       loadResidentsMeta().then(() => drawWalkers());
-      // conversations load on first toggle (💬), not at boot — the layer is opt-in
+      // conversations load with the map while the layer is on (on by default, remembered per viewer: see convoVisible), and on the switch's first turn-on otherwise
       if (!pmKey()) resolveIdentity(); // keyless: still settles the ring and the presets
     } catch (err) {
       $(root, ".wv-telling").innerHTML = `<div class="wv-err">could not load the world record: ${esc(err?.message ?? err)}</div>`;

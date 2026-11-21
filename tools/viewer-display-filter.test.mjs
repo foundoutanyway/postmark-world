@@ -37,7 +37,7 @@ import { fileURLToPath } from "node:url";
 import {
   emptyDisplaySelection, parseSizeM, markLongerSideM, displaySelectionHides, markInDisplaySelection, displaySelectionChips, clearDisplayChoice,
   displayControlsHTML, sortByDisplayType, townRegionMarks,
-  DISPLAY_LAYERS, DISPLAY_MARK_KINDS, toggleDisplayLayer, layerIsOff, displaySelectionActive,
+  DISPLAY_LAYERS, DISPLAY_MARK_KINDS, toggleDisplayLayer, layerIsOff, displaySelectionActive, presentKindsMemo,
 } from "../spectator/viewer.mjs";
 import { MARK_ICONS } from "../spectator/mark-icons.mjs";
 import { machinePage, NO_PLAYWRIGHT } from "./page-machine.mjs";
@@ -185,6 +185,31 @@ test("source: the speech bubbles are ONE control in the Filters panel (the 💬 
   assert.match(src, /if \(!liveCreatures\.size \|\| creaturesOff\(\)\) return "";/, "the creatures' draw (the hit scan reads these glyphs)");
   assert.match(src, /whatOf: whatOfMark/, "the mark kinds ask the one predicate with markWhat");
   assert.match(src, /import \{[^}]*\bmarkWhat\b[^}]*\} from "\.\/mark-icons\.mjs"/);
+  // the kinds list follows what thingClasses() follows: the page's learned thing kinds, with the epoch and the count unchanged
+  assert.match(src, /presentKindsOnce\(\{ epoch: worldEpoch, count: marks\.length, live, things \}/, "the memo's stamp carries the learned thing kinds");
+  assert.match(src, /things = thingKinds\.size;/, "read from the same ledger thingClasses() reads");
+});
+
+test("the present-kinds memo is kept while its inputs hold, and a thing kind learned LATE (epoch and mark count unchanged) makes it recompute", () => {
+  let computes = 0, answer = ["place"];                       // a mark first read as a place...
+  const once = presentKindsMemo();
+  const ask = (s) => once(s, () => { computes += 1; return [...answer]; });
+  assert.deepEqual(ask({ epoch: 3, count: 24, live: 0, things: 0 }), ["place"]);
+  assert.deepEqual(ask({ epoch: 3, count: 24, live: 0, things: 0 }), ["place"]);
+  assert.equal(computes, 1, "nothing moved: the kept answer is returned, not recomputed");
+  answer = ["thing"];                                         // ...becomes a thing when a close look teaches the kind (same epoch, same count)
+  assert.deepEqual(ask({ epoch: 3, count: 24, live: 0, things: 0 }), ["place"], "still the kept answer while the learned-kinds count has not moved");
+  assert.deepEqual(ask({ epoch: 3, count: 24, live: 0, things: 1 }), ["thing"], "a learned thing kind (epoch and mark count unchanged) recomputes: the things switch is offered, the places one is not");
+  assert.equal(computes, 2);
+  assert.deepEqual(ask({ epoch: 3, count: 24, live: 1, things: 1 }), ["thing"]);
+  assert.equal(computes, 3, "a creature going live recomputes too");
+  assert.deepEqual(ask({ epoch: 4, count: 24, live: 1, things: 1 }), ["thing"]);
+  assert.equal(computes, 4, "so does a new record epoch");
+  // an answer drawn before any mark had arrived is never kept
+  const early = presentKindsMemo(); let n = 0;
+  early({ epoch: 1, count: 0, live: 0, things: 0 }, () => { n += 1; return []; });
+  early({ epoch: 1, count: 0, live: 0, things: 0 }, () => { n += 1; return []; });
+  assert.equal(n, 2, "an empty-world answer is not kept");
 });
 
 // ── 3. the shipped consumers, in the real viewer ────────────────────────────
