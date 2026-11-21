@@ -81,7 +81,8 @@ async function onThePage(t, { viewport, phone }) {
   await page.goto(`http://localhost:${port}/?lite=0`, { waitUntil: "domcontentloaded", timeout: 90_000 });
   // a spectator is greeted on every visit (Keemin 2026-08-12), with no key and no click
   await page.waitForSelector(".wv-tour-card", { state: "visible", timeout: 90_000 });
-  const press = (sel) => (phone ? page.tap(sel) : page.click(sel));
+  // the card glides to each step's place (transform .22 s): a read is taken when it has arrived, never mid-glide
+  const press = async (sel) => { await (phone ? page.tap(sel) : page.click(sel)); await page.waitForTimeout(700); };
   const out = {};
 
   // ── step 1 of 3: the greeting, whole on the screen ─────────────────────────
