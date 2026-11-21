@@ -14,8 +14,26 @@ import assert from "node:assert/strict";
 import {
   quantile, median, spread, quietFrom, frameGaps, longestTask, windowTasks, observeInteractive, interactiveSummary, bytesCutoff,
   centredWithin, sameScale, dragMoved, sameVersion, sameFrame, freshnessMoved, versionOf, FRAME_KEYS, TAG_KEYS, FRESHNESS_KEYS,
-  sampleProblems, auditRow, repoPathOf, PLACES, MIN_CAMERA_WRITES, MIN_TRAVEL_PX, INTERACTIVE_BOUND_MS, QUIET_MS,
+  sampleProblems, auditRow, readTown, repoPathOf, PLACES, MIN_CAMERA_WRITES, MIN_TRAVEL_PX, INTERACTIVE_BOUND_MS, QUIET_MS,
 } from "./perf/world-page-audit.mjs";
+
+test("prod context comes from the viewer's API snapshot, never the legacy export or a guessed build stamp", async () => {
+  const original = globalThis.fetch, urls = [];
+  const build = { code_sha: "site", world_sha: "engine", world_settlement: "S183", world_digest: "baked" };
+  let state = { marks: [{}, {}, {}], parcels: [{}], meta: { source: "settlement", as_of: { settlement: "S999", digest: "actual-api" } } };
+  globalThis.fetch = async (url) => { urls.push(url); return { ok: true, json: async () => url.endsWith("/build.json") ? build : state }; };
+  try {
+    const got = await readTown("https://postmark.town");
+    assert.deepEqual(urls, ["https://postmark.town/build.json", "https://postmark.town/api/world/state"]);
+    assert.equal(got.town.marks, 3); assert.equal(got.town.parcels, 1);
+    assert.equal(got.town.data_source, "/api/world/state");
+    assert.equal(got.version.world_settlement, "S999"); assert.equal(got.version.world_digest, "actual-api");
+    assert.equal(got.version.world_sha, build.world_sha, "engine identity still comes from the compiled package");
+    state = { marks: [{}], parcels: [] };
+    const gap = await readTown("https://postmark.town");
+    assert.equal(gap.version.world_digest, null, "an unstamped API answer is a gap, not the baked stamp substituted for it");
+  } finally { globalThis.fetch = original; }
+});
 
 const BUILD = {
   code_sha: "c", code_ref: "release/2026-w47.5", world_sha: "w", world_ref: "settlement/S183", world_settlement: "S183", world_digest: "g",

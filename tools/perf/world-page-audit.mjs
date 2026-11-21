@@ -61,8 +61,8 @@
 // a missing number is null and invalidates the row.
 //
 // Bytes per settlement from git (--backfill-bytes) are NOT a browser timing replay and NOT a cold load: they are the raw and
-// gzip sizes of the repo-served files the page requests (/world-engine/* -> the repo path, /WORLD/world-state.json and
-// skeleton.json) at each settlement/S* tag. basis says so on every line; files absent at a tag are listed, never zero-filled.
+// gzip sizes of selected engine sources and retained WORLD exports at each settlement/S* tag, not the live /api/world/state
+// payload. The basis says so on every line; files absent at a tag are listed, never zero-filled.
 
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -293,19 +293,26 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function fetchJson(url) {
   try { const r = await fetch(url, { headers: { "cache-control": "no-cache" } }); return r.ok ? await r.json() : null; } catch { return null; }
 }
-/** the served town's size and versions, read from the same origin's public files (outside the throttled page). */
+/** the served town's size and versions, read outside the throttled page. Prod's viewer reads the public API, not the legacy export. */
 export async function readTown(origin) {
   const build = await fetchJson(`${origin}/build.json`);
-  const state = await fetchJson(`${origin}/WORLD/world-state.json`);
+  const source = origin === PROD ? "/api/world/state" : "/WORLD/world-state.json";
+  const state = await fetchJson(`${origin}${source}`);
+  const asOf = state?.meta?.source === "settlement" ? state.meta.as_of : null;
+  const served = build ? { ...build,
+    world_settlement: origin === PROD ? asOf?.settlement ?? null : build.world_settlement,
+    world_digest: origin === PROD ? asOf?.digest ?? null : build.world_digest,
+  } : null;
   const marks = Array.isArray(state?.marks) ? state.marks : null;
   return {
-    build, version: versionOf(build),
+    build, version: versionOf(served),
     town: {
       marks: marks?.length ?? null,
       parcels: Array.isArray(state?.parcels) ? state.parcels.length : (state?.parcels ? Object.keys(state.parcels).length : null),
-      settlement: build?.world_settlement ?? null, crossing: build?.crossing ?? null,
+      data_source: source, data_observed_at: new Date().toISOString(), data_as_of: asOf,
+      settlement: served?.world_settlement ?? null, crossing: build?.crossing ?? null,
       code_sha: build?.code_sha ?? null, town_data_sha: build?.town_data_sha ?? null, town_sha: build?.town_sha ?? null, world_sha: build?.world_sha ?? null,
-      world_digest: build?.world_digest ?? null, code_ref: build?.code_ref ?? null, world_ref: build?.world_ref ?? null, town_index_as_of: build?.town_index_as_of ?? null,
+      world_digest: served?.world_digest ?? null, code_ref: build?.code_ref ?? null, world_ref: build?.world_ref ?? null, town_index_as_of: build?.town_index_as_of ?? null,
     },
   };
 }
@@ -596,7 +603,7 @@ export function backfillBytes({ files = DEFAULT_SERVED, repo = REPO } = {}) {
     return {
       kind: "bytes-backfill", schema: 1, settlement: tag.replace("settlement/", ""), commit: sha, files: files.length - missing.length, files_missing: missing,
       repo_bytes_raw: raw, repo_bytes_gzip: gz,
-      basis: "sum of git blob sizes (raw, and gzip -6) at the settlement tag of the repo-served files the World page requests; NOT a browser cold load (no site assets, no images, no HTTP headers, whatever the CDN compressed) and NOT a timing replay. The file set is today's served list applied to every tag: a file not yet in the repo at that tag is listed in files_missing and counts as nothing, so early rows are lower bounds on that set, not the page of their day",
+      basis: "sum of git blob sizes (raw, and gzip -6) at the settlement tag of the selected World engine sources and retained WORLD exports; NOT the live /api/world/state payload, a browser cold load, or a timing replay. The fixed file set is applied to every tag; absent files are listed in files_missing, so early rows are lower bounds on that selected set, not the page of their day",
     };
   });
 }
