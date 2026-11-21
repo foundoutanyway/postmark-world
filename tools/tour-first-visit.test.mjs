@@ -81,9 +81,21 @@ async function onThePage(t, { viewport, phone }) {
   await page.goto(`http://localhost:${port}/?lite=0`, { waitUntil: "domcontentloaded", timeout: 90_000 });
   // a spectator is greeted on every visit (Keemin 2026-08-12), with no key and no click
   await page.waitForSelector(".wv-tour-card", { state: "visible", timeout: 90_000 });
-  // the card glides to each step's place (transform .22 s): a read is taken when it has arrived, never mid-glide
-  const press = async (sel) => { await (phone ? page.tap(sel) : page.click(sel)); await page.waitForTimeout(700); };
+  // the card glides to each step's place (transform .22 s, slower on a throttled machine): a read is taken once it has ARRIVED, two reads 150 ms apart alike,
+  // never mid-glide and never after a fixed sleep a loaded machine could outrun
+  const settle = async () => {
+    let before = null;
+    for (let i = 0; i < 80; i++) {
+      const r = await readTour(page), key = JSON.stringify([r.kicker, r.cardOnScreen]) + JSON.stringify(await page.evaluate(() => document.querySelector(".wv-tour-card")?.getBoundingClientRect().toJSON()));
+      if (key === before) return;
+      before = key;
+      await page.waitForTimeout(150);
+    }
+    assert.fail("the tour card never came to rest");
+  };
+  const press = async (sel) => { await (phone ? page.tap(sel) : page.click(sel)); await settle(); };
   const out = {};
+  await settle();
 
   // ── step 1 of 3: the greeting, whole on the screen ─────────────────────────
   const s1 = await readTour(page);
