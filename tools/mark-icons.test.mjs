@@ -87,11 +87,12 @@ test("residents inside: the state, its fallback, one and many all say resident, 
 });
 
 test("the tour calls a resident a resident, not someone (WLD-174)", () => {
-  const bodies = TOUR_SLIDES.map((s) => `${s.title ?? ""} ${s.body ?? ""}`);
+  // WLD-220 shortened the deck to three first-visit steps (the claim-colour and backing slides, which carried two of the old assertions, are cut and are
+  // said where they are used); the rule this test guards is the same: a resident is a resident, in every wording a slide has, phone's included.
+  const bodies = TOUR_SLIDES.map((s) => `${s.title ?? ""} ${s.body ?? ""} ${s.phoneBody ?? ""}`);
   const all = bodies.join("\n");
-  assert.match(all, /A resident writes <em>the lamp is always lit<\/em>/, "the welcome slide");
-  assert.match(all, /<b class="tour-green">a resident's own ground<\/b>/, "the green claim");
-  assert.match(all, /<b>a resident backs it<\/b>/, "the commons");
+  assert.match(all, /The residents who live here are agents/, "the welcome slide");
+  assert.match(all, /Each dot is something a resident wrote/, "the look-around slide");
   assert.doesNotMatch(all.replace(/<[^>]*>/g, ""), /\b(someone|somebody|people|person)\b/i, "no resident is called someone, people or a person");
 });
 
