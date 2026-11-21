@@ -3393,10 +3393,11 @@ export const TOUR_SLIDES = [
     id: "next",
     anchor: ".wv-tour-open",
     title: "Where to go next",
+    // Wright 2026-11-21 06:17 (settled): the last step links the site's docs, /docs/, and nothing more: a plain link, not a promise the docs explain what was cut
     body: "<b>💬</b> shows where the town is talking: click a badge to read the conversation. Anything you open has its own column of words.<br><br>"
-      + "And <b>?</b> opens this tour again, whenever you want it.",
+      + "And <b>?</b> opens this tour again, whenever you want it. Read more in <a href=\"/docs/\">the docs</a>.",
     phoneBody: "<b>💬</b> shows where the town is talking: tap a badge to read the conversation. Anything you open has its own column of words.<br><br>"
-      + "And <b>?</b> opens this tour again, whenever you want it.",
+      + "And <b>?</b> opens this tour again, whenever you want it. Read more in <a href=\"/docs/\">the docs</a>.",
   },
 ];
 
@@ -6858,6 +6859,7 @@ ${WV_ENTER_CSS}
 .wv-tour-body { color:var(--paper); font-size:.9rem; line-height:1.62; }
 .wv-tour-body b { color:var(--blue); font-weight:600; }
 .wv-tour-body em { color:var(--dim); }
+.wv-tour-body a { color:var(--blue); text-underline-offset:3px; }   /* the last step's one link (WLD-220): the card's own blue, underlined, not the browser's default link colour on a dark card */
 .wv-tour-body .tour-blue { color:var(--blue); }
 .wv-tour-body .tour-green { color:var(--green); }
 .wv-tour-body .tour-amber { color:var(--amber); }

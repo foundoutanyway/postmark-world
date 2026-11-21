@@ -1335,6 +1335,14 @@ test("WLD-220: a phone is told only what a phone has (drag, tap, what is drawn);
   // the last step says how to get the tour back, and points at the ? that does it
   assert.equal(next.anchor, ".wv-tour-open");
   assert.match(TOUR_TEXT(next.body), /\?.*again/);
+  // Wright 2026-11-21 06:17 (settled): the LAST step, and only it, links the site's docs: one plain link, the same on a phone and a desktop, no other link in the deck
+  // and no help at the controls
+  const links = (html) => [...html.matchAll(/<a\b[^>]*>([\s\S]*?)<\/a>/g)].map((m) => ({ tag: m[0].match(/^<a\b[^>]*>/)[0], text: TOUR_TEXT(m[1]) }));
+  for (const key of ["body", "phoneBody"]) {
+    assert.deepEqual(links(next[key]), [{ tag: '<a href="/docs/">', text: "the docs" }], `the last step's ${key} links /docs/ once, plainly`);
+    assert.match(TOUR_TEXT(next[key]), /Read more in the docs\.$/, `${key} ends on the link, said plainly`);
+  }
+  for (const slide of [welcome, explore]) for (const key of ["body", "phoneBody"]) assert.deepEqual(links(slide[key] ?? ""), [], `${slide.id}.${key} links nothing`);
   // the renderer chooses the phone's words on a phone and nowhere else
   assert.match(source, /\$\(el, "\.wv-tour-body"\)\.innerHTML = onPhone\(\) && slide\.phoneBody \? slide\.phoneBody : slide\.body;/);
   // the greeting is unchanged: spectators each load, a resident once, never reset by this deck

@@ -143,6 +143,30 @@ async function onThePage(t, { viewport, phone }) {
   if (phone) { assert.match(s3.text, /\btap a badge\b/); assert.doesNotMatch(s3.text, /click/i); } else assert.match(s3.text, /\bclick a badge\b/);
   out.s3 = s3;
 
+  // ── the last step's one link, /docs/ (Wright 2026-11-21 06:17): whole on the screen, keyboard-usable, and the tour's own click handling does not swallow it ──
+  assert.match(s3.text, /Read more in the docs\.$/);
+  const link = await page.evaluate(() => {
+    const a = document.querySelector('.wv-tour-body a'); if (!a) return null;
+    const card = document.querySelector(".wv-tour-card").getBoundingClientRect(), r = a.getBoundingClientRect();
+    const all = [...document.querySelectorAll(".wv-tour-body a")];
+    a.focus();
+    return { count: all.length, href: a.getAttribute("href"), text: a.textContent, whole: r.width > 0 && r.x >= card.x && r.right <= card.right && r.y >= card.y && r.bottom <= card.bottom && r.x >= 0 && r.right <= innerWidth && r.bottom <= innerHeight,
+      focusable: document.activeElement === a, underline: getComputedStyle(a).textDecorationLine, color: getComputedStyle(a).color, body: getComputedStyle(document.querySelector(".wv-tour-body")).color };
+  });
+  assert.ok(link, "the last step has a link");
+  assert.equal(link.count, 1, "one link, and no other in the tour");
+  assert.equal(link.href, "/docs/");
+  assert.equal(link.text, "the docs");
+  assert.ok(link.whole, "the link lies wholly on the screen and inside the card");
+  assert.ok(link.focusable, "a keyboard reaches it (it takes focus)");
+  assert.ok(link.underline.includes("underline") || link.color !== link.body, `the link reads as a link (underline ${link.underline}, colour ${link.color} against the body's ${link.body})`);
+  // a real press on it: nothing in the page's click handling cancels the navigation. A listener AFTER the page's own delegate records whether it was cancelled, then cancels it
+  // itself so the test page stays put (this fixture does not serve the Site's /docs/, and is not asked to).
+  await page.evaluate(() => { window.__docsClick = null; document.addEventListener("click", (e) => { if (e.target.closest?.('.wv-tour-body a')) { window.__docsClick = { cancelledByPage: e.defaultPrevented }; e.preventDefault(); } }); });
+  await (phone ? page.tap('.wv-tour-body a') : page.click('.wv-tour-body a'));
+  assert.deepEqual(await page.evaluate(() => window.__docsClick), { cancelledByPage: false }, "the tour's handler leaves the link's navigation alone");
+  assert.equal((await readTour(page)).open, true, "following it is the visitor's choice; the tour is not closed under them by the press");
+
   // ── done closes it, and the page underneath is intact; the ? brings it back ─
   await press(".wv-tour-next");
   await page.waitForSelector(".wv-tour", { state: "hidden", timeout: 10_000 });
