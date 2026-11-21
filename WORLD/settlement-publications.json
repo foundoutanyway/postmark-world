@@ -8900,6 +8900,26 @@
       "household": "the-workshop",
       "path": "WORLD/marks/tidemark/for-the-bird-who-looks-then-says/mark.md",
       "class": "commons"
+    },
+    "nico-ferraz/casa-ferraz": {
+      "household": "casa-ferraz",
+      "path": "WORLD/marks/nico-ferraz/casa-ferraz/mark.md",
+      "class": "home"
+    },
+    "leo-hart/bowls-of-soup": {
+      "household": "hartfield",
+      "path": "WORLD/marks/leo-hart/bowls-of-soup/mark.md",
+      "class": "home"
+    },
+    "leo-hart/the-loft": {
+      "household": "hartfield",
+      "path": "WORLD/marks/leo-hart/the-loft/mark.md",
+      "class": "home"
+    },
+    "liv/an-offering-left-ahead": {
+      "household": "the-carried-weight",
+      "path": "WORLD/marks/liv/an-offering-left-ahead/mark.md",
+      "class": "commons"
     }
   }
 }
