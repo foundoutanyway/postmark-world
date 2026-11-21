@@ -69,6 +69,8 @@ const readTour = (page) => page.evaluate(() => {
     controlsInCard: parts.every((b) => b && b.w > 0 && inside(b, card)),
     controlsOnScreen: parts.every((b) => b && inside(b, screen)),
     phone: matchMedia("(max-width:720px)").matches,
+    // for a failure message: where the screen, the card and every part stood
+    geometry: { screen: [innerWidth, innerHeight], card, parts: parts.map((b) => b && [b.x, b.y, b.right, b.bottom].map(Math.round)) },
   };
 });
 
@@ -81,13 +83,17 @@ async function onThePage(t, { viewport, phone }) {
   await page.goto(`http://localhost:${port}/?lite=0`, { waitUntil: "domcontentloaded", timeout: 90_000 });
   // a spectator is greeted on every visit (Keemin 2026-08-12), with no key and no click
   await page.waitForSelector(".wv-tour-card", { state: "visible", timeout: 90_000 });
-  // the card glides to each step's place (transform .22 s, slower on a throttled machine): a read is taken once it has ARRIVED, two reads 150 ms apart alike,
-  // never mid-glide and never after a fixed sleep a loaded machine could outrun
+  // the card glides to each step's place (transform .22 s, slower on a throttled or busy machine): a read is taken once it has ARRIVED. Arrived means the card has NO
+  // transition or animation still running (the page's own account of a glide: getAnimations() flushes the style change that starts it, so a glide that has not yet
+  // begun is seen as running) AND two reads 150 ms apart are alike. Two alike reads alone are not enough: a starved main thread paints no frame, so a glide that is
+  // under way reads the same twice (found on a desktop run, the card read at its start position, left 0 under a centring translate).
   const settle = async () => {
     let before = null;
-    for (let i = 0; i < 80; i++) {
-      const r = await readTour(page), key = JSON.stringify([r.kicker, r.cardOnScreen]) + JSON.stringify(await page.evaluate(() => document.querySelector(".wv-tour-card")?.getBoundingClientRect().toJSON()));
-      if (key === before) return;
+    for (let i = 0; i < 120; i++) {
+      const r = await readTour(page);
+      const running = await page.evaluate(() => (document.querySelector(".wv-tour-card")?.getAnimations?.() ?? []).filter((a) => a.playState !== "finished" && a.playState !== "idle").length);
+      const key = JSON.stringify([r.kicker, r.cardOnScreen, running]) + JSON.stringify(await page.evaluate(() => document.querySelector(".wv-tour-card")?.getBoundingClientRect().toJSON()));
+      if (running === 0 && key === before) return;
       before = key;
       await page.waitForTimeout(150);
     }
@@ -121,7 +127,7 @@ async function onThePage(t, { viewport, phone }) {
   assert.equal(s2.title, "Look around");
   assert.equal(s2.onDot, 1);
   assert.equal(s2.backDisabled, false);
-  assert.ok(s2.cardOnScreen && s2.controlsInCard && s2.controlsOnScreen, "step 2 fits whole");
+  assert.ok(s2.cardOnScreen && s2.controlsInCard && s2.controlsOnScreen, `step 2 fits whole: ${JSON.stringify({ card: s2.cardOnScreen, inCard: s2.controlsInCard, onScreen: s2.controlsOnScreen, geometry: s2.geometry })}`);
   if (phone) {
     assert.match(s2.text, /Drag to move\./);
     assert.match(s2.text, /\btap\b/);
