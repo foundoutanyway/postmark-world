@@ -212,13 +212,18 @@ test("wiring: the closure is gone, and the one call site passes the looked-up ro
 // hashed), not this test's code. That route reproduced the three digests it is checked against: 94d56a41… (107135 bytes) on the POS-945
 // merge-base, ed771ead… (107711 bytes, the pin above) on this main, and 37ddf8f8… (107954 bytes, the pin the reviewed head 6f4c906a
 // carried) on that head. A line diff of the masked texts, main to the merge, is exactly the 8 `.wv-bymail*` lines and none removed.
-const PINNED_MASKED_STYLE_SHA256 = "f5f3a7045743f0b79fec4deea60b2b607d5a898340bfbb1d2373601cae5330aa";
+// RE-PINNED FOR CORE-54 (main), knowingly: phone/touch hit-area rules, 108530 -> 110597, then the tour foot fit, 110597 -> 111168 (main's own
+// digest d8d98631…, 111168 bytes); CREATURE_CSS and both of its neighbours untouched.
 // RE-PINNED IN CORE-127 (World viewer filters, PR #417), an INTENDED change to STYLE: the display-filter opener, its desktop popover and
 // its 390 px sheet (`.wv-filters-open`, `.wv-dpanel`, `.wv-dstrip`, `.wv-dfilter-host`) add 4075 bytes of CSS and nothing else moved (a line
 // diff of the masked texts, main 6928feab to the head, is added lines only).
 // RE-PINNED AGAIN IN CORE-147 (the icon dropdown, Darko 2026-11-21), an INTENDED change to STYLE: the icon switches' CSS (`.wv-dlayers`, `.wv-dlayer*`, the phone
 // sheet's three columns) adds 1276 bytes on top of CORE-127's, added lines only (the 💬 button was markup, not STYLE).
-const PINNED_MASKED_STYLE_BYTES = 113881;
+// MERGED WITH main 01e29a17 (CORE-147 branch): the byte count is the sum of the three additive changes (111168 + 4075 + 1276 = 116519; the merge was line-clean in
+// STYLE). THE DIGEST BELOW IS NOT YET MEASURED on the merged tree: it is still the pre-merge CORE-147 digest (f5f3a704…), kept as a deliberate placeholder because no
+// test or script was run locally in this phase; the Actions run of this test prints the actual digest, which replaces it in the next commit.
+const PINNED_MASKED_STYLE_SHA256 = "f5f3a7045743f0b79fec4deea60b2b607d5a898340bfbb1d2373601cae5330aa";
+const PINNED_MASKED_STYLE_BYTES = 116519;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";

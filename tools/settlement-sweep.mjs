@@ -42,6 +42,7 @@ import {
 import { snapshotWorld, keepWorldAcross, ReframeRefusal } from "./reparent-keep-world.mjs";
 import { CONSENT_FIELD, consentMap } from "./consent.mjs";
 import { sketchbookHouse } from "./lane-author.mjs"; // whose a sketchbook is: the lane's one binding (WLD-122)
+import { parcelCaptures } from "./parcel-captures.mjs"; // WLD-224: a parcel that newly takes in an older foreign mark, said to the keeper
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -1210,6 +1211,9 @@ export function settlementSweep({
   // grammar went red while this was in the crossing".
   const suiteQuarantined = [];
   const touched = [];
+  // WLD-224: the keeper's flag (tools/parcel-captures.mjs), set after the fold. NOT checked until something looked: an object, never an
+  // array, so an Office composer that predates it reads it as no outcome channel and ignores it.
+  let parcelCaptureReport = { checked: false, why: "the crossing did not reach its fold, so nobody looked for a parcel taking in an older mark" };
   // `rehomed` was a channel here until 2026-08-25. It is gone rather than left
   // permanently empty: a report that always says zero is a state with no receipt,
   // and a reader still asking for it should fail loudly rather than learn nothing.
@@ -2022,6 +2026,17 @@ export function settlementSweep({
     execFileSync(process.execPath, [join(repo, "tools", "marks-fold.mjs"), "--stakes", stakesPath], {
       cwd: repo, stdio: ["ignore", "pipe", "inherit"], // stderr -> the journal: the fanup-shadow lines are FOR the reader (S39-era fix; "pipe" was swallowing them)
     });
+    // WLD-224: which parcels published THIS crossing took in an older mark from another household. A report line and nothing else:
+    // admission, containment and the verdict are the fold's and are already decided; a fault here is named on the report.
+    try {
+      parcelCaptureReport = parcelCaptures({
+        state: JSON.parse(readFileSync(join(repo, "WORLD", "world-state.json"), "utf8")),
+        publishedIds: published.map((row) => row.id),
+        priorParentOf: (id) => mainFolded.get(id)?.placementParent ?? null,   // main's fold before this crossing: an unchanged pair is not new
+      });
+    } catch (error) {
+      parcelCaptureReport = { checked: false, why: `the folded world could not be read for parcel captures: ${String(error?.message ?? error).slice(0, 200)}` };
+    }
     // The fold writes THREE files now, not two: the heads-up list became
     // fold-derived state (tools/region-outsiders.mjs) so that a settlement
     // cannot leave it stale. All three must be tracked here — a file the fold
@@ -2095,6 +2110,9 @@ export function settlementSweep({
     // named in the sweep's own answer, not only in a log — the operator reading
     // the crossing must see that a sketchbook was set aside without going looking
     quarantined,
+    // WLD-224: a parcel this crossing published that took in an older mark from another household. Admitted and filed as ever; this
+    // only says so: { checked, parcels_checked, events: [{ parcel, parcel_household, mark, mark_household, overlap_m2, … }] }.
+    parcel_captures: parcelCaptureReport,
     suite_quarantined: suiteQuarantined,
     unpublished: unpublished.map(({ content, ...item }) => item),
     withdrawn,

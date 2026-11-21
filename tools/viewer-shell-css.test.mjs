@@ -87,13 +87,29 @@ import { MARK_ICON_CSS } from "../spectator/mark-icons.mjs";
 // digests it is checked against: 94d56a41… (107135 bytes) on the POS-945 merge-base, ed771ead… (107711 bytes, the pin above) on this main,
 // and 37ddf8f8… (107954 bytes, the pin the reviewed head 6f4c906a carried) on that head. A line diff of the masked texts, main to the merge,
 // is exactly the 8 `.wv-bymail*` lines and none removed, the same 8 lines the reviewed head added over its own base.
-const PINNED_MASKED_STYLE_SHA256 = "f5f3a7045743f0b79fec4deea60b2b607d5a898340bfbb1d2373601cae5330aa";
+// RE-PINNED FOR CORE-54 (main), knowingly: its accounts follow below this branch's own, unchanged: main's digest d8d98631…, 111168 bytes.
 // RE-PINNED IN CORE-127 (World viewer filters, PR #417), an INTENDED change to STYLE: the display-filter opener, its desktop popover and
 // its 390 px sheet (`.wv-filters-open`, `.wv-dpanel`, `.wv-dstrip`, `.wv-dfilter-host`) add 4075 bytes of CSS and nothing else moved (a line
 // diff of the masked texts, main 6928feab to the head, is added lines only).
 // RE-PINNED AGAIN IN CORE-147 (the icon dropdown, Darko 2026-11-21), an INTENDED change to STYLE: the icon switches' CSS (`.wv-dlayers`, `.wv-dlayer*`, the phone
 // sheet's three columns) adds 1276 bytes on top of CORE-127's, added lines only (the 💬 button was markup, not STYLE).
-const PINNED_MASKED_STYLE_BYTES = 113881;
+// CORE-54's account, as main carries it (Darko 2026-11-20, "4. Small targets"), knowingly, an INTENDED change to STYLE over the pin above: the phone/touch hit-area
+// rules (the round map controls and root mark, the tour's three buttons and step dots, the mark bubble's close) and the touch-reach constants' CSS
+// neighbours: 1877 bytes added (108530 -> 110407), nothing removed or changed; then the chooser row's 44 px reach (`.wv-choose-row`, one media rule,
+// 190 bytes, 110407 -> 110597) when the crowded press's choices joined the phone column (Wright 16:57Z). The digest below was measured by this test's own masked-emission route
+// on the CORE-54 branch (the same route the earlier pins' last paragraph names), not by an independent script, and is checked by the test below that the pin
+// can fail; the base digest 31265315… (108530 bytes) is what main emitted before the branch.
+// RE-PINNED AGAIN FOR CORE-54, knowingly, after merging main 50fbbaf7: the chooser row's media rule MOVED (same bytes, 110597 still) from between CREATURE_CSS
+// and `.wv-choose-row.is-convo` to after `.wv-choose-row.is-creature`, because viewer-creature-nameplate pins CREATURE_CSS's neighbours. Only that one line's
+// position changed (e6974c7c… -> faa58492…); no rule was added or removed.
+// RE-PINNED A THIRD TIME FOR CORE-54 (lead fix, 2026-11-20 20:01Z): the 390 px tour foot FIT. The published 0dae4132/c300 tour frame showed "next" spilling past the card (the 8 step dots at
+// 20 px plus skip/back/next at 192 px did not fit the ~160 px beside them). One media block gains 6 lines / 571 bytes (110597 -> 111168), nothing removed or changed: the foot may wrap, the
+// actions sit 4 px apart and right-aligned, skip's padding 6 px and back/next 8 px a side (each still at least 44 px wide and 44 px tall). Measured by this test's own masked-emission route.
+// MERGED WITH main 01e29a17 (CORE-147 branch): the byte count is the sum of the three additive changes (111168 + 4075 + 1276 = 116519; the merge was line-clean in
+// STYLE). THE DIGEST BELOW IS NOT YET MEASURED on the merged tree: it is still the pre-merge CORE-147 digest (f5f3a704…), kept as a deliberate placeholder because no
+// test or script was run locally in this phase; the Actions run of this test prints the actual digest, which replaces it in the next commit.
+const PINNED_MASKED_STYLE_SHA256 = "f5f3a7045743f0b79fec4deea60b2b607d5a898340bfbb1d2373601cae5330aa";
+const PINNED_MASKED_STYLE_BYTES = 116519;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";
