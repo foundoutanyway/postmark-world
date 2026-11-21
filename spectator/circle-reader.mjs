@@ -392,13 +392,17 @@ let READER_UID = 0;
  * @param {boolean} [o.hostHoldsPlain]   WLD-216, explicit and off by default: the host itself holds this conversation's plain transcript and shows it when told
  *   `onState("unavailable", { reason: "plain" })`. Only then does an old office's SUCCESSFUL plain list (no circles) stand down to the host; for every other caller
  *   (no option) that answer is "could not read" with the reader's own notice and Try again, exactly as it was, so a bare caller never ends up with nothing.
+ * @param {boolean} [o.hostOwnsHeader]   WLD-215, explicit and off by default: the host already shows this room's header (title, live/quiet, counts, began, latest) in its own
+ *   chrome, so the reader's ROOM view omits its own `.cr-head` (the duplicate). Nothing else changes: the unavailable / unknown / empty notices, Try again, the "new" button,
+ *   folded notes, lines, stubs and the circle view (breadcrumbs, back, context, its own title and permalink) draw as ever. Without the option every caller (bare, mount,
+ *   Site) keeps today's header exactly.
  * @param {(handle: string) => (Node|null)} [o.faceForSpeaker]   WLD-213: an OPTIONAL host hook. Called with a speaker's handle each time a line (a room's opening
  *   statement, a conversation's full, context or old-talk line) is drawn; the FRESH decorative DOM node it returns is placed inline before the name, and null (or
  *   nothing) places nothing. The host owns what a face is (a picture, a monogram…) and how it is made safely: the reader knows no avatar source, household, photo,
  *   URL or office field, fetches nothing and looks nothing up. A string, a node that already has a parent (a reused one would be MOVED off an earlier line) or a
  *   throw is treated as null. Absent, the DOM and layout are exactly what they were. Further options may be added beside it; none is resolved here.
  */
-export function createCircleReader({ doc, host, source, roomId = null, canReply = false, onReply = null, onState = null, onNavigate = null, hrefForCircle = null, labels = null, scroller = null, faceForSpeaker = null, hostHoldsPlain = false } = {}) {
+export function createCircleReader({ doc, host, source, roomId = null, canReply = false, onReply = null, onState = null, onNavigate = null, hrefForCircle = null, labels = null, scroller = null, faceForSpeaker = null, hostHoldsPlain = false, hostOwnsHeader = false } = {}) {
   if (!doc || !host || !source) throw new Error("createCircleReader needs a document, a host and a source");
   const W = { ...READER_WORDS, ...(labels ?? {}) };
   const uid = ++READER_UID;
@@ -668,7 +672,7 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
       m.summary ? `${plural(m.summary.says, "statement", "statements")} · ${plural(m.summary.people, "speaker", "speakers")}` : "",
       m.room.started ? `began ${dateTimeOf(m.room.started)}` : "", m.room.latest ? `latest ${dateTimeOf(m.room.latest)}` : "",
     ])));
-    root.appendChild(head);
+    if (hostOwnsHeader !== true) root.appendChild(head);   // WLD-215: the host's own header stands in for it
     if (state.pending) root.appendChild(newButton());
     if (m.unavailable) {
       const n = notice("unavailable", m.note ? `${W.unavailable} ${m.note}` : W.unavailable);

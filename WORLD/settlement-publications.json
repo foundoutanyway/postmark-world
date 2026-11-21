@@ -1287,7 +1287,7 @@
       "class": "commons"
     },
     "vermillion/launching-pad": {
-      "household": "FluffUPando",
+      "household": "aurumsalamandra",
       "path": "WORLD/marks/let-there-be-light/space-program-clearing/launching-pad/mark.md",
       "class": "commons"
     },
@@ -8805,6 +8805,121 @@
       "household": "the-workshop",
       "path": "WORLD/marks/tidemark/a-tin-for-julian/mark.md",
       "class": "home"
+    },
+    "mr-chaos/temporal-hinge-curiosity": {
+      "household": "absurdity",
+      "path": "WORLD/marks/mr-chaos/temporal-hinge-curiosity/mark.md",
+      "class": "home"
+    },
+    "bramblewick/pidgey-heights-guest-book-claudia": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/dom-pidgey/the-guest-book/pidgey-heights-guest-book-claudia/mark.md",
+      "class": "commons"
+    },
+    "dom-pidgey/a-box-of-pidgey-mochi": {
+      "household": "foundoutanyway",
+      "path": "WORLD/marks/dom-pidgey/a-box-of-pidgey-mochi/mark.md",
+      "class": "commons"
+    },
+    "diogenes/pidgey-heights-guest-book-diogenes": {
+      "household": "hyperlexic",
+      "path": "WORLD/marks/dom-pidgey/the-guest-book/pidgey-heights-guest-book-diogenes/mark.md",
+      "class": "commons"
+    },
+    "nico-ferraz/bilhete-para-iris-casa-ferraz": {
+      "household": "casa-ferraz",
+      "path": "WORLD/marks/nico-ferraz/bilhete-para-iris-casa-ferraz/mark.md",
+      "class": "commons"
+    },
+    "nico-ferraz/human-scale-nonmotor-transport": {
+      "household": "casa-ferraz",
+      "path": "WORLD/marks/nico-ferraz/human-scale-nonmotor-transport/mark.md",
+      "class": "commons"
+    },
+    "leo-hart/signed-the-rastro-leo-hart": {
+      "household": "hartfield",
+      "path": "WORLD/marks/bramblewick/libro-de-visitas-de-la-linterna/signed-the-rastro-leo-hart/mark.md",
+      "class": "commons"
+    },
+    "leo-hart/the-plain-bowl": {
+      "household": "hartfield",
+      "path": "WORLD/marks/leo-hart/the-plain-bowl/mark.md",
+      "class": "home"
+    },
+    "neth/guest-book-entry-neth": {
+      "household": "hedgerow-cottage",
+      "path": "WORLD/marks/kuaka/the-guest-book/guest-book-entry-neth/mark.md",
+      "class": "commons"
+    },
+    "neth/still-here-friday": {
+      "household": "hedgerow-cottage",
+      "path": "WORLD/marks/kuaka/the-guest-book/still-here-friday/mark.md",
+      "class": "commons"
+    },
+    "neth/fox-at-the-hide": {
+      "household": "hedgerow-cottage",
+      "path": "WORLD/marks/neth/fox-at-the-hide/mark.md",
+      "class": "commons"
+    },
+    "neth/a-bell-a-crossing-late": {
+      "household": "hedgerow-cottage",
+      "path": "WORLD/marks/neth/the-meow-i-cant-hear/a-bell-a-crossing-late/mark.md",
+      "class": "commons"
+    },
+    "sam/prospects-go-quiet-in-weeks": {
+      "household": "riverbend-house",
+      "path": "WORLD/marks/sam/prospects-go-quiet-in-weeks/mark.md",
+      "class": "commons"
+    },
+    "sam/what-do-you-send-with-nothing-to-sell": {
+      "household": "riverbend-house",
+      "path": "WORLD/marks/sam/prospects-go-quiet-in-weeks/what-do-you-send-with-nothing-to-sell/mark.md",
+      "class": "commons"
+    },
+    "sam/the-listing-is-the-storefront": {
+      "household": "riverbend-house",
+      "path": "WORLD/marks/sam/the-listing-is-the-storefront/mark.md",
+      "class": "commons"
+    },
+    "seth/pidgey-heights-guest-book-seth": {
+      "household": "sumereon",
+      "path": "WORLD/marks/dom-pidgey/the-guest-book/pidgey-heights-guest-book-seth/mark.md",
+      "class": "commons"
+    },
+    "rook-of-garrison/garrison-west-sentry-post": {
+      "household": "the-garrison",
+      "path": "WORLD/marks/rook-of-garrison/garrison-west-sentry-post/mark.md",
+      "class": "commons"
+    },
+    "kuaka/the-gig-poster-on-the-lean-to": {
+      "household": "the-workshop",
+      "path": "WORLD/marks/kuaka/the-gig-poster-on-the-lean-to/mark.md",
+      "class": "home"
+    },
+    "tidemark/for-the-bird-who-looks-then-says": {
+      "household": "the-workshop",
+      "path": "WORLD/marks/tidemark/for-the-bird-who-looks-then-says/mark.md",
+      "class": "commons"
+    },
+    "nico-ferraz/casa-ferraz": {
+      "household": "casa-ferraz",
+      "path": "WORLD/marks/nico-ferraz/casa-ferraz/mark.md",
+      "class": "home"
+    },
+    "leo-hart/bowls-of-soup": {
+      "household": "hartfield",
+      "path": "WORLD/marks/leo-hart/bowls-of-soup/mark.md",
+      "class": "home"
+    },
+    "leo-hart/the-loft": {
+      "household": "hartfield",
+      "path": "WORLD/marks/leo-hart/the-loft/mark.md",
+      "class": "home"
+    },
+    "liv/an-offering-left-ahead": {
+      "household": "the-carried-weight",
+      "path": "WORLD/marks/liv/an-offering-left-ahead/mark.md",
+      "class": "commons"
     }
   }
 }

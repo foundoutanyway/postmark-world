@@ -49,7 +49,7 @@ import { creatureSilhouette, roomInMists, bakeRoomSurround, MISTS_PAINT, bakeShe
 // are handed to it. A home page is resident-authored prose arriving over a wire,
 // so the one thing that module may never do is parse a string as HTML — see its
 // header, and tools/home-column.test.mjs, which proves it cannot.
-import { createHomeColumn, homeHandleForParcel, isParcelMark, HOME_COLUMN_CSS } from "./home-column.mjs";
+import { createHomeColumn, speakerFaceEl, homeHandleForParcel, isParcelMark, HOME_COLUMN_CSS } from "./home-column.mjs";
 // HOMES ARE PER RESIDENT (POS-368, Darko 2026-10-04): the one resolver, shared
 // with the office. See homesOfParcel below. The dwelling picker
 // (tools/dwelling.mjs) is deleted: "a guess with a good score is still a guess;
@@ -2346,6 +2346,14 @@ export function hydrateMarkImages(box, resolve, doc = globalThis.document) {
 }
 
 export const MARK_SNAP_RADIUS_PX = 18;
+// A FINGER IS NOT A CURSOR (CORE-54, Darko 2026-11-20 "4. Small targets"): a pip is ~6 px and its 18 px snap circle is a 36 px target, under the
+// ~44 px a thumb needs. A touch press reaches 22 px (a 44 px target); a mouse keeps 18. Same ranking, same chooser: only the reach grows.
+export const MARK_SNAP_RADIUS_TOUCH_PX = 22;
+/** The snap reach for the pointer that pressed: a touch (or pen) gets the finger's reach, anything else the cursor's. */
+export const snapRadiusFor = (pointerType) => (pointerType === "touch" || pointerType === "pen" ? MARK_SNAP_RADIUS_TOUCH_PX : MARK_SNAP_RADIUS_PX);
+/** A conversation badge is a ~5 px disc: the screen distance a press may be from its centre and still mean it. Resolved from the drawn disc at use
+ *  (like the pip boxes), so it can never drift from what is on screen: a cursor reaches 13 px (the long-standing easy reach), a finger 22 px. */
+export const CONVO_HIT_TOUCH_PX = 22;
 
 // ── marker size on screen ────────────────────────────────────────────────────
 // Markers are authored in painting units but have to read at a stable size on
@@ -5177,9 +5185,9 @@ export function chooserLeadLine(ids = []) {
  *  click could have meant and nothing else. `people` are the residents and
  *  the creatures, `marks` the pips, cards and shapes, all in screen space.
  *  Pure. */
-export function clickablesAtPoint(point, { people = [], marks = [] } = {}) {
-  const who = contestedMarksAtPoint(point, people);
-  const what = contestedMarksAtPoint(point, marks);
+export function clickablesAtPoint(point, { people = [], marks = [] } = {}, radiusPx = MARK_SNAP_RADIUS_PX) {
+  const who = contestedMarksAtPoint(point, people, radiusPx);
+  const what = contestedMarksAtPoint(point, marks, radiusPx);
   return { people: who, marks: what, all: [...who, ...what] };
 }
 
@@ -7104,6 +7112,27 @@ ${WV_ENTER_CSS}
 .wv-tour-back:disabled { opacity:.3; cursor:not-allowed; }
 .wv-tour-next { color:var(--night); background:linear-gradient(180deg,#a9c8ef,var(--blue));
   border:1px solid var(--blue); font-weight:700; }
+/* CORE-54 (Darko, "4. Small targets"): the tour's own controls keep their words, steps and order (WLD-220 owns those) and gain REACH on a phone or a
+   touch screen: the three buttons are 44 px tall, and each 7 px step dot sits in a 20 x 44 press target that draws the same dot. */
+@media (max-width:720px), (pointer:coarse) {
+  .wv-tour-acts button { min-height:44px; }
+  .wv-tour-skip { min-width:44px; }
+  /* FIT at 390 px (the 44 px dots, 8 of them, leave a 358 px card ~160 px for skip/back/next, which were 192 px and pushed "next" past the card): tighter button
+     padding and gaps keep each button at least 44 px wide, and the foot may wrap rather than ever clip a control on a narrower screen. */
+  .wv-tour-foot { flex-wrap:wrap; }
+  .wv-tour-acts { gap:4px; margin-left:auto; }
+  .wv-tour-acts .wv-tour-skip { padding-left:6px; padding-right:6px; margin-right:0; }
+  .wv-tour-acts .wv-tour-back, .wv-tour-acts .wv-tour-next { padding-left:8px; padding-right:8px; }
+  .wv-tour-dots { gap:0; }
+  .wv-tour-dot { position:relative; width:20px; height:44px; border-radius:0; background:transparent; transform:none; }
+  .wv-tour-dot::before { content:""; position:absolute; left:50%; top:50%; width:7px; height:7px; margin:-3.5px 0 0 -3.5px;
+    border-radius:999px; background:rgba(123,167,224,.26); transition:background .12s; }
+  .wv-tour-dot:hover { background:transparent; transform:none; }
+  .wv-tour-dot:hover::before { background:rgba(123,167,224,.62); }
+  .wv-tour-dot.on, .wv-tour-dot.on:hover { background:transparent; }
+  .wv-tour-dot.on::before { background:var(--blue); }
+  .wv-tour-open::after { content:""; position:absolute; inset:-5px -3px; }
+}
 /* the ? wears a ring until the tour has been taken once — a tutorial nobody
    finds is a tutorial nobody reads, and this is the smallest thing that says
    "there is one" without taking the page hostage on arrival */
@@ -7369,6 +7398,14 @@ ${PIP_CSS}
   background:rgba(232,197,106,.16); }
 .wv-mapctl .ctl.on { color:var(--night); border-color:var(--amber);
   background:linear-gradient(180deg,#f0d68f,var(--amber)); }
+/* CORE-54 (Darko 2026-11-20, "4. Small targets"): on a phone or a touch screen the round map controls keep their DRAWN size and gain REACH: a
+   transparent border-box extension makes each press target about 44 px tall (and 38 px wide, so the five-circle row and its 6 px gaps do not move). */
+@media (max-width:720px), (pointer:coarse) {
+  .wv-mapctl .ctl { position:relative; }
+  .wv-mapctl .ctl::after { content:""; position:absolute; inset:-5px -3px; border-radius:999px; }
+  .wv-root-mark { position:relative; }
+  .wv-root-mark::after { content:""; position:absolute; inset:-9px; border-radius:999px; }
+}
 /* THE SEARCH PILL. Collapsed it is one of the circles; open it is a pill that
    grows leftward, which is free because the row is right-anchored. The width is
    the only thing that animates, so nothing reflows around it. */
@@ -7546,6 +7583,7 @@ ${WV_SEARCH_CSS}
 ${CREATURE_CSS}
 .wv-choose-row.is-convo { border-left:3px solid #7f93a6; display:flex; align-items:baseline; gap:7px; flex-wrap:wrap; font-size:.78rem; }
 .wv-choose-row.is-creature { border-left:3px solid #d8706a; display:flex; align-items:baseline; gap:7px; flex-wrap:wrap; font-size:.78rem; }
+@media (max-width:720px), (pointer:coarse) { .wv-choose-row { min-height:44px; } }   /* CORE-54: a row of the crowded press's choices is a thumb's height, in the phone column or a bubble */
 .wv-creature-note { position:absolute; z-index:9; left:50%; bottom:58px; transform:translateX(-50%); max-width:min(34rem,80%);
   padding:6px 12px; border:1px solid #b8615b; border-radius:8px; background:rgba(20,16,19,.94); color:#f1dcd8;
   font-size:.8rem; font-style:italic; line-height:1.4; opacity:0; pointer-events:none; transition:opacity .25s; }
@@ -7715,6 +7753,7 @@ ${WV_BUBBLE_CSS}
 .wv-bubble-close { margin-left:auto; flex:none; border:0; background:transparent; color:var(--dim);
   font:inherit; font-size:.95rem; line-height:1; padding:4px 7px; cursor:pointer; border-radius:4px; }
 .wv-bubble-close:hover, .wv-bubble-close:focus-visible { color:var(--paper); background:var(--panel2); }
+@media (max-width:720px), (pointer:coarse) { .wv-bubble-close { min-width:44px; min-height:44px; } }   /* CORE-54: the close keeps its mark, gains a thumb's reach */
 /* the cell inside a bubble is the SAME cell the panel builds — the bubble only
    takes away the frame it no longer needs (its own border, its width cap) */
 .wv-bubble .wv-card { border:0; border-radius:0; margin:0; max-width:none; padding:10px 13px; cursor:pointer; }
@@ -11783,11 +11822,17 @@ export function mountViewer(appEl) {
       // EVERY CLICKABLE UNDER THE CURSOR, no kind special-cased (Darko 2026-10-16
       // 17:37, row 55: "If it's … there under the cursor when you click it, then
       // it should be included in the chooser. Simple as that.")
+      const reach = snapRadiusFor(e.pointerType);          // CORE-54: a finger reaches 22 px, a cursor 18 (same ranking, same chooser)
       const here = clickablesAtPoint({ x: e.clientX, y: e.clientY },
-        { people: [...screenWalkerCandidates(), ...screenCreatureCandidates()], marks: screenMarkCandidates() });
+        { people: [...screenWalkerCandidates(), ...screenCreatureCandidates()], marks: screenMarkCandidates() }, reach);
       // …and with the 💬 lens up, every wash the point is in (Darko 18:06, call A):
       // alone it opens its thread, as ever; with anything else it is one more entry
-      const washes = (() => { const wp = worldPointForEvent(e); return convosAt(wp.x, wp.y).map((h) => convoChoiceId(h.id)); })();
+      const washes = (() => {
+        const wp = worldPointForEvent(e);
+        const ids = new Set(convosAt(wp.x, wp.y).map((h) => String(h.id)));
+        for (const d of convoDiscsAt(e.clientX, e.clientY, e.pointerType)) ids.add(String(d.id));    // the drawn disc, resolved on screen (CORE-54)
+        return [...ids].map((id) => convoChoiceId(id));
+      })();
       const peopleHere = here.people;
       if (peopleHere.length) {
         if (here.all.length + washes.length > 1) { openChooser([...here.all, ...washes]); return; }
@@ -11805,7 +11850,7 @@ export function mountViewer(appEl) {
       // it meant before the layer existed.
       {
         const wp = worldPointForEvent(e);
-        const hit = convoClickAt(wp.x, wp.y); // visibility-gated: always null while hidden
+        const hit = convoClickAt(wp.x, wp.y) ?? convoDiscsAt(e.clientX, e.clientY, e.pointerType)[0] ?? null; // visibility-gated: always null while hidden
         // the thread opens in the right-hand column (Darko 2026-11-06), beside the map, never over it and in no new tab:
         // a click selects it, and the selection is what the column and the wash follow
         if (hit) { selectMark(convoChoiceId(hit.id)); return; }
@@ -11818,7 +11863,7 @@ export function mountViewer(appEl) {
       // behaviour this map has always had, down to the scrollCell.
       const candidates = screenMarkCandidates();
       // no one here: the same one rule over the marks (row 55)
-      const contested = clickablesAtPoint({ x: e.clientX, y: e.clientY }, { marks: candidates }).all;
+      const contested = clickablesAtPoint({ x: e.clientX, y: e.clientY }, { marks: candidates }, reach).all;
       if (contested.length > 1) { openChooser(contested); return; }
       const markId = contested[0] ?? null;
       // A PIP OR A CARD names its mark outright, and aims at it, as always. A hung
@@ -13148,7 +13193,7 @@ export function mountViewer(appEl) {
       if (!r.ok) return;
       const body = await r.json();
       const entries = Object.entries(body?.residents ?? {});
-      if (entries.length) { residentsMeta = new Map(entries); renderByMail(); } // the names the list already shows arrive with the faces
+      if (entries.length) { residentsMeta = new Map(entries); renderByMail(); refreshConvoColumn(); } // the names the list already shows arrive with the faces; an open conversation's faces follow (WLD-215)
     } catch { /* no faces today; the dots are still the truth */ }
   }
   // IN TOWN BY MAIL (POS-945): names only, each linking to their address page; hidden while nobody is. It draws from what the
@@ -13622,6 +13667,23 @@ export function mountViewer(appEl) {
     const mpp = m.paneW > 0 && m.view?.w ? (m.view.w / m.paneW) * m.mPerPx : 0;
     return Math.max((CONVO_BADGE_R * m.mPerPx) / k, CONVO_HIT_MIN_PX * mpp);
   };
+  // The badges a PRESS reaches, measured on screen from the drawn discs at use (CORE-54: a ~5 px disc is not a thumb-sized target, and the world-space
+  // test above can drift from what is drawn). A spectator's cursor reaches CONVO_HIT_MIN_PX, a finger CONVO_HIT_TOUCH_PX; a reader who CAN ACT walks
+  // the map, so the ground beside a badge stays ground: a cursor keeps the disc alone (the world-space test above), a finger gets a short 16 px reach.
+  const convoDiscsAt = (x, y, pointerType) => {
+    if (!convoVisible || !mapCtx?.convoLayer) return [];
+    const touch = pointerType === "touch" || pointerType === "pen";
+    const reach = canAct() ? (touch ? 16 : 0) : (touch ? CONVO_HIT_TOUCH_PX : CONVO_HIT_MIN_PX);
+    if (!reach) return [];
+    const out = [];
+    for (const g of mapCtx.convoLayer.querySelectorAll(".wv-convo-badge")) {
+      const r = g.querySelector(".wv-convo-disc")?.getBoundingClientRect();
+      if (!r || !(r.width > 0)) continue;
+      const dist = Math.hypot(r.x + r.width / 2 - x, r.y + r.height / 2 - y);
+      if (dist <= Math.max(reach, r.width / 2)) out.push({ id: g.getAttribute("data-convo"), dist });
+    }
+    return out.sort((a, b) => a.dist - b.dist);
+  };
   // every badge holding the point, nearest first (row 63's rule counts them all)
   const convosAt = (wx, wy, { disc = false } = {}) => {
     if (!convoVisible) return [];
@@ -13709,7 +13771,8 @@ export function mountViewer(appEl) {
     if (n > voices.length) blocks.push({ type: "paragraph", spans: [{ type: "em", spans: [{ type: "text", text: `the newest ${voices.length} of ${n} statements; the conversations page keeps the whole` }] }] });
     for (const v of voices) {
       const at = convoWhen(v?.at);
-      blocks.push({ type: "paragraph", spans: [
+      const vf = faceOf(String(v?.handle ?? ""));
+      blocks.push({ type: "paragraph", speaker: String(v?.handle ?? ""), look: vf.avatar || vf.color || "", spans: [   // `speaker`: the column puts that speaker's face before the line (WLD-215)
         { type: "strong", spans: [{ type: "text", text: String(v?.handle ?? "") }] },
         { type: "text", text: `${at ? ` (${at})` : ""}: ${String(v?.said ?? "")}` },
       ] });
@@ -13723,20 +13786,20 @@ export function mountViewer(appEl) {
       // READING-ONLY ON A PHONE (Wright 2026-11-14 23:59Z): the phone World page keeps its reading-only mode, so the reader there carries no Reply
       // buttons (the SAY sheet lives in the rail that page does not show); the circle's link to the conversations page, where the speaking box is, stays.
       // The host option, not a stylesheet hide: it is re-read on every render, so a resize or rotation reaches the open reader in place.
-      reader: { roomId: tid, source: convoReaderSource, canReply: canAct() && !onPhone(), onReply: (target) => setReplyTarget(target), hrefForCircle: (c) => `/conversations/#circle-${encodeURIComponent(c)}` },
+      // WLD-215: the column draws this conversation's ONE header (title, live, counts, began, latest, who spoke), so the reader drops its own (`hostOwnsHeader`), and
+      // every line and speaker wears the page's own face for that handle (`faceOf`, the occupant tokens' source: no new fetch, a fresh node per call).
+      reader: { roomId: tid, source: convoReaderSource, canReply: canAct() && !onPhone(), onReply: (target) => setReplyTarget(target), hrefForCircle: (c) => `/conversations/#circle-${encodeURIComponent(c)}`,
+        hostOwnsHeader: true, faceForSpeaker: (h) => { const f = faceOf(h); return speakerFaceEl(document, { name: f.name, monogram: f.monogram, color: f.color, picture: f.avatar ?? null }, (u) => markImagePath({ image: u })); } },   // the same gate the occupant tokens' pictures pass (the column's own imagePath)
       handle: "the-town", residentLink: false,
       kicker: live ? "a conversation · live" : "a conversation · gone quiet",
+      // the old "now" row's meaning, kept where "live" is said
+      kickerTitle: live ? "live: a conversation lasts the settlement" : "gone quiet: an earlier settlement's",
       title: String(t.place ?? "somewhere"),
-      region: `${n} statement${n === 1 ? "" : "s"} · ${people.length} speaker${people.length === 1 ? "" : "s"}`,
+      region: [`${n} statement${n === 1 ? "" : "s"} · ${people.length} speaker${people.length === 1 ? "" : "s"}`, convoWhen(t.started) ? `began ${convoWhen(t.started)}` : "", convoWhen(t.latest) ? `latest ${convoWhen(t.latest)}` : ""].filter(Boolean).join(" · "),
+      speakers: people.map((h) => { const f = faceOf(String(h)); return { handle: String(h), name: String(h), look: f.avatar || f.color || "" }; }),
       leadImage: null,
       door: { blocks },
-      byline: live ? "in this settlement" : "in an earlier settlement",
-      facts: [
-        { label: "now", value: live ? "live: a conversation lasts the settlement" : "gone quiet: an earlier settlement's" },
-        { label: "speakers", value: people.join(", ") },
-        { label: "began", value: convoWhen(t.started) },
-        { label: "latest", value: convoWhen(t.latest) },
-      ],
+      byline: false,   // WLD-215: "live" is said once, at the top; no second line saying the same
       icons: MARK_ICONS.conversation ? [{ key: "conversation", label: MARK_ICONS.conversation.label, meaning: MARK_ICONS.conversation.meaning }] : [],
       footerLink: { href: convoHref(tid), text: "all conversations →" },
     };
@@ -15928,6 +15991,18 @@ export function mountViewer(appEl) {
   }
   // ITS COLUMN: what it is in its kind's own words, its kind, what it is doing,
   // its moods, when it came out, what it runs on, and what was done to it and how it answered.
+  // THE CROWDED PRESS, ON A PHONE (CORE-54; Wright 2026-11-20 16:57Z: "On a phone, a tap on crowded marks or conversation badges opens the existing
+  // chooser content in the phone column", inside Darko's pick 4). A contested press has always selected a chooser id (`openChooser`), whose only surface
+  // is the bubble, and bubbles exist only in painting-only mode: on a phone the column is the one selection surface and it had no view for that id, so the
+  // press rendered nothing. This view hands the column the SAME chooser (chooserHTML: its groups, its rows, its ids, its order) and a row press goes through
+  // the one delegate (`[data-choose]` -> selectMark), exactly as a row in a bubble does. Phone only: a desktop selection is unchanged, byte for byte.
+  function chooserColumnView(id) {
+    const ids = id ? chooserIdsFrom(id) : null;
+    if (!ids || !onPhone()) return null;
+    // the column opens a view only with a handle and a key; a view that brings its own door (here an empty one) is painted as handed, with no home read
+    return { key: id, handle: "the-town", residentLink: false, kicker: "here", title: "Choose one", byline: " ", door: { blocks: [] },
+      chooser: { fill: (host) => { host.innerHTML = chooserHTML(id); } } };
+  }
   function creatureColumnView(id) {
     if (!isCreatureId(id)) return null;
     const c = liveCreatures.get(id) ?? null;
@@ -16030,6 +16105,11 @@ export function mountViewer(appEl) {
   function positionCreatureSays() {
     const host = bubbleHost();
     if (!host) return;
+    // Nothing speaking (no entry that is connected and showing; a retained hidden or disconnected one is not): there is nothing to lay out,
+    // so read no rectangle at all: not the host's, not a token's, not a resident's. This runs with every camera write.
+    let speaking = false;
+    for (const say of creatureSays.values()) if (say.el?.isConnected && say.el.classList.contains("show")) { speaking = true; break; }
+    if (!speaking) return;
     const b = host.getBoundingClientRect();
     const shown = [];
     for (const [id, say] of creatureSays) {
@@ -16666,7 +16746,7 @@ export function mountViewer(appEl) {
     // to swap either: the click scrolls the mark's cell up in the Telling, and
     // it still does.)
     const selected = markInteraction.getState().selectedId;
-    const column = convoColumnView(selected) ?? parcelColumnView(selected) ?? regionColumnView(selected) ?? creatureColumnView(selected) ?? residentColumnView(selected) ?? markColumnView(selected);
+    const column = chooserColumnView(selected) ?? convoColumnView(selected) ?? parcelColumnView(selected) ?? regionColumnView(selected) ?? creatureColumnView(selected) ?? residentColumnView(selected) ?? markColumnView(selected);
     if (column) homeColumn.open(column); else homeColumn.close();
     renderConvoWash(); // the selected thread keeps its wash drawn, and clearing the selection takes it away
     // ── AND THE MAP HAS TO HEAR ABOUT IT (2026-09-12) ─────────────────────
@@ -17207,6 +17287,12 @@ export function mountViewer(appEl) {
   let devTimer = null;
   // the size field applies as it is typed (a number only; anything else leaves the choice as it was)
   root.addEventListener("input", (e) => { const f = e.target?.closest?.("[data-dsel-size]"); if (f) typeDisplaySize(f.value); });
+  // A ROW PRESS BEGINS ON THE ROW (CORE-54, found in the built capture). On a touch screen a crowded press on the map opens the chooser in the phone column
+  // under the finger, and the click that follows the same touch then lands on the row that appeared there: the chooser chose its first row by itself
+  // (pointerup 5972 ms, "Choose one" 5991, click on a row 6033, "The Green House" 6120). So a click on a row counts only if its pointer press began on that
+  // row; a keyboard activation (no pointer, detail 0) is always a press.
+  let chooseDownOn = null;
+  root.addEventListener("pointerdown", (e) => { chooseDownOn = e.target.closest?.("[data-choose]") ?? null; }, true);
   root.addEventListener("click", (e) => {
     // the tour first, and every branch returns: while it is up it owns the page,
     // and a click that fell through to the painting underneath would select a
@@ -17252,6 +17338,7 @@ export function mountViewer(appEl) {
     // picking one out of the stack: from here it is an ordinary selection, and
     // the mark opens in exactly the bubble it would have opened in alone
     const chosen = e.target.closest("[data-choose]");
+    if (chosen && e.detail !== 0 && chooseDownOn !== chosen) return;     // a click whose press began elsewhere (the map) is not a row press
     if (chosen && isConvoChoiceId(chosen.dataset.choose)) { selectMark(chosen.dataset.choose); return; }
     if (chosen) { selectMark(chosen.dataset.choose, { scrollCell: true }); return; }
     const actor = e.target.closest("[data-act-as]");

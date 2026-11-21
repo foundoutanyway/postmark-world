@@ -74,7 +74,9 @@ standing institution and its first instance; `the-town/node` and
 `the-town/edge`, the logos primitives the whole ontology roots in; and
 `the-town/character-cap`, the mark class's first predicate-child parameter
 (*SUPERSEDED in part 2026-10-16: it is the constitution child property of
-`mark`'s sovereign `body` property, § Property and predicate*).
+`mark`'s sovereign `body` property, § Property and predicate*); and
+`the-town/outline-point-cap`, the mark class's footprint-outline cap dial
+(WLD-196).
 
 The seatings, on the record (prose about the channel, never the channel
 itself): household, member-of
@@ -354,14 +356,52 @@ Darko, 2026-10-16 15:12: *"ideas are no longer marks. They are posts, which
 are a different subclass of postmark-node. Same for bounties."*
 
 - **`post` is a sibling of `mark` under `postmark-node`.** An idea and a bounty
-  are posts; neither stands in the world as a mark, sited or predicated.
+  are posts, and so is a flare (below); none stands in the world as a mark,
+  sited or predicated.
 - **A post carries a sovereign `about:` property naming a mark** (ruled
   16:02): an idea or a bounty about a mark names it there, instead of
-  standing under it.
-- **What a post is beyond that is not yet written into law** — its other
-  properties, who may write one, and which other asks join it. The 58 idea
-  marks and 3 bounty marks the record holds on 2026-10-16 move to posts as
-  WLD-73 part 2's data change.
+  standing under it. A flare's `about:` names a spark.
+- **What an idea and a bounty carry as posts beyond that is not yet written
+  into law** — their other properties, who may write one, and which other asks
+  join them. The 58 idea marks and 3 bounty marks the record holds on
+  2026-10-16 move to posts as WLD-73 part 2's data change.
+
+**The flare — a spark turns into a flare (ruled 2026-11-16, Darko, the CON-18
+growth sitting).** *"maybe this can continue the analogy of light, and call it a
+flare. So a spark turns into a flare, and everything is in the Illuminator's
+domain."* A flare is the first post class written in law.
+
+- **What it is.** A flare is a post about a spark, made off-town: by a
+  household, which claims the posting quest, or by the town, on its own
+  channels. It is a post, the sibling of a mark under `postmark-node`, and
+  stands nowhere in the world: it is no mark, never sited or placed, and it is
+  not necessarily an ask.
+- **Its `about:` names a public spark** (ruled 17:04, call 15). A private
+  spark, a draft memory, cannot be the spark of a flare: the spark is put
+  forward first, and goes through ordinary acceptance as any spark does. A
+  public post in an agent town counts as a flare.
+- **Its parts:** the post's link, the external URL of the place it was posted
+  (YouTube, TikTok or anywhere else), one for every place it was posted; the
+  platform it is on; whether it is text or video; ideally a screenshot of it,
+  unless the platform does not allow one; and the household that made it (the
+  town, for the town's own).
+- **It is linked to its spark, and the spark back to it** (ruled 2026-11-18,
+  Darko: *"whenever there is a flare that's posted from a Spark, there
+  definitely needs to be a link from that Spark to the flare wherever it's
+  posted. Like whether it be YouTube or TikTok or anywhere else."*). A flare
+  names the public spark it was posted from, and carries the external URL of
+  each place it was posted; a flare with no spark named, or with a posting
+  place whose URL is lost, is not a complete flare. A spark can list its
+  flares and where each was posted. A private spark names no flare, since no
+  flare can be about it.
+- **Its states:** a flare starts *reported*, and is then *accepted as text*,
+  *accepted as video* or *declined*; the acceptance says which form it was
+  accepted as. What a flare pays is the posting quest's word, not this class's.
+- **Who advances it:** Iris, wright and keemin. Iris, the Illuminator, holds
+  flares now; the journalist splits off from her once the town's own posting
+  runs daily.
+
+Rendered in the world as `the-town/flare`, a class extending `post`.
 
 ## Class-nodes
 
@@ -482,7 +522,13 @@ pedantic to require like an entire child predicate mark"*; ruled 12:42:
   subclasses"*). The maker writes it, and every mark subclass inherits it —
   sited marks, predicates, parcels, namings, things. Its locked part is a
   constitution child property, the 150-character cap: `the-town/character-cap`
-  folds into it. Class-nodes and properties take their body from the
+  folds into it. One more locked dial bounds a mark's 2D footprint outline
+  only (WLD-196): `outline-point-cap`, 256 points for the `points:` outline; it
+  does not cap 3D `form:` geometry, and a parcel keeps its own `extent_m`. No
+  resident common-ground size cap is set for now; the town may declare opposed
+  any mark, a parcel included, that is obnoxious or deliberately obstructive, at
+  its discretion until enough cases support a guideline; the town's opposed
+  removes the mark at the next settlement. Class-nodes and properties take their body from the
   meta-class, never from `mark`, uncapped; the 150 cap stays on residents'
   marks (ruled 18:44).
 
@@ -1272,6 +1318,21 @@ and never returned, up to the same cap of three. One parcel per resident still h
 resident for each parcel. A claim past a household's room is opposed at the
 crossing like any claim past the cap, citing `the-town/claim-cap`. Its
 sentence names the room, the cutoff and the price of the next room.
+
+**A move within one window, ruled 2026-11-19** (Darko, 22:06 EST, WLD-218:
+"whole window only works now because the live version isn't implemented; will
+need to revisit then. but for now yes this is fine"). A resident's own
+withdrawals in a window apply before their claims in that window, in either
+act order, and each of those claims is judged on the holding that results. A
+parcel the resident withdrew in the window no longer counts toward
+one-per-resident or toward the household's room, and no longer holds its
+ground against those claims. Only a resident's own withdrawal of their own
+parcel counts, and it gives no say over anyone else's parcel; the limits, the
+room and its price, and who owns what are unchanged. A claim whose resulting
+holding still puts the resident past one parcel, or the household past its
+room, is refused as before, and its author is told why. The whole window is
+the unit only because the live version is not built yet: revisit this when
+live edits land (POS-686, WLD-209).
 
 Rendered in the world as `the-town/claim-cap`, `the-town/one-per-resident`,
 `the-town/homes-per-resident` and `the-town/declared-home` (children of
@@ -2086,6 +2147,8 @@ A walk, a letter that mattered, a thought, a quiet afternoon, a conversation or 
 way. An event is one possible tie, not what makes a spark. Kept private, it is a draft spark, a private memory;
 put forward, it is public and goes through ordinary acceptance.
 
+A spark turns into a flare: a public spark is what a flare, a post made off-town about it, is about (§ Posts).
+
 Rendered in the world as `the-town/spark`.
 
 Ruled by Darko in the CORE-70 sitting. Call 5: "a Spark should minimally just require like a time and a place and a
@@ -2462,6 +2525,18 @@ names its owning doc, and the owner outranks every other use.
   the record's grouping (§ the emission lines), which is why that clause
   stands as `the-hearing-and-the-record` and did not take this word. Registered
   the day the second sense tried to claim the slug and the lint refused it.
+- **post** — ① **a town post**: the class `post`, a sibling of `mark` under
+  `postmark-node` (§ Posts), whose classes are the idea, the bounty and the
+  flare; it stands nowhere in the world and is not necessarily an ask; ② **a
+  social post**: what a household or the town publishes on a platform off-town
+  (a social network, a video channel, a public post in an agent town). A
+  surface that says "post" says which; the flare is the one place the two
+  meet: a social post about a spark, held in law as a town post that carries
+  its link, platform and form. A mark is neither.
+- **spark / flare** — a **spark** is a mark, a moment remembered (§ The
+  spark); a **flare** is a post, made off-town about a public spark (§ Posts).
+  They are two classes, and "a spark turns into a flare" says what is made from
+  a spark, not that one class is the other.
 
 A future lint may warn when a new mark takes a registered word in an
 unregistered sense — the meta-class already owns the naming grammar — but
