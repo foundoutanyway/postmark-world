@@ -14,6 +14,7 @@ import assert from "node:assert/strict";
 import {
   quantile, median, spread, quietFrom, frameGaps, longestTask, windowTasks, observeInteractive, interactiveSummary, bytesCutoff,
   centredWithin, sameScale, dragMoved, sameVersion, sameFrame, freshnessMoved, versionOf, FRAME_KEYS, TAG_KEYS, FRESHNESS_KEYS,
+  pillOffsetM, standingNear, classifyRequests, NEAR_CENTRE_M,
   sampleProblems, auditRow, readTown, repoPathOf, PLACES, MIN_CAMERA_WRITES, MIN_TRAVEL_PX, INTERACTIVE_BOUND_MS, QUIET_MS,
 } from "./perf/world-page-audit.mjs";
 
@@ -291,6 +292,83 @@ test("THE RELEASE TAGS ARE PROVENANCE, NOT IDENTITY: the Site stamps `ref || nul
   const reshaped = versionOf({ ...BUILD, world_sha: "w2", world_ref: null });
   assert.equal(sameFrame(versionOf(BUILD), reshaped), false);
   assert.equal(sampleProblems(sample({ version_after: reshaped }), { official: true }).some((m) => /mixed frame/.test(m)), true);
+});
+
+// ── F1: the Town Centre's location test is NEAR the centre, not any pill ending in "of TC" ─────────────────────
+
+test("F1 · the Town Centre is located only by the pill's DISTANCES: near the centre passes, the Spire's pill and any far camera do not", () => {
+  const TC = PLACES.town_centre, SPIRE = PLACES.spire;
+  assert.equal(NEAR_CENTRE_M, 500);
+  assert.deepEqual(pillOffsetM("at TC · elevation +5 m"), { x: 0, y: 0 }, "exactly (0, 0)");
+  assert.deepEqual(pillOffsetM("79 m N · 54 m W of TC · elevation +5 m"), { x: -54, y: -79 }, "north is -y, west is -x, as the page prints them");
+  assert.deepEqual(pillOffsetM("5,512 m N · 3,843 m E of TC · elevation +60 m"), { x: 3843, y: -5512 }, "thousands separators");
+  assert.deepEqual(pillOffsetM("40 m S of TC"), { x: 0, y: 40 }, "one axis when the other is zero");
+  assert.equal(pillOffsetM(""), null); assert.equal(pillOffsetM("elevation +5 m"), null); assert.equal(pillOffsetM("12 m N"), null, "no 'of TC': not a position");
+  // the row-1 evidence: all three TC samples read 79 m N · 54 m W (96 m from the centre)
+  assert.equal(standingNear(TC, "79 m N · 54 m W of TC · elevation +5 m"), true);
+  assert.equal(standingNear(TC, "at TC · elevation +5 m"), true);
+  assert.equal(standingNear(TC, "300 m S · 300 m E of TC"), true, "424 m: inside the radius");
+  assert.equal(standingNear(TC, "400 m S · 400 m E of TC"), false, "566 m: outside it");
+  // THE VACUOUS CASE: the old /\bTC\b/ passed every one of these
+  assert.equal(standingNear(TC, "5,512 m N · 3,843 m E of TC · elevation +60 m"), false, "the Spire's own pill is not the Town Centre");
+  assert.equal(standingNear(TC, "25,000 m S · 40,000 m W of TC"), false, "a camera far across the map");
+  assert.equal(standingNear(TC, ""), false);
+  assert.equal(standingNear(SPIRE, "79 m N · 54 m W of TC"), false, "a place that declares no `near` is never located by the pill");
+});
+
+test("F1 · a Town Centre sample whose camera is elsewhere is not located and not 'still in view' by the pill alone", () => {
+  // what measureSample does for both: `shape || standingNear(place, pill)` — with the Spire's pill the second term is false for the Town Centre
+  const farPill = "5,512 m N · 3,843 m E of TC · elevation +60 m";
+  assert.equal(centredWithin(null, { x: 0, y: 0, width: 1000, height: 800 }) || standingNear(PLACES.town_centre, farPill), false);
+  const r = row([sample(), sample(), sample({ places: { town_centre: place({ located: false, still_in_view: false }), spire: place() } })]);
+  assert.equal(r.valid, false);
+  assert.ok(r.invalid.some((m) => /town_centre: the place was not under the middle/.test(m)));
+  assert.ok(r.invalid.some((m) => /town_centre: the place had left the screen/.test(m)));
+});
+
+// ── F2: the page's data is /api/world/*; a read of the legacy export is a fallback, and a failure ANYWHERE in the sample counts ──
+
+test("F2 · classifyRequests over the whole sample: API failures are the page's own, the legacy export is a fallback, and later phases count as much as the cold load", () => {
+  const ok = (url, extra = {}) => ({ url, status: 200, type: "Fetch", ...extra });
+  const good = [ok("https://postmark.town/world/", { type: "Document" }), ok("https://postmark.town/api/world/state"), ok("https://postmark.town/api/world/skeleton"), ok("https://postmark.town/api/world/walkers")];
+  const clean = classifyRequests(good, { prod: true });
+  assert.deepEqual([clean.failed_requests, clean.other_failed_requests, clean.legacy_data_requests], [[], [], []]);
+  assert.deepEqual(clean.api_data, { state_ok: 1, skeleton_ok: 1 });
+  // the 503-then-fallback case the review measured
+  const fell = classifyRequests([...good.slice(0, 2), { url: "https://postmark.town/api/world/state", status: 503, type: "Fetch" }, ok("https://postmark.town/WORLD/world-state.json")].filter((r, i) => i !== 1), { prod: true });
+  assert.ok(fell.failed_requests.some((f) => /503 .*\/api\/world\/state/.test(f)), "a failed API read is the page's OWN failure, not 'other'");
+  assert.equal(fell.legacy_data_requests.length, 1, "the legacy export was read");
+  assert.equal(fell.api_data.state_ok, 0);
+  // a failure that happens late (an API re-read during the pans) is in the same list: the classification is over every request of the sample
+  const late = classifyRequests([...good, { url: "https://postmark.town/api/world/state", status: 500, type: "Fetch" }], { prod: true });
+  assert.equal(late.failed_requests.length, 1);
+  // an unrelated failing request stays "other"
+  const other = classifyRequests([...good, { url: "https://postmark.town/api/world/walkers", status: 500, type: "Fetch" }], { prod: true });
+  assert.deepEqual([other.failed_requests.length, other.other_failed_requests.length], [0, 1]);
+  // not the official origin: the legacy export IS the data there, and /api/world/* is not required
+  const local = classifyRequests([ok("http://localhost:1/WORLD/world-state.json"), { url: "http://localhost:1/api/world/state", status: 404, type: "Fetch" }], { prod: false });
+  assert.deepEqual([local.failed_requests, local.legacy_data_requests, local.api_data], [[], [], null]);
+});
+
+test("F2 · an official sample that fell back to the legacy export, or never read the API snapshot, is INVALID; the accepted row's samples (no such fields) are untouched", () => {
+  const prodReqs = (extra) => classifyRequests([
+    { url: "https://postmark.town/world/", status: 200, type: "Document" }, { url: "https://postmark.town/api/world/skeleton", status: 200, type: "Fetch" }, ...extra,
+  ], { prod: true });
+  const fallback = prodReqs([{ url: "https://postmark.town/api/world/state", status: 503, type: "Fetch" }, { url: "https://postmark.town/WORLD/world-state.json", status: 200, type: "Fetch" }]);
+  const s = sample(fallback);
+  const probs = sampleProblems(s, { official: true });
+  assert.ok(probs.some((m) => /failed requests: 503 .*\/api\/world\/state/.test(m)), probs.join("; "));
+  assert.ok(probs.some((m) => /fell back to the legacy WORLD export \(mixed population\)/.test(m)), probs.join("; "));
+  assert.ok(probs.some((m) => /never read \/api\/world\/state and \/api\/world\/skeleton successfully/.test(m)), probs.join("; "));
+  const r = row([sample(), sample(), s]);
+  assert.equal(r.valid, false);
+  // the fallback alone (the API read itself did not fail) is a mixed population too
+  const alone = sample({ legacy_data_requests: ["200 https://postmark.town/WORLD/world-state.json"], api_data: { state_ok: 1, skeleton_ok: 1 } });
+  assert.ok(sampleProblems(alone, { official: true }).some((m) => /legacy WORLD export/.test(m)));
+  assert.deepEqual(sampleProblems(alone, { official: false }), [], "…but only on the official origin, where the API snapshot is the data");
+  // a clean API sample, and a sample from before these fields existed, are valid
+  assert.deepEqual(sampleProblems(sample({ legacy_data_requests: [], api_data: { state_ok: 4, skeleton_ok: 1 } }), { official: true }), []);
+  assert.deepEqual(sampleProblems(sample(), { official: true }), [], "the accepted first row's samples carry neither field");
 });
 
 test("an official baseline requires a complete frame and town counts, not matching missing values", () => {

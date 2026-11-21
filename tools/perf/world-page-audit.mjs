@@ -82,18 +82,38 @@ export const QUIET_MS = 2000;            // the stutter-free window that makes t
 // is bound - 2 s. No such window = a CENSORED observation (interactive_ms is "more than" that), which still counts as a sample.
 export const INTERACTIVE_BOUND_MS = 180000;
 export const MAP_WAIT_MS = 120000;       // how long the map may take to show before the phase has failed (a real failure, not a censoring)
-export const SETTLE_CAP_MS = 20000;      // each "let the page rest" wait between inputs is capped; whether it rested is recorded, never assumed
+export const NEAR_CENTRE_M = 500;        // the Town Centre's pill test: the camera within this many metres of TC (a stated radius; the region itself is ~2 km across)
+export const SETTLE_CAP_MS = 20000;     // each "let the page rest" wait between inputs is capped; whether it rested is recorded, never assumed
 export const MIN_CAMERA_WRITES = 5;      // a drag that moved the camera fewer times than this was inert (a slowed page may write it rarely, never not at all)
 export const MIN_TRAVEL_PX = 60;         // …or moved it less far than this (CSS px of the map)
 export const SCALE_TOLERANCE = 0.06;     // both places are panned within 6 % of the same map scale
 
 /** the two named places: what the page's search box finds them by, and the record that says where each is. */
 export const PLACES = {
-  // `standing`: what the page's own coordinate pill says when the camera is over the place ("at TC"); the Town Centre is a
-  // region two kilometres across, drawn differently at each zoom, so the pill is its evidence as well as its shape
-  town_centre: { id: "the-town/the-town-centre", query: "town centre", standing: /\bTC\b/ },
-  spire: { id: "wright/the-starforge-spire", query: "starforge spire", standing: null },
+  // `near`: the Town Centre is a region two kilometres across, drawn differently at each zoom, so the page's own coordinate pill is its evidence
+  // as well as its shape. The pill reads "at TC" only at exactly (0, 0) and "<dy> m N|S · <dx> m E|W of TC" everywhere else, so it names a place ONLY through
+  // the distances it prints: the camera is "at the Town Centre" when it is within `near.radius_m` of the centre, and nowhere else.
+  town_centre: { id: "the-town/the-town-centre", query: "town centre", near: { radius_m: NEAR_CENTRE_M } },
+  spire: { id: "wright/the-starforge-spire", query: "starforge spire", near: null },
 };
+/** the camera's offset from the Town Centre in metres {x: east+, y: south+}, read off the page's coordinate pill, or null if the text is not a position. */
+export function pillOffsetM(text) {
+  const s = String(text ?? "");
+  if (/^at TC\b/.test(s)) return { x: 0, y: 0 };
+  if (!/\bof TC\b/.test(s)) return null;
+  let x = 0, y = 0, axes = 0;
+  for (const m of s.matchAll(/([\d,]+(?:\.\d+)?)\s*m\s+([NSEW])\b/g)) {
+    const d = Number(m[1].replace(/,/g, "")); if (!Number.isFinite(d)) return null;
+    if (m[2] === "N") y -= d; else if (m[2] === "S") y += d; else if (m[2] === "W") x -= d; else x += d;
+    axes++;
+  }
+  return axes ? { x, y } : null;
+}
+/** is the page's own pill, for this place, within the stated radius of its centre? Only places that declare `near` can be located this way. */
+export function standingNear(place, text) {
+  const o = place?.near ? pillOffsetM(text) : null;
+  return !!o && Math.hypot(o.x, o.y) <= place.near.radius_m;
+}
 
 // ── pure helpers (the focused offline check exercises these) ────────────────────────────────────────────────
 export const quantile = (xs, p) => {
@@ -226,6 +246,10 @@ export function sampleProblems(s, { official }) {
   if (!(s.bytes_cold_load_encoded > 0)) bad.push("no cold-load bytes were read");
   if (!s.bytes_basis) bad.push("the cold-load byte cutoff is unstated");
   if (s.failed_requests?.length) bad.push(`failed requests: ${s.failed_requests.slice(0, 3).join(", ")}`);
+  // on the official origin the page's data is the /api/world/* snapshot; a read of the legacy WORLD export is the viewer's fallback after the API failed, i.e. a
+  // different (smaller) population than the one the row names — a mixed population, never a baseline
+  if (official && s.legacy_data_requests?.length) bad.push(`the page fell back to the legacy WORLD export (mixed population): ${s.legacy_data_requests.slice(0, 2).join(", ")}`);
+  if (official && s.api_data && !(s.api_data.state_ok > 0 && s.api_data.skeleton_ok > 0)) bad.push(`the page never read /api/world/state and /api/world/skeleton successfully (${s.api_data.state_ok}, ${s.api_data.skeleton_ok})`);
   // the FRAME (World code/snapshot + Site release) may not move during a sample; the town's freshness (town_sha, crossing…) may, and is recorded
   if (official && !sameFrame(s.version_before, s.version_after)) bad.push("the rendered World/Site frame changed during the sample (mixed frame)");
   if (official && !s.version_before) bad.push("build.json was unavailable, so the served version is unknown");
@@ -381,6 +405,24 @@ const bareGrab = (page) => page.evaluate(() => {
 });
 const drawnMarks = (page) => page.evaluate(() => new Set([...document.querySelectorAll("#wv-overlay [data-id]")].map((e) => e.getAttribute("data-id"))).size);
 
+/** What the page asked for over the WHOLE sample (every measured phase, not only the cold load), sorted into: failures of its own document, code and data
+ *  (which invalidate), failures of anything else (recorded), the legacy WORLD export requested at all (on the official origin that is the viewer's FALLBACK
+ *  when /api/world/state or /api/world/skeleton did not answer: a different population from the one the row names, so it invalidates), and whether the two
+ *  API reads that carry the town's population and skeleton succeeded. `prod`: the official origin, whose data is the /api/world/* snapshot. */
+export function classifyRequests(requests, { prod = false } = {}) {
+  const failed = requests.filter((r) => r.failed || r.status >= 400);
+  const api = (r) => /\/api\/world\/(state|skeleton)(\?|$)/.test(r.url);
+  const legacy = (r) => /\/WORLD\/(world-state|skeleton)\.json(\?|$)/.test(r.url);
+  const own = (r) => r.type === "Document" || /\/(WORLD\/(world-state|skeleton)\.json|world-engine\/.*\.mjs|_astro\/.*\.js)(\?|$)/.test(r.url) || (prod && api(r));
+  const fmt = (r) => `${r.failed ?? r.status} ${r.url}`;
+  const ok = (name) => requests.filter((r) => new RegExp(`/api/world/${name}(\\?|$)`).test(r.url) && !r.failed && r.status >= 200 && r.status < 300).length;
+  return {
+    failed_requests: failed.filter(own).map(fmt),
+    other_failed_requests: failed.filter((r) => !own(r)).map(fmt),
+    legacy_data_requests: prod ? requests.filter(legacy).map((r) => `${r.failed ?? r.status ?? "?"} ${r.url}`) : [],
+    api_data: prod ? { state_ok: ok("state"), skeleton_ok: ok("skeleton") } : null,
+  };
+}
 /** wait until no long task has ended in the last `ms`, for at most `cap`; returns whether the page did rest (recorded, never assumed). Asks the page one number, not its whole history. */
 async function settle(page, ms, cap = SETTLE_CAP_MS) {
   const end = Date.now() + cap;
@@ -402,6 +444,7 @@ async function measureSample(browser, origin, cpu, scaleRef, worldPath, boundMs 
   const ctx = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1 });
   await ctx.addInitScript(pageInit);
   const page = await ctx.newPage();
+  const reqs = new Map();      // every request of the whole sample, kept to the end (a failure or a legacy fallback in ANY phase counts, not only the cold load's)
   try {
     // same-site first, so the CPU throttle is on the process the World page then runs in
     await page.goto(`${origin}/build.json`);
@@ -411,7 +454,7 @@ async function measureSample(browser, origin, cpu, scaleRef, worldPath, boundMs 
     await cdp.send("Network.enable");
     const metrics = async () => Object.fromEntries((await cdp.send("Performance.getMetrics")).metrics.map((m) => [m.name, m.value]));
     // the wire: every request's start, finish and size, and what it was
-    const reqs = new Map(); let docT0 = null;
+    let docT0 = null;
     cdp.on("Network.requestWillBeSent", (e) => { if (!reqs.has(e.requestId)) reqs.set(e.requestId, { url: e.request.url, t0: e.timestamp, type: e.type }); if (e.type === "Document" && e.request.url === worldUrl && docT0 === null) docT0 = e.timestamp; });
     cdp.on("Network.responseReceived", (e) => { const r = reqs.get(e.requestId); if (r) { r.status = e.response.status; r.type = e.type; } });
     cdp.on("Network.loadingFinished", (e) => { const r = reqs.get(e.requestId); if (r) { r.t1 = e.timestamp; r.bytes = e.encodedDataLength; } });
@@ -444,12 +487,6 @@ async function measureSample(browser, origin, cpu, scaleRef, worldPath, boundMs 
     out.requests_cold_load = done.length;
     out.bytes_by_type = {}; for (const r of done) out.bytes_by_type[r.type ?? "Other"] = (out.bytes_by_type[r.type ?? "Other"] ?? 0) + (r.bytes ?? 0);
     out.cold_load_files = done.map((r) => { try { return new URL(r.url).pathname; } catch { return r.url; } }).sort();
-    // a failed request invalidates the sample only if it is the page itself or the town's own data and code; any other
-    // failure is recorded beside the sample (other_failed_requests), where a reader can see it, but is not the measure's concern
-    const failed = [...reqs.values()].filter((r) => r.failed || r.status >= 400);
-    const own = (r) => r.type === "Document" || /\/(WORLD\/(world-state|skeleton)\.json|world-engine\/.*\.mjs|_astro\/.*\.js)(\?|$)/.test(r.url);
-    out.failed_requests = failed.filter(own).map((r) => `${r.failed ?? r.status} ${r.url}`);
-    out.other_failed_requests = failed.filter((r) => !own(r)).map((r) => `${r.failed ?? r.status} ${r.url}`);
 
     // 2 ── the tour holds the roll-in; a returning visitor skips it
     // (the tour's wrapper, .wv-tour, carries `hidden`; its card never does)
@@ -495,7 +532,8 @@ async function measureSample(browser, origin, cpu, scaleRef, worldPath, boundMs 
       rec.settled_after_pick = await settle(page, 1500);
       const standing = () => page.evaluate(() => document.querySelector(".wv-spectator-coordinate")?.textContent?.trim() ?? "");
       rec.standing = await standing();
-      rec.located = centredWithin(await placeRect(page, place.id), await paneRect(page)) || !!place.standing?.test(rec.standing);
+      const off = pillOffsetM(rec.standing); rec.standing_offset_m = off ? Math.round(Math.hypot(off.x, off.y)) : null;
+      rec.located = centredWithin(await placeRect(page, place.id), await paneRect(page)) || standingNear(place, rec.standing);
       rec.drawn_marks = await drawnMarks(page);
       // the drag: a hand moving the map in a slow ellipse for 10 s, ~60 moves a second
       cam = await camera(page);
@@ -532,7 +570,7 @@ async function measureSample(browser, origin, cpu, scaleRef, worldPath, boundMs 
       // how far the painting travelled under the hand: the extent of the svg's translate during the drag (CSS px)
       rec.travel_px = R.tx && R.ty ? Math.hypot(R.tx[1] - R.tx[0], R.ty[1] - R.ty[0]) : 0;
       rec.still_in_view = (await placeRect(page, place.id).then((r) => !!r && r.x < pane.x + pane.width && r.x + r.width > pane.x && r.y < pane.y + pane.height && r.y + r.height > pane.y))
-        || !!place.standing?.test(await standing());
+        || standingNear(place, await standing());
       out.places[key] = rec;
       await page.mouse.move(4, 4);
     }
@@ -550,6 +588,10 @@ async function measureSample(browser, origin, cpu, scaleRef, worldPath, boundMs 
   } catch (e) {
     out.error = String(e?.message ?? e).split("\n").slice(0, 6).join(" | ").slice(0, 600);
   } finally {
+    // a failed request invalidates the sample only if it is the page itself or the town's own code and data (on prod: /api/world/state and /skeleton, and
+    // any request of the legacy WORLD export, which is the viewer's fallback); any other failure is recorded (other_failed_requests), not the measure's concern.
+    // Read here, over everything the sample requested, so a failure in the pans or the idle counts as much as one in the cold load.
+    Object.assign(out, classifyRequests([...reqs.values()], { prod: origin === PROD }));
     await ctx.close();
   }
   const after = await readTown(origin);
