@@ -13,7 +13,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   quantile, median, spread, quietFrom, frameGaps, longestTask, windowTasks, observeInteractive, interactiveSummary, bytesCutoff,
-  centredWithin, sameScale, dragMoved, sameVersion, sameFrame, freshnessMoved, versionOf, FRAME_KEYS, FRESHNESS_KEYS,
+  centredWithin, sameScale, dragMoved, sameVersion, sameFrame, freshnessMoved, versionOf, FRAME_KEYS, TAG_KEYS, FRESHNESS_KEYS,
   sampleProblems, auditRow, repoPathOf, PLACES, MIN_CAMERA_WRITES, MIN_TRAVEL_PX, INTERACTIVE_BOUND_MS, QUIET_MS,
 } from "./perf/world-page-audit.mjs";
 
@@ -70,13 +70,18 @@ test("a place is 'located' only when it is under the middle of the map", () => {
 
 // ── C: exact, and censored ─────────────────────────────────────────────────────────────────────────────────
 
-test("C exact: a page that goes quiet inside the bound reads the same as before, and its observation is explicit", () => {
-  const r = observeInteractive([[9000, 300], [9500, 400], [20_000, 100]], 9000);
+test("C exact: an early quiet window stops the watching; the BUDGET is stated apart from the window actually observed and counted", () => {
+  const r = observeInteractive([[9000, 300], [9500, 400], [20_000, 100], [60_000, 500]], 9000);
   assert.equal(r.interactive_ms, 9900, "quiet from the end of the first burst (9500 + 400) to the next task");
   assert.equal(r.interactive_censored, null);
-  assert.deepEqual([r.interactive_observation.from_ms, r.interactive_observation.until_ms, r.interactive_observation.bound_ms, r.interactive_observation.quiet_window_ms],
-    [9000, 9000 + INTERACTIVE_BOUND_MS, INTERACTIVE_BOUND_MS, QUIET_MS], "the bound is stated, by the page's clock, with the 2 s window");
-  assert.equal(r.interactive_observation.last_start_tried_ms, 9000 + INTERACTIVE_BOUND_MS - QUIET_MS, "the 2 s lookahead lies inside the bound");
+  const o = r.interactive_observation;
+  assert.deepEqual([o.from_ms, o.budget_ms, o.budget_until_ms, o.quiet_window_ms], [9000, INTERACTIVE_BOUND_MS, 9000 + INTERACTIVE_BOUND_MS, QUIET_MS], "the budget, by the page's clock, with the 2 s window");
+  assert.equal(o.first_quiet_start_ms, 9900);
+  assert.equal(o.observed_to_ms, 9900 + QUIET_MS, "what the answer rested on: through the end of its own 2 s window, not the unspent 180 s");
+  assert.equal(o.observed_ms, 9900 + QUIET_MS - 9000);
+  assert.equal("last_start_tried_ms" in o, false, "no 'latest start tried' in the unspent future of an exact C");
+  assert.equal(o.count, 2, "only the tasks inside the window actually observed are counted (the ones at 20 s and 60 s are after it)");
+  assert.equal(o.total_ms, 300 + 400);
 });
 
 test("C censored: no 2 s window inside the bound is `>N s (never quiet: K long tasks, L ms total in the window)`, with its bound, reason and counts", () => {
@@ -89,8 +94,12 @@ test("C censored: no 2 s window inside the bound is `>N s (never quiet: K long t
   assert.equal(c.long_task_ms, 400 * 120);
   assert.equal(c.text, `>187.0 s (never quiet: 400 long tasks, 48000 ms total in the window)`);
   assert.match(c.reason, /no 2 s window without a long task began between map shown/);
-  assert.equal(r.interactive_observation.count, 400, "the window's long-task evidence is kept");
-  assert.equal(r.interactive_observation.longest.length, 5);
+  const o = r.interactive_observation;
+  assert.equal(o.count, 400, "the window's long-task evidence is kept");
+  assert.equal(o.longest.length, 5);
+  assert.equal(o.observed_to_ms, o.budget_until_ms, "a censored sample has used the whole budget");
+  assert.equal(o.observed_ms, INTERACTIVE_BOUND_MS);
+  assert.equal(o.last_start_tried_ms, 9000 + INTERACTIVE_BOUND_MS - QUIET_MS);
 });
 
 test("the lookahead is inside the bound: a quiet window that would only END after the bound is censored, not exact", () => {
@@ -104,21 +113,39 @@ test("the lookahead is inside the bound: a quiet window that would only END afte
   assert.equal(late.interactive_censored.gt_ms, 9000 + INTERACTIVE_BOUND_MS - QUIET_MS);
 });
 
-test("C across samples: exact medians are exact; one censored sample ranks above the exact ones and the middle stays exact; two censored make the median `>`", () => {
+test("C across samples is by INTERVAL: a censored bound is relative to its own sample's map-shown time, so it need not exceed an exact C", () => {
   const ex = (ms) => ({ interactive_ms: ms, interactive_censored: null });
   const ce = (gt) => ({ interactive_ms: null, interactive_censored: { gt_ms: gt, long_tasks: 10, long_task_ms: 1000, text: `>${gt / 1000} s` } });
+  const iv = (s, k) => [s[k], s[`${k}_lower_ms`], s[`${k}_lower_strict`], s[`${k}_upper_ms`]];
   const all = interactiveSummary([ex(30_000), ex(10_000), ex(20_000)]);
-  assert.equal(all.median, 20_000); assert.equal(all.n_censored, 0); assert.equal(all.median_censored, false);
+  assert.deepEqual(iv(all, "median"), [20_000, 20_000, false, 20_000]); assert.equal(all.n_censored, 0); assert.equal(all.median_censored, false);
+  assert.deepEqual([all.min, all.max], [10_000, 30_000]);
+  // a censored bound well above every exact value: the middle is the larger exact, exactly as the plain case; the max is unbounded
   const one = interactiveSummary([ex(30_000), ce(178_000), ex(10_000)]);
-  assert.equal(one.median, 30_000, "the censored sample is above every exact one, so the middle by rank is the larger exact");
-  assert.equal(one.max_censored, true); assert.equal(one.max, null); assert.equal(one.max_gt_ms, 178_000); assert.equal(one.n_censored, 1);
+  assert.equal(one.median, 30_000);
+  assert.deepEqual(iv(one, "max"), [null, 178_000, true, null], "the max is more than 178 s and has no upper bound");
+  assert.equal(one.min, 10_000); assert.equal(one.n_censored, 1);
+  // THE LEAD'S CASE [10 s, 184 s, >182 s]: the median is the smaller of 184 and X>182, so it lies in (182, 184] — no exact value is established
+  const lead = interactiveSummary([ex(10_000), ex(184_000), ce(182_000)]);
+  assert.equal(lead.median, null, "184 s is not established as the median");
+  assert.deepEqual(iv(lead, "median"), [null, 182_000, true, 184_000]);
+  assert.equal(lead.median_censored, true);
+  assert.deepEqual(iv(lead, "max"), [null, 184_000, false, null], "the max is at least 184 s (X could be smaller or larger), unbounded above");
+  assert.equal(lead.min, 10_000);
+  // overlapping bounds: [>182 s, >185 s, 184 s] — the median is at least 184 s (184 if X<184, else the smaller of X and Y), unbounded above
+  const overlap = interactiveSummary([ce(182_000), ce(185_000), ex(184_000)]);
+  assert.deepEqual(iv(overlap, "median"), [null, 184_000, false, null]);
+  assert.deepEqual(iv(overlap, "min"), [null, 182_000, true, 184_000], "the min is between >182 s and 184 s");
+  // two censored beside one exact: the middle is censored; no median over the finite subset
   const two = interactiveSummary([ex(10_000), ce(178_000), ce(177_000)]);
   assert.equal(two.median, null, "no finite-subset median");
-  assert.equal(two.median_censored, true); assert.equal(two.median_gt_ms, 177_000);
+  assert.deepEqual(iv(two, "median"), [null, 177_000, true, null]);
   assert.match(two.text, /2 of 3 samples censored/);
+  assert.match(two.text, /median >177000 ms/);
   const three = interactiveSummary([ce(178_000), ce(177_000), ce(179_000)]);
-  assert.equal(three.median_censored, true);
+  assert.deepEqual(iv(three, "median"), [null, 178_000, true, null]);
   assert.equal(interactiveSummary([ex(1), { interactive_ms: null, interactive_censored: null }]), null, "a sample with neither is a gap: no summary at all");
+  assert.equal(interactiveSummary([ex(5_000), ex(5_000), ce(5_000)]).median, 5_000, "a tie with an exact value: the lower bound is the exact one, the censored one is above it");
 });
 
 test("the cold-load bytes name their cutoff: C when reached, the end of the observation when it was not", () => {
@@ -232,8 +259,24 @@ test("TOWN FRESHNESS ALONE DOES NOT INVALIDATE: town_sha, town_data_sha and the 
   assert.equal(sameFrame(null, versionOf(BUILD)), false);
 });
 
+test("THE RELEASE TAGS ARE PROVENANCE, NOT IDENTITY: the Site stamps `ref || null`, so a null or renamed code_ref/world_ref with the same shas is the same frame", () => {
+  assert.deepEqual(TAG_KEYS, ["code_ref", "world_ref"]);
+  assert.equal(FRAME_KEYS.some((k) => TAG_KEYS.includes(k)), false, "no tag is a frame key");
+  for (const tags of [{ code_ref: null, world_ref: null }, { world_ref: null }, { code_ref: "release/renamed", world_ref: "settlement/S183-renamed" }]) {
+    const other = versionOf({ ...BUILD, ...tags });
+    assert.equal(sameFrame(versionOf(BUILD), other), true, JSON.stringify(tags));
+    const r = row([sample(), sample({ version_before: other, version_after: other }), sample()], true, { ...TOWN, ...tags });
+    assert.equal(r.valid, true, `${JSON.stringify(tags)}: ${r.invalid.join("; ")}`);
+    assert.deepEqual(r.tags, { code_ref: tags.code_ref !== undefined ? tags.code_ref : BUILD.code_ref, world_ref: tags.world_ref !== undefined ? tags.world_ref : BUILD.world_ref }, "recorded as provenance in the row");
+  }
+  // …while a changed sha under an unchanged (or null) label is a different frame
+  const reshaped = versionOf({ ...BUILD, world_sha: "w2", world_ref: null });
+  assert.equal(sameFrame(versionOf(BUILD), reshaped), false);
+  assert.equal(sampleProblems(sample({ version_after: reshaped }), { official: true }).some((m) => /mixed frame/.test(m)), true);
+});
+
 test("an official baseline requires a complete frame and town counts, not matching missing values", () => {
-  for (const town of [null, { ...TOWN, marks: null }, { ...TOWN, parcels: null }, { ...TOWN, world_sha: null }, { ...TOWN, code_ref: null }, { ...TOWN, world_ref: null }]) {
+  for (const town of [null, { ...TOWN, marks: null }, { ...TOWN, parcels: null }, { ...TOWN, world_sha: null }, { ...TOWN, code_sha: null }, { ...TOWN, world_digest: null }, { ...TOWN, settlement: null }]) {
     const r = row([sample(), sample(), sample()], true, town);
     assert.equal(r.valid, false, JSON.stringify(town));
   }

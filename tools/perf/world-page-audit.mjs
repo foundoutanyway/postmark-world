@@ -28,19 +28,26 @@
 //   map_shown_ms              the first moment svg#map-svg exists AND at least one drawn mark (#wv-overlay [data-id]) is in
 //                             it, in a visible tab — the map is on screen with its marks, not merely attached.
 //   interactive_ms            C. The earliest moment at or after map_shown_ms from which NO long task (>= 50 ms, the Long Tasks
-//                             API) starts for the next 2000 ms. "Answers without stutter." It is watched for INTERACTIVE_BOUND_MS
-//                             (180 s) of the page's clock after the map is shown, and a quiet window must END inside that bound, so the
-//                             2 s lookahead is inside it: the latest start tried is bound - 2 s. If no such window exists the sample is
-//                             CENSORED, not failed: interactive_ms is null and interactive_censored carries gt_ms (C is more than this),
-//                             the reason, and the counts, rendered as `>N s (never quiet: K long tasks, L ms total in the window)`.
-//                             interactive_observation keeps the window (from/until, bound, last start tried, count/total/max/five longest
-//                             tasks). A censored sample is a sample: bytes, both pans, idle and heap still run. The audit's value for C is the
-//                             median by rank over the three samples with every censored one ranking above every exact one: exact when the
-//                             middle sample is exact, `>` the censored bound when it is not — never the median of the exact subset.
-//   COMPARABILITY             rows compare on the rendered FRAME: Site release (code_sha, code_ref) and World snapshot (world_sha, world_ref,
-//                             world_settlement, world_digest). The town's freshness (town_sha, town_data_sha, crossing, town_index_as_of)
-//                             moves without changing what is rendered, so it rides as per-sample provenance (version_before/after,
-//                             freshness_moved) and never invalidates a sample. A frame change during or between samples does.
+//                             API) starts for the next 2000 ms. "Answers without stutter." The page may be watched for up to a BUDGET of
+//                             INTERACTIVE_BOUND_MS (180 s) of its clock after the map is shown, and a quiet window must END inside that
+//                             budget, so the 2 s lookahead is inside it: the latest start tried is budget - 2 s. If no such window exists
+//                             the sample is CENSORED, not failed: interactive_ms is null and interactive_censored carries gt_ms (C is more
+//                             than this), the reason, and the counts, rendered as `>N s (never quiet: K long tasks, L ms total in the window)`.
+//                             interactive_observation separates the BUDGET (budget_ms, budget_until_ms) from the window ACTUALLY OBSERVED
+//                             (observed_to_ms, observed_ms): an exact C stops the watching at the end of its own 2 s window (C + 2 s), a
+//                             censored one has used the whole budget; the long-task count/total/max/five longest are those of the window
+//                             actually observed. A censored sample is a sample: bytes, both pans, idle and heap still run.
+//                             ACROSS SAMPLES, C is not a rank of numbers but of INTERVALS: each censoring bound is relative to its own sample's
+//                             map-shown time while C is navigation-relative, so a censored `>182 s` is not known to exceed an exact 184 s.
+//                             Exact: [ms, ms]; censored: (gt, unbounded). The min, median and max each lie between the k-th smallest lower bound
+//                             and the k-th smallest upper bound; the value is exact only when those meet, and otherwise the row keeps the interval
+//                             (X_lower_ms, X_lower_strict, X_upper_ms with null = unbounded) and invents no number — never the median of the
+//                             exact subset. [10 s, 184 s, >182 s] has a median in (182 s, 184 s].
+//   COMPARABILITY             rows compare on the rendered FRAME: the Site release's code_sha and the World snapshot (world_sha, world_settlement,
+//                             world_digest). The release tags (code_ref, world_ref) are labels the Site stamps as `ref || null`: provenance only
+//                             (row.tags), may be null or renamed, never required or compared. The town's freshness (town_sha, town_data_sha,
+//                             crossing, town_index_as_of) moves without changing what is rendered, so it rides as per-sample provenance
+//                             (version_before/after, freshness_moved) and never invalidates a sample. A frame change during or between samples does.
 //   idle_busy_pct             10 s with nothing touched: renderer main-thread task time / wall time (CDP TaskDuration), %.
 //   heap_after_gc_mib         JS heap in use after a forced garbage collection, at the end of the sample.
 //   pan_frame_p95_ms          95th percentile of the gaps between animation frames over the 10 s drag, at a place.
@@ -124,43 +131,61 @@ export function windowTasks(longTasks, from, until) {
     longest: [...inside].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([s, d]) => [Math.round(s), Math.round(d)]),
   };
 }
-/** what a sample records about C, from the long tasks it saw: exact (the first quiet window) or censored (none inside the bound). */
+/** what a sample records about C, from the long tasks it saw: exact (the first quiet window) or censored (none inside the budget).
+ *  The BUDGET (boundMs after the map is shown) is how long the page may be watched; the window ACTUALLY OBSERVED is what the answer rested on:
+ *  an exact C stops the watching at the end of its own 2 s window (observed_to_ms = C + 2 s), a censored one has used the whole budget. The long-task
+ *  count, total, maximum and longest five are those of the window actually observed, never of the unspent budget. */
 export function observeInteractive(longTasks, mapAt, { boundMs = INTERACTIVE_BOUND_MS, windowMs = QUIET_MS } = {}) {
-  const until = mapAt + boundMs;
-  const t = quietFrom(longTasks, mapAt, windowMs, until);            // `until` as "now": the window must END inside the bound
-  const obs = { from_ms: mapAt, until_ms: until, bound_ms: boundMs, quiet_window_ms: windowMs, last_start_tried_ms: until - windowMs, ...windowTasks(longTasks, mapAt, until) };
-  if (t !== null) return { interactive_ms: t, interactive_censored: null, interactive_observation: obs };
-  const gt = until - windowMs;
+  const budgetUntil = mapAt + boundMs;
+  const t = quietFrom(longTasks, mapAt, windowMs, budgetUntil);      // the budget's end as "now": a window must END inside it
+  const base = { from_ms: mapAt, budget_ms: boundMs, budget_until_ms: budgetUntil, quiet_window_ms: windowMs };
+  if (t !== null) {
+    const observedTo = t + windowMs;
+    return { interactive_ms: t, interactive_censored: null, interactive_observation: { ...base, observed_to_ms: observedTo, observed_ms: observedTo - mapAt, first_quiet_start_ms: t, ...windowTasks(longTasks, mapAt, observedTo) } };
+  }
+  const gt = budgetUntil - windowMs;
+  const obs = { ...base, observed_to_ms: budgetUntil, observed_ms: boundMs, last_start_tried_ms: gt, ...windowTasks(longTasks, mapAt, budgetUntil) };
   return {
     interactive_ms: null, interactive_observation: obs,
     interactive_censored: {
-      gt_ms: gt, reason: `no ${windowMs / 1000} s window without a long task began between map shown (${Math.round(mapAt)} ms) and ${Math.round(gt)} ms, inside the ${boundMs / 1000} s observation`,
+      gt_ms: gt, reason: `no ${windowMs / 1000} s window without a long task began between map shown (${Math.round(mapAt)} ms) and ${Math.round(gt)} ms, inside the ${boundMs / 1000} s observation budget (all of it was used)`,
       long_tasks: obs.count, long_task_ms: obs.total_ms,
       text: `>${(gt / 1000).toFixed(1)} s (never quiet: ${obs.count} long tasks, ${obs.total_ms} ms total in the window)`,
     },
   };
 }
 const censoredOk = (c) => !!c && Number.isFinite(c.gt_ms) && Number.isFinite(c.long_tasks) && Number.isFinite(c.long_task_ms);
-/** C across the samples, honestly. A censored sample is a value larger than every exact one (every exact C is inside the bound), so the
- *  median of n by rank is exact when the middle sample is exact and censored (">") when it is not; it is never a median of the finite subset.
- *  null when any sample has neither an exact value nor a well-formed censoring. */
+/** C across the samples, by what each sample's interval actually establishes. C is navigation-relative while each censoring bound is relative to that
+ *  sample's own map-shown time, so a censored sample is NOT known to exceed every exact one: an exact C of 184 s beats a censored `>182 s` only if the latter is
+ *  really bigger. Each sample is an interval — exact: [ms, ms]; censored: (gt, unbounded) — and the k-th order statistic (min, median, max) lies between the
+ *  k-th smallest lower bound and the k-th smallest upper bound. It is `exact` only when those meet; otherwise the interval is kept (lower bound, whether strict,
+ *  upper bound or null for unbounded) and no number is invented. Never the median of the finite subset. null when any sample has neither an exact C nor a
+ *  well-formed censoring. */
 export function interactiveSummary(samples) {
-  const items = samples.map((s) => (Number.isFinite(s.interactive_ms) ? { exact: s.interactive_ms } : censoredOk(s.interactive_censored) ? { gt: s.interactive_censored.gt_ms, c: s.interactive_censored } : null));
+  const items = samples.map((s) => (Number.isFinite(s.interactive_ms) ? { lo: s.interactive_ms, strict: false, hi: s.interactive_ms } : censoredOk(s.interactive_censored) ? { lo: s.interactive_censored.gt_ms, strict: true, hi: Infinity, c: s.interactive_censored } : null));
   if (!items.length || items.some((i) => i === null)) return null;
-  const order = [...items].sort((a, b) => ("exact" in a && "exact" in b ? a.exact - b.exact : "exact" in a ? -1 : "exact" in b ? 1 : a.gt - b.gt));
-  const mid = order[Math.min(order.length - 1, Math.floor(0.5 * (order.length - 1) + 0.5))], lo = order[0], hi = order[order.length - 1];
-  const nCens = items.filter((i) => "gt" in i).length;
-  const show = (i) => ("exact" in i ? `${Math.round(i.exact)} ms` : i.c.text);
+  const lows = [...items].sort((a, b) => a.lo - b.lo || Number(a.strict) - Number(b.strict));        // ties: an exact value before a censored bound
+  const highs = items.map((i) => i.hi).sort((a, b) => a - b);
+  const stat = (k) => {
+    const lo = lows[k], hi = highs[k];
+    const exact = Number.isFinite(hi) && lo.lo === hi && !lo.strict;
+    return { ms: exact ? hi : null, lower_ms: lo.lo, lower_strict: lo.strict, upper_ms: Number.isFinite(hi) ? hi : null };
+  };
+  const show = (s) => (s.ms !== null ? `${Math.round(s.ms)} ms` : s.upper_ms === null ? `${s.lower_strict ? ">" : "≥"}${Math.round(s.lower_ms)} ms` : `${s.lower_strict ? "(" : "["}${Math.round(s.lower_ms)}, ${Math.round(s.upper_ms)}] ms`);
+  const k = Math.min(items.length - 1, Math.floor(0.5 * (items.length - 1) + 0.5));
+  const mn = stat(0), md = stat(k), mx = stat(items.length - 1);
+  const nCens = items.filter((i) => i.c).length;
   return {
-    median: "exact" in mid ? mid.exact : null, median_censored: !("exact" in mid), median_gt_ms: "gt" in mid ? mid.gt : null,
-    min: "exact" in lo ? lo.exact : null, min_censored: !("exact" in lo), max: "exact" in hi ? hi.exact : null, max_censored: !("exact" in hi), max_gt_ms: "gt" in hi ? hi.gt : null,
+    median: md.ms, median_censored: md.ms === null, median_lower_ms: md.lower_ms, median_lower_strict: md.lower_strict, median_upper_ms: md.upper_ms,
+    min: mn.ms, min_lower_ms: mn.lower_ms, min_lower_strict: mn.lower_strict, min_upper_ms: mn.upper_ms,
+    max: mx.ms, max_lower_ms: mx.lower_ms, max_lower_strict: mx.lower_strict, max_upper_ms: mx.upper_ms,
     n_censored: nCens, n: items.length,
-    samples: items.map((i) => ("exact" in i ? { ms: i.exact } : { censored: true, gt_ms: i.gt, long_tasks: i.c.long_tasks, long_task_ms: i.c.long_task_ms, text: i.c.text })),
-    text: `median ${show(mid)}${nCens ? `; ${nCens} of ${items.length} samples censored` : ""}`,
+    samples: items.map((i) => (i.c ? { censored: true, gt_ms: i.lo, long_tasks: i.c.long_tasks, long_task_ms: i.c.long_task_ms, text: i.c.text } : { ms: i.lo })),
+    text: `median ${show(md)}${nCens ? `; ${nCens} of ${items.length} samples censored` : ""}`,
   };
 }
-/** the cold-load byte cutoff for a sample: the moment C was reached, or — C censored — the end of the observation window. */
-export const bytesCutoff = (s) => (Number.isFinite(s.interactive_ms) ? { at_ms: s.interactive_ms, basis: "interactive" } : s.interactive_observation ? { at_ms: s.interactive_observation.until_ms, basis: "observation_end" } : null);
+/** the cold-load byte cutoff for a sample: the moment C was reached, or — C censored — the end of the observation (the whole budget, all of it used). */
+export const bytesCutoff = (s) => (Number.isFinite(s.interactive_ms) ? { at_ms: s.interactive_ms, basis: "interactive" } : s.interactive_observation ? { at_ms: s.interactive_observation.observed_to_ms, basis: "observation_end" } : null);
 /** is the rect's centre within `frac` of the pane's middle, each way (fractions of the pane's width and height)? */
 export function centredWithin(rect, pane, frac = 0.12) {
   if (!rect || !pane) return false;
@@ -175,9 +200,13 @@ export const dragMoved = ({ writes, travelPx }) => writes >= MIN_CAMERA_WRITES &
 // freshness — the town and its mail moving with town_sha and the crossing — changes between samples without changing what the page renders,
 // so it is kept as per-sample provenance and never decides whether samples may be combined. A change in the FRAME during a sample, or
 // between samples, is a change in the thing measured: it still cannot be silently combined.
-export const FRAME_KEYS = ["code_sha", "code_ref", "world_sha", "world_ref", "world_settlement", "world_digest"];
+// The release tags (code_ref, world_ref) are LABELS the Site's build stamp emits as `ref || null`: null means the lane named no tag, not that the
+// code or the World snapshot is unknown. The shas (and the settlement and digest) are the identity; the tags are recorded as provenance, may be
+// null or renamed, and are neither required nor compared.
+export const FRAME_KEYS = ["code_sha", "world_sha", "world_settlement", "world_digest"];
+export const TAG_KEYS = ["code_ref", "world_ref"];
 export const FRESHNESS_KEYS = ["town_sha", "town_data_sha", "crossing", "town_index_as_of"];
-export const VERSION_KEYS = [...FRAME_KEYS, ...FRESHNESS_KEYS];
+export const VERSION_KEYS = [...FRAME_KEYS, ...TAG_KEYS, ...FRESHNESS_KEYS];
 export const versionOf = (build) => (build ? Object.fromEntries(VERSION_KEYS.map((k) => [k, build[k] ?? null])) : null);
 /** the same rendered frame: every FRAME key equal (freshness is not compared). Null on either side is never the same. */
 export const sameFrame = (a, b) => !!a && !!b && FRAME_KEYS.every((k) => a[k] === b[k]);
@@ -248,6 +277,7 @@ export function auditRow({ samples, town, env, official, at }) {
     kind: "world-page-audit", schema: 1, at, valid: invalid.length === 0, official, invalid,
     // the comparator: the rendered frame is what rows are compared on; freshness rides along per sample and never decides comparability
     frame: Object.fromEntries(FRAME_KEYS.map((k) => [k, (k === "world_settlement" ? town?.settlement : town?.[k]) ?? null])),
+    tags: Object.fromEntries(TAG_KEYS.map((k) => [k, town?.[k] ?? null])),     // provenance labels; null = no tag named, not an unknown snapshot
     freshness_varied: fresh.size > 1,
     censored: metrics.interactive_ms ? metrics.interactive_ms.n_censored > 0 : null,
     town, env, metrics,
