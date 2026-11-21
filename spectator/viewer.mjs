@@ -15761,6 +15761,11 @@ export function mountViewer(appEl) {
   function positionCreatureSays() {
     const host = bubbleHost();
     if (!host) return;
+    // Nothing speaking (no entry that is connected and showing; a retained hidden or disconnected one is not): there is nothing to lay out,
+    // so read no rectangle at all: not the host's, not a token's, not a resident's. This runs with every camera write.
+    let speaking = false;
+    for (const say of creatureSays.values()) if (say.el?.isConnected && say.el.classList.contains("show")) { speaking = true; break; }
+    if (!speaking) return;
     const b = host.getBoundingClientRect();
     const shown = [];
     for (const [id, say] of creatureSays) {

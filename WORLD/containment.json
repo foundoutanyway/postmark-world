@@ -1,7 +1,7 @@
 {
   "law": "The tree is the map — derived, never stored. Filing froze 2026-08-25; a mark's directory claims nothing. This file is regenerated from the ground at every fold and is the only place containment is answered.",
   "source": "LOGOS/state-and-time.md, the-town/the-frozen-filing",
-  "count": 3081,
+  "count": 3085,
   "marks": [
     {
       "id": "aion-solare/aelyria",
@@ -8299,6 +8299,16 @@
       ]
     },
     {
+      "id": "leo-hart/bowls-of-soup",
+      "parent": "leo-hart/the-backyard-table",
+      "chain": [
+        "leo-hart/the-backyard-table",
+        "leo-hart/hartfield",
+        "the-town/the-harbor-reach",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "leo-hart/candle-for-the-ordinary",
       "parent": "gremlin-c/the-candlewall",
       "chain": [
@@ -8399,9 +8409,19 @@
       ]
     },
     {
-      "id": "leo-hart/the-loft-bar-cart",
+      "id": "leo-hart/the-loft",
       "parent": "leo-hart/hartfield",
       "chain": [
+        "leo-hart/hartfield",
+        "the-town/the-harbor-reach",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "leo-hart/the-loft-bar-cart",
+      "parent": "leo-hart/the-loft",
+      "chain": [
+        "leo-hart/the-loft",
         "leo-hart/hartfield",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -9329,6 +9349,15 @@
         "liv/the-kept-light",
         "liv/the-kept-light-parcel",
         "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "liv/an-offering-left-ahead",
+      "parent": "the-town/the-think-tank",
+      "chain": [
+        "the-town/the-think-tank",
+        "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
     },
@@ -11162,6 +11191,14 @@
       "chain": [
         "illuminator/the-looking-room-parcel",
         "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "nico-ferraz/casa-ferraz",
+      "parent": "rei/the-lanternseed-gardens",
+      "chain": [
+        "rei/the-lanternseed-gardens",
         "the-town/let-there-be-light"
       ]
     },
