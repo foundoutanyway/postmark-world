@@ -87,11 +87,23 @@ import { MARK_ICON_CSS } from "../spectator/mark-icons.mjs";
 // digests it is checked against: 94d56a41… (107135 bytes) on the POS-945 merge-base, ed771ead… (107711 bytes, the pin above) on this main,
 // and 37ddf8f8… (107954 bytes, the pin the reviewed head 6f4c906a carried) on that head. A line diff of the masked texts, main to the merge,
 // is exactly the 8 `.wv-bymail*` lines and none removed, the same 8 lines the reviewed head added over its own base.
-// RE-PINNED FOR WLD-220 (Wright 2026-11-21 06:17: the tour's last step links /docs/), knowingly, an INTENDED change to STYLE over the pin above: ONE rule, `.wv-tour-body a`
-// (the card's blue, underline offset, and a comment), 196 bytes (108530 -> 108726), nothing removed or moved. Measured by this test's own masked-emission route on the
-// WLD-220 branch (the same route the pins above name); the base digest 31265315... (108530 bytes) is what main emitted before the branch.
-const PINNED_MASKED_STYLE_SHA256 = "955f7eb3a83c3a445952293adb4cd817d4aaab8d5a53c43ef931d2b1c1b6aef1";
-const PINNED_MASKED_STYLE_BYTES = 108726;
+// RE-PINNED FOR CORE-54 (Darko 2026-11-20, "4. Small targets"), knowingly, an INTENDED change to STYLE over the pin above: the phone/touch hit-area
+// rules (the round map controls and root mark, the tour's three buttons and step dots, the mark bubble's close) and the touch-reach constants' CSS
+// neighbours: 1877 bytes added (108530 -> 110407), nothing removed or changed; then the chooser row's 44 px reach (`.wv-choose-row`, one media rule,
+// 190 bytes, 110407 -> 110597) when the crowded press's choices joined the phone column (Wright 16:57Z). The digest below was measured by this test's own masked-emission route
+// on the CORE-54 branch (the same route the earlier pins' last paragraph names), not by an independent script, and is checked by the test below that the pin
+// can fail; the base digest 31265315… (108530 bytes) is what main emitted before the branch.
+// RE-PINNED AGAIN FOR CORE-54, knowingly, after merging main 50fbbaf7: the chooser row's media rule MOVED (same bytes, 110597 still) from between CREATURE_CSS
+// and `.wv-choose-row.is-convo` to after `.wv-choose-row.is-creature`, because viewer-creature-nameplate pins CREATURE_CSS's neighbours. Only that one line's
+// position changed (e6974c7c… -> faa58492…); no rule was added or removed.
+// RE-PINNED A THIRD TIME FOR CORE-54 (lead fix, 2026-11-20 20:01Z): the 390 px tour foot FIT. The published 0dae4132/c300 tour frame showed "next" spilling past the card (the 8 step dots at
+// 20 px plus skip/back/next at 192 px did not fit the ~160 px beside them). One media block gains 6 lines / 571 bytes (110597 -> 111168), nothing removed or changed: the foot may wrap, the
+// actions sit 4 px apart and right-aligned, skip's padding 6 px and back/next 8 px a side (each still at least 44 px wide and 44 px tall). Measured by this test's own masked-emission route.
+// RE-PINNED FOR WLD-220 (Wright 2026-11-21 06:17: the tour's last step links /docs/), knowingly, AFTER merging main 01e29a17 (which carries CORE-54's pin above): the WLD-220 branch's ONE added rule,
+// `.wv-tour-body a` (the card's blue, underline offset, and a comment), 196 bytes, on top of main's STYLE (111168 -> 111364), nothing removed or moved. Measured by this test's own masked-emission
+// route on the merged WLD-220 branch (the same route the pins above name). Alone on its old base the rule was 108530 -> 108726 (955f7eb3...); main has since moved to CORE-54's 111168.
+const PINNED_MASKED_STYLE_SHA256 = "8324d45b44d910af0b5e5096ece690008c9ded4bd16318509de75e2029a73f32";
+const PINNED_MASKED_STYLE_BYTES = 111364;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";

@@ -212,10 +212,15 @@ test("wiring: the closure is gone, and the one call site passes the looked-up ro
 // hashed), not this test's code. That route reproduced the three digests it is checked against: 94d56a41… (107135 bytes) on the POS-945
 // merge-base, ed771ead… (107711 bytes, the pin above) on this main, and 37ddf8f8… (107954 bytes, the pin the reviewed head 6f4c906a
 // carried) on that head. A line diff of the masked texts, main to the merge, is exactly the 8 `.wv-bymail*` lines and none removed.
-// RE-PINNED FOR WLD-220 (the tour's last step links /docs/): one rule, `.wv-tour-body a`, 196 bytes (108530 -> 108726), nothing removed or moved; tools/viewer-shell-css.test.mjs
-// carries the account. CREATURE_CSS and both of its neighbours are untouched.
-const PINNED_MASKED_STYLE_SHA256 = "955f7eb3a83c3a445952293adb4cd817d4aaab8d5a53c43ef931d2b1c1b6aef1";
-const PINNED_MASKED_STYLE_BYTES = 108726;
+// RE-PINNED FOR CORE-54, knowingly (the same intended STYLE change tools/viewer-shell-css.test.mjs re-pins, which carries the account): STYLE gains the
+// phone/touch hit-area rules, 108530 -> 110597 bytes, nothing removed; CREATURE_CSS and both of its neighbours are untouched (the chooser row's media rule
+// sits AFTER `.wv-choose-row.is-creature`, so the neighbour pin below still holds). The digest is the one viewer-shell-css measures by this same masked route.
+// RE-PINNED AGAIN FOR CORE-54 (the tour foot fit at 390 px, 110597 -> 111168, one media block of 6 added lines, nothing removed; tools/viewer-shell-css.test.mjs carries the account);
+// CREATURE_CSS and both of its neighbours are untouched.
+// RE-PINNED FOR WLD-220 (the tour's last step links /docs/), after merging main 01e29a17: the branch's ONE rule, `.wv-tour-body a`, 196 bytes on top of main's 111168 (-> 111364), nothing removed or
+// moved; tools/viewer-shell-css.test.mjs carries the account. CREATURE_CSS and both of its neighbours are untouched.
+const PINNED_MASKED_STYLE_SHA256 = "8324d45b44d910af0b5e5096ece690008c9ded4bd16318509de75e2029a73f32";
+const PINNED_MASKED_STYLE_BYTES = 111364;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";
