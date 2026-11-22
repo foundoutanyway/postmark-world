@@ -339,3 +339,51 @@ test("the legal chain and the geometric one are allowed to disagree", () => {
   // his body, meanwhile, is ashore: he walked off after boarding (v0 does not stop him)
   assert.equal(exitPrompt(ASHORE, world, { occupancy: occupancyAt(acts, 10), handle: "adam" }).mark, SHIP.id);
 });
+
+// ── WLD-212: a thing has no inside (the-town/the-not-ground) ────────────────
+//
+// INVENTED fixture, no live enter call. The bag is named for the real one the report was about
+// (little-bird/a-paper-bag-of-crumbs) but is a planted record here: a thing, placed on the quay, with no door.
+
+const CLASS = (name, ext) => ({ id: `the-town/${name}`, kind: "class", by: "the-town", tier: "constitution", class: name, ...(ext ? { extends: ext } : {}), body: `the ${name} class` });
+const BAG = { id: "little-bird/a-paper-bag-of-crumbs", kind: "thing", by: "little-bird", tier: "market", at: { x: 100, y: -10 }, extent: { w: 0.5, h: 0.5 }, body: "A paper bag of crumbs." };
+const BOWL = { id: "little-bird/a-candy-bowl", kind: "halloween-candy-bowl", by: "little-bird", tier: "market", at: { x: 110, y: -10 }, extent: { w: 0.5, h: 0.5 }, body: "A subclass thing." };
+const SATCHEL = { id: "little-bird/a-bag-of-holding", kind: "thing", by: "little-bird", tier: "market", at: { x: 120, y: -10 }, extent: { w: 0.5, h: 0.5 }, body: "A thing that carries a door.",
+  entry: { word: "welcomed", into: [HOLD.id] } };
+const thingWorld = {
+  ...world,
+  marks: [...world.marks, CLASS("postmark-node"), CLASS("mark", "postmark-node"), CLASS("sited", "mark"), CLASS("thing", "sited"), CLASS("halloween-candy-bowl", "thing"), BAG, BOWL, SATCHEL],
+};
+const BESIDE = { x: 100, y: -10, name: "adam" };
+
+test("WLD-212 · a thing with no door is refused by name before any row: the bag", () => {
+  const a = enter(BESIDE, BAG.id, thingWorld, { handle: "adam", at: 20, accepted: true });
+  assert.equal(a.refused, "thing");
+  assert.equal(a.target, BAG.id);
+  assert.match(a.error, /little-bird\/a-paper-bag-of-crumbs/, "it names the target");
+  assert.match(a.error, /a thing has no inside/);
+  assert.equal(a.rows, undefined, "no row generated");
+  assert.equal(a.entered, undefined, "nothing entered");
+});
+
+test("WLD-212 · the same refusal for a thing SUBCLASS (read through the class chain, not a spelling of `kind`)", () => {
+  const a = enter(BESIDE, BOWL.id, thingWorld, { handle: "adam", at: 20, accepted: true });
+  assert.equal(a.refused, "thing");
+  assert.match(a.error, /a thing has no inside/);
+  assert.equal(a.rows, undefined);
+  // CONTROL: with no class nodes in hand the subclass cannot be known to be a thing, so this guard is the chain's, not a string's
+  const bare = { ...world, marks: [...world.marks, BOWL] };
+  assert.notEqual(enter(BESIDE, BOWL.id, bare, { handle: "adam", at: 20, accepted: true }).refused, "thing");
+});
+
+test("WLD-212 · controls: ground still enters, and a thing that carries a door still passes through it", () => {
+  const ground = enter(ASHORE, SHIP.id, thingWorld, { handle: "adam", at: 20, accepted: true });
+  assert.notEqual(ground.refused, "thing");
+  assert.ok(ground.rows.length > 0 && ground.entered.includes(SHIP.id), "ground entry writes its rows as before");
+  const door = enter(BESIDE, SATCHEL.id, thingWorld, { handle: "adam", at: 20, accepted: true });
+  assert.notEqual(door.refused, "thing", "the portal-on-thing branch is untouched");
+  assert.ok(!door.error, `no refusal: ${door.error}`);
+  assert.ok(door.rows.length > 0, "and it writes its rows");
+  const hidden = enter(BESIDE, "no/such-thing", thingWorld, { handle: "adam", at: 20, accepted: true });
+  assert.equal(hidden.error, "no mark 'no/such-thing' to enter", "an unknown target keeps its answer");
+});
