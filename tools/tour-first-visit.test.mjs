@@ -68,8 +68,8 @@ const readTour = (page) => page.evaluate(() => {
   const lit = {};
   if (kind === "house") {
     const pip = overlay?.querySelector(`.ov-pip.ov-pip-home[data-id="${esc(ids[0])}"]`), man = walks?.querySelector(`.wv-walker-far[data-handle="${esc(ids[1])}"]`);
-    lit.house = { found: !!pip, inSpot: within(box(pip), spot) };
-    lit.resident = { found: !!man, inSpot: within(box(man), spot), moving: !!man?.classList.contains("moving"), stroke: man ? getComputedStyle(man.querySelector(".wv-walker-frame")).stroke : null };
+    lit.house = { found: !!pip, inSpot: within(box(pip), spot), rect: box(pip), count: overlay?.querySelectorAll(`.ov-pip[data-id="${esc(ids[0])}"]`).length };
+    lit.resident = { found: !!man, inSpot: within(box(man), spot), rect: box(man), moving: !!man?.classList.contains("moving"), stroke: man ? getComputedStyle(man.querySelector(".wv-walker-frame")).stroke : null };
   }
   if (kind === "picture") {
     const pip = overlay?.querySelector(`.ov-pip.ov-pip-pictured[data-id="${esc(ids[0])}"]`);
@@ -180,8 +180,8 @@ function assertLit(s, what, phone) {
   assert.ok(spot && spot.w > 0, `${what}: the spotlight is up, over the page`);
   if (kind === "house") {
     assert.equal(ids.length, 2, `${what}: a house id and a resident handle`);
-    assert.ok(lit.house.found && lit.house.inSpot, `${what}: the house ${ids[0]} is the map's own home pip, inside the spotlight`);
-    assert.ok(lit.resident.found && lit.resident.inSpot, `${what}: the resident ${ids[1]} is the map's own walker frame, inside the spotlight`);
+    assert.ok(lit.house.found && lit.house.inSpot, `${what}: the house ${ids[0]} is the map's own home pip, inside the spotlight ${JSON.stringify({ spot, house: lit.house })}`);
+    assert.ok(lit.resident.found && lit.resident.inSpot, `${what}: the resident ${ids[1]} is the map's own walker frame, inside the spotlight ${JSON.stringify({ spot, resident: lit.resident })}`);
     assert.equal(lit.resident.moving, false, `${what}: a standing resident (no walking claim is made)`);
     assert.equal(lit.resident.stroke, "rgb(132, 201, 143)", `${what}: the standing resident is the map's own green`);
     assert.ok(highlighted, `${what}: the viewer's own highlight is on the house`);
