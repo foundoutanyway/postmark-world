@@ -110,6 +110,10 @@ test("slow pan: real travel but fewer than 5 writes is pan_stalled when a bar is
   assert.equal(panStalled(slow({ frame_p95_ms: 50, longest_task_ms: 100 })), false);
   assert.equal(panStalled(slow({ frame_p95_ms: null })), false, "no frames: nothing to read the bar from");
   assert.equal(panStalled(null), false);
+  for (const w of [null, undefined, NaN, Infinity, "4"]) assert.equal(panStalled(slow({ camera_writes: w })), false, `camera_writes ${String(w)} is no count`);
+  assert.equal(sampleProblems(sample({ places: { town_centre: slow({ camera_writes: null }), spire: place() } }), { official: true }).some((m) => /did not move the camera/.test(m)), true, "a missing count stays invalid");
+  assert.equal(panStalled(place({ camera_writes: MIN_CAMERA_WRITES, travel_px: MIN_TRAVEL_PX - 0.1, frame_p95_ms: 3000 })), false);
+  assert.equal(sampleProblems(sample({ places: { town_centre: place({ camera_writes: MIN_CAMERA_WRITES, travel_px: MIN_TRAVEL_PX - 0.1, frame_p95_ms: 3000 }), spire: place() } }), { official: true }).some((m) => /did not move the camera/.test(m)), true, "5 writes but 59.9 px is invalid");
   const bad = (over) => sampleProblems(sample({ places: { town_centre: slow(over), spire: place() } }), { official: true });
   assert.deepEqual(bad({}), [], "a slow pan is not an invalidity");
   assert.equal(bad({ travel_px: 30 }).some((m) => /did not move the camera/.test(m)), true);

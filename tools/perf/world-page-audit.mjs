@@ -219,7 +219,7 @@ export const sameScale = (a, b, tol = SCALE_TOLERANCE) => Number.isFinite(a) && 
 export const dragMoved = ({ writes, travelPx }) => writes >= MIN_CAMERA_WRITES && travelPx >= MIN_TRAVEL_PX;
 /** WLD-226 (Wright 2026-11-22 21:09Z): a real drag (>= MIN_TRAVEL_PX) that the page was too slow to write MIN_CAMERA_WRITES times is a SLOW PAN, not an inert drag, when
  *  its own pan p95 or longest task crossed the bar. Read from the phase's own fields; nothing a caller passes can set it. */
-export const panStalled = (p) => !!p && p.travel_px >= MIN_TRAVEL_PX && p.camera_writes < MIN_CAMERA_WRITES
+export const panStalled = (p) => !!p && Number.isFinite(p.camera_writes) && p.travel_px >= MIN_TRAVEL_PX && p.camera_writes < MIN_CAMERA_WRITES
   && Number.isFinite(p.frame_p95_ms) && Number.isFinite(p.longest_task_ms) && (p.frame_p95_ms >= PAN_P95_BAR_MS || p.longest_task_ms > PAN_TASK_BAR_MS);
 // WHAT THE PAGE RENDERED vs HOW FRESH THE TOWN IS (WLD-222 fit, Wright 2026-11-21). The frame a sample was measured on is the
 // World code/snapshot and the Site release: the Site's release tag and code, the World sha and its settlement and digest. The town's
