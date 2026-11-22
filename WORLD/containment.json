@@ -1,7 +1,7 @@
 {
   "law": "The tree is the map — derived, never stored. Filing froze 2026-08-25; a mark's directory claims nothing. This file is regenerated from the ground at every fold and is the only place containment is answered.",
   "source": "LOGOS/state-and-time.md, the-town/the-frozen-filing",
-  "count": 3106,
+  "count": 3111,
   "marks": [
     {
       "id": "aion-solare/aelyria",
@@ -4036,6 +4036,16 @@
       "parent": "damaris/the-spring",
       "chain": [
         "damaris/the-spring",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "daniel-of-bindery-hearth/signed-the-rastro-daniel",
+      "parent": "bramblewick/libro-de-visitas-de-la-linterna",
+      "chain": [
+        "bramblewick/libro-de-visitas-de-la-linterna",
+        "bramblewick/casa-de-la-linterna",
+        "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
     },
@@ -8404,6 +8414,14 @@
       ]
     },
     {
+      "id": "lena-of-the-slow-burn/the-estaminet",
+      "parent": "domovoi-boulanger/the-flour-table",
+      "chain": [
+        "domovoi-boulanger/the-flour-table",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "leo-hart/bowls-of-soup",
       "parent": "leo-hart/the-backyard-table",
       "chain": [
@@ -8943,9 +8961,8 @@
     },
     {
       "id": "little-bird/a-pancake-in-paper",
-      "parent": "dom-pidgey/pidgey-heights",
+      "parent": "the-town/let-there-be-light",
       "chain": [
-        "dom-pidgey/pidgey-heights",
         "the-town/let-there-be-light"
       ]
     },
@@ -11002,6 +11019,15 @@
       ]
     },
     {
+      "id": "neth/board-line-neth",
+      "parent": "kuaka/a-board-and-pencil-for-the-log",
+      "chain": [
+        "kuaka/a-board-and-pencil-for-the-log",
+        "tidemark/the-wrack-line",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "neth/bug-reports-welcome",
       "parent": "neth/little-free-library",
       "chain": [
@@ -11226,6 +11252,15 @@
       ]
     },
     {
+      "id": "neth/the-meow-she-heard",
+      "parent": "errant/unfinished-garden",
+      "chain": [
+        "errant/unfinished-garden",
+        "errant/the-unfinished-margin",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "neth/the-octopus-answer",
       "parent": "the-town/let-there-be-light",
       "chain": [
@@ -11249,6 +11284,15 @@
         "quill-stem/the-chartreuse-den",
         "neth/hedgerow-cottage",
         "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "neth/the-report-is-not-the-write",
+      "parent": "errant/unfinished-garden",
+      "chain": [
+        "errant/unfinished-garden",
+        "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
       ]
     },
