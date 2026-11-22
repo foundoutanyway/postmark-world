@@ -167,9 +167,9 @@ async function onThePage(t, { viewport, phone, art = "present", only = null }) {
       assert.ok(s.type.title >= 22 && s.type.body >= 17, `step ${i + 1}: the words stay large (${s.type.title}px / ${s.type.body}px)`);
       // the NARROW short screen (360 x 560) keeps one readable column: not the two-column reflow of a wide short one, a picture that is not a miniature, labels a thumb can read
       if (viewport.width < 640) {
-        assert.ok(s.card.w <= viewport.width - 10 + 0.5, `step ${i + 1}: the card is the phone column (${Math.round(s.card.w)}px of ${viewport.width})`);
+        assert.ok(s.geometry.card.w <= viewport.width - 10 + 0.5, `step ${i + 1}: the card is the phone column (${Math.round(s.geometry.card.w)}px of ${viewport.width})`);
         assert.ok(s.visual.ctls.length || (s.visual.svgW >= 270 && s.visual.labelPx >= 14), `step ${i + 1}: art and labels are legible (picture ${Math.round(s.visual.svgW)}px wide, smallest label ${s.visual.labelPx}px)`);
-      } else assert.ok(s.card.w >= 700 || viewport.width < 800, `step ${i + 1}: a wide short screen gets the wide card`);
+      } else assert.ok(s.geometry.card.w >= 700, `step ${i + 1}: a wide short screen gets the wide card`);
       // THE TOUR'S INPUT MODE, in words and in the picture, whatever the width: a touch screen is told drag and tap (844 x 390 and 360 x 560), a mouse its wheel (1440 x 480)
       if (i === 3) {
         if (phone) {
