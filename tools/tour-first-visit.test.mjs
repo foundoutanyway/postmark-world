@@ -177,7 +177,7 @@ async function openPage(t, { viewport, phone, pictures = true }) {
 
 // a lit target is a real element of the mounted scene, wholly inside the spotlight; the spotlight is on screen
 function assertLit(s, what, phone) {
-  const { kind, ids, spot, lit, highlighted } = s.scene;
+  const { kind, ids, spot, lit } = s.scene;
   assert.ok(spot && spot.w > 0, `${what}: the spotlight is up, over the page`);
   if (kind === "house") {
     assert.equal(ids.length, 2, `${what}: a house id and a resident handle`);
@@ -185,13 +185,11 @@ function assertLit(s, what, phone) {
     assert.ok(lit.resident.found && lit.resident.inSpot, `${what}: the resident ${ids[1]} is the map's own walker frame, inside the spotlight ${JSON.stringify({ spot, resident: lit.resident })}`);
     assert.equal(lit.resident.moving, false, `${what}: a standing resident (no walking claim is made)`);
     assert.equal(lit.resident.stroke, "rgb(132, 201, 143)", `${what}: the standing resident is the map's own green`);
-    assert.ok(highlighted, `${what}: the viewer's own highlight is on the house`);
   } else if (kind === "picture") {
     assert.equal(ids.length, 1);
     assert.ok(lit.pip.found && lit.pip.inSpot, `${what}: the mark ${ids[0]} is the map's own pictured mark, its pip inside the spotlight`);
     assert.ok(lit.art.count >= 1, `${what}: the map's own placed picture lies in the spotlight (${JSON.stringify(lit.art.hrefs)})`);
     assert.ok(lit.art.hrefs.every((h) => /^\/shelf\//.test(h)), `${what}: every picture is the shelf's, by the map's own route`);
-    assert.ok(highlighted, `${what}: the viewer's own highlight is on the mark`);
   } else if (kind === "dot") {
     assert.equal(ids.length, 1);
     assert.ok(lit.dot.found && lit.dot.inSpot, `${what}: the dot ${ids[0]} is the map's own home pip, inside the spotlight`);

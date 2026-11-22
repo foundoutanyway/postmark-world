@@ -1339,10 +1339,9 @@ test("WLD-220: a phone is told only what a phone has (drag, tap, what is drawn);
   assert.match(source, /walks\.querySelectorAll\("\.wv-walker-far:not\(\.moving\)"\)/);
   assert.match(source, /pips\("\.ov-pip-pictured"\)/);
   assert.match(source, /footprintBoxFor\(id\)/);
-  // the page stays as the visitor had it: the stage moves no camera, selection or walk, and writes only the viewer's own highlight layer back as it was
-  const stageScene = source.slice(source.indexOf("function stageScene(kind)"), source.indexOf("function stageScene(kind)") + 900);
-  assert.doesNotMatch(stageScene, /setView|walkState|selectedId|markInteraction/, "staging a scene touches no camera, walk or selection");
-  assert.match(stageScene, /writeHighlight\(wasHTML\)/, "and the highlight is put back");
+  // the page stays as the visitor had it: the stage moves no camera, selection or walk and writes nothing to the map (the spotlight over the real elements is the highlight)
+  const stageScene = source.slice(source.indexOf("function stageScene(kind)"), source.indexOf("function stageScene(kind)") + 700);
+  assert.doesNotMatch(stageScene, /setView|walkState|selectedId|markInteraction|writeHighlight|hlLayer|innerHTML/, "staging a scene touches no camera, walk, selection or layer");
   // a step whose stage finds nothing is left out, never replaced by a stand-in
   assert.match(source, /const tourDeckNow = \(\) => TOUR_SLIDES\.filter\(\(s\) => !s\.stage \|\| !!tourSceneTarget\(s\.stage\)\);/);
   // the short screen tightens the card and scrolls inside it; there is no tour drawing to shrink

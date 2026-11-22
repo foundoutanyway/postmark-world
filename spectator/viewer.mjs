@@ -16603,7 +16603,7 @@ export function mountViewer(appEl) {
   // Three stages find a piece of the MOUNTED map by reading the live scene, never by drawing one: a HOUSE (a home's pip in the overlay) with a RESIDENT standing at it (a
   // `wv-walker-far` in the walk layer, the green round frame on two legs), a PICTURE (a mark drawn with its own picture on the map, found by its pictured pip, its ground read by
   // footprintBoxFor), and a DOT (any home's pip) to read. Each target must lie wholly in the painting, clear of the map's controls, and the first by public id is taken, so the same page
-  // gives the same step. Nothing is moved: no camera, no selection, no walk. The only thing written is the viewer's own highlight layer, which the undo puts back as it was.
+  // gives the same step. Nothing is moved or written: no camera, no selection, no walk, no highlight layer; the spotlight over the real elements is the highlight.
   // A stage that finds nothing returns null and its step is left out of the deck: there is no stand-in picture.
   const tourPane = () => {
     const pane = $(root, ".wv-minimap")?.getBoundingClientRect();
@@ -16635,7 +16635,7 @@ export function mountViewer(appEl) {
         for (const h of homes) { const m = tourMid(h.r), d = Math.hypot(m.x - c.x, m.y - c.y); if (d < bestD) { bestD = d; best = h; } }
         if (best && bestD <= 30) {
           const house = best.id, handle = w.id;
-          return { kind, ids: [house, handle], highlightId: house, rect: () => {
+          return { kind, ids: [house, handle], rect: () => {
             const rs = [tourById(overlay, ".ov-pip", "data-id", house), tourById(walks, ".wv-walker-far", "data-handle", handle)].filter(Boolean);
             return rs.length ? tourUnion(rs) : null;
           } };
@@ -16656,7 +16656,7 @@ export function mountViewer(appEl) {
         const r = ground(p.id);
         if (r && tourWithin(r, pane)) {
           const id = p.id;
-          return { kind, ids: [id], highlightId: id, rect: () => { const g = ground(id); return g ? { x: g.left, y: g.top, width: g.width, height: g.height } : null; } };
+          return { kind, ids: [id], rect: () => { const g = ground(id); return g ? { x: g.left, y: g.top, width: g.width, height: g.height } : null; } };
         }
       }
       return null;
@@ -16669,7 +16669,7 @@ export function mountViewer(appEl) {
       })[0];
       if (!home) return null;
       const id = home.id;
-      return { kind, ids: [id], highlightId: null, rect: () => { const r = tourById(overlay, ".ov-pip", "data-id", id); return r ? tourUnion([r]) : null; } };
+      return { kind, ids: [id], rect: () => { const r = tourById(overlay, ".ov-pip", "data-id", id); return r ? tourUnion([r]) : null; } };
     }
     return null;
   }
@@ -16678,14 +16678,10 @@ export function mountViewer(appEl) {
   function stageScene(kind) {
     const t = tourSceneTarget(kind);
     if (!t) return null;
-    const wasHTML = t.highlightId ? mapCtx.hlLayer?.innerHTML ?? "" : null;
-    if (t.highlightId && mapCtx.hlLayer) writeHighlight(renderOneMarkHighlight(t.highlightId));
+    // the spotlight over the real elements IS the highlight, in place: the stage writes nothing to the page, so there is nothing to put back but its own bookkeeping
     tourStageRect = t.rect;
     tourSceneInfo = { kind: t.kind, ids: t.ids };
-    return () => {
-      tourSceneInfo = null;
-      if (wasHTML !== null && mapCtx?.hlLayer) { writeHighlight(wasHTML); renderMarkHighlight(); }
-    };
+    return () => { tourSceneInfo = null; };
   }
   // OPEN THE TELLING FOR THE SLIDE THAT IS ABOUT IT (Keemin, 2026-08-05) — and
   // only for that slide. state.paintingOnly moves; writePaintingOnly does not, so
