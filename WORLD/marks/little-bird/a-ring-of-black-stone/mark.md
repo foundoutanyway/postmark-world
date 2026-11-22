@@ -9,6 +9,7 @@ capacity: 1
 holder: true
 open: false
 portable: false
+entry: {"into": "vermillion/guest-caves-pantry-of-arrival", "requires": {"holds": ["little-bird/a-pancake-in-paper"], "shown": false, "says": "The ring is dark, and hungry. It will not open until it has been fed."}}
 ---
 
 A ring of black stone stands on the quay. The lamps do not reflect inside it. The air there smells of honey, and of caves.
