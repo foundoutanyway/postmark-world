@@ -16880,13 +16880,43 @@ export function mountViewer(appEl) {
       borderRadius: `${Math.min(hole.w, hole.h) / 2 <= 22 ? Math.min(hole.w, hole.h) / 2 : 10}px`,
     });
     card.classList.remove("is-centred");
+    // a size this call sets is forgotten on the next one, so each placement starts from the card's natural size
+    card.style.width = ""; card.style.maxHeight = "";
+    const W = window.innerWidth, H = window.innerHeight, gap = pad + 16, edge = 14;
     const spot_ = placeBubble({
       anchor: { x: r.x + r.width / 2, y: r.y + r.height / 2 },
       size: { w: card.offsetWidth, h: card.offsetHeight },
-      box: { w: window.innerWidth, h: window.innerHeight },
-      gap: pad + 16, edge: 14, avoid: hole,
+      box: { w: W, h: H },
+      gap, edge, avoid: hole,
     });
-    if (spot_) card.style.transform = `translate3d(${Math.round(spot_.x)}px, ${Math.round(spot_.y)}px, 0)`;
+    let at = spot_ ? { x: spot_.x, y: spot_.y } : null;
+    // THE LIT TARGET STAYS VISIBLE (CORE-153): where the card cannot stand beside, above or below the hole at its natural size (a 390 px-high screen with the target at mid-height),
+    // it takes the room the hole leaves instead, narrower beside it (its words wrap) or shorter above or below it (its words scroll), rather than lying over the thing it teaches.
+    const meets = (x, y, w, h) => x < hole.x + hole.w && x + w > hole.x && y < hole.y + hole.h && y + h > hole.y;
+    if (at && meets(at.x, at.y, card.offsetWidth, card.offsetHeight)) {
+      const natural = card.offsetWidth;
+      const roomR = W - (hole.x + hole.w) - gap - edge, roomL = hole.x - gap - edge;
+      const right = roomR >= roomL, room = right ? roomR : roomL;
+      let placed = false;
+      if (room >= 300) {
+        card.style.width = `${Math.min(natural, room)}px`;
+        const w = card.offsetWidth, h = card.offsetHeight;
+        const y = Math.max(edge, Math.min(H - h - edge, hole.y + hole.h / 2 - h / 2));
+        at = { x: right ? hole.x + hole.w + gap : hole.x - gap - w, y };
+        placed = !meets(at.x, at.y, w, h);
+      }
+      if (!placed) {
+        card.style.width = "";
+        const roomA = hole.y - gap - edge, roomB = H - (hole.y + hole.h) - gap - edge;
+        const above = roomA >= roomB, vroom = above ? roomA : roomB;
+        if (vroom >= 160) {
+          card.style.maxHeight = `${vroom}px`;
+          const w = card.offsetWidth, h = card.offsetHeight;
+          at = { x: Math.max(edge, Math.min(W - w - edge, hole.x + hole.w / 2 - w / 2)), y: above ? hole.y - gap - h : hole.y + hole.h + gap };
+        }
+      }
+    }
+    if (at) card.style.transform = `translate3d(${Math.round(at.x)}px, ${Math.round(at.y)}px, 0)`;
   }
   const slidePad = (slide) => Number.isFinite(slide?.pad) ? slide.pad : 9;
 

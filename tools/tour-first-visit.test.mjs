@@ -75,12 +75,12 @@ const readTour = (page) => page.evaluate(() => {
   if (kind === "picture") {
     const pip = overlay?.querySelector(`.ov-pip.ov-pip-pictured[data-id="${esc(ids[0])}"]`);
     const arts = [...(placed?.querySelectorAll("image") ?? [])];
-    lit.pip = { found: !!pip, inSpot: within(box(pip), spot) };
+    lit.pip = { found: !!pip, inSpot: within(box(pip), spot), rect: box(pip) };
     lit.art = { count: arts.filter((a) => meets(box(a), spot)).length, hrefs: arts.filter((a) => meets(box(a), spot)).map((a) => a.getAttribute("href")) };
   }
   if (kind === "dot") {
     const pip = overlay?.querySelector(`.ov-pip.ov-pip-home[data-id="${esc(ids[0])}"]`);
-    lit.dot = { found: !!pip, inSpot: within(box(pip), spot) };
+    lit.dot = { found: !!pip, inSpot: within(box(pip), spot), rect: box(pip) };
   }
   const s = q(".wv-tour-scroll");
   return {
@@ -179,6 +179,14 @@ async function openPage(t, { viewport, phone, pictures = true }) {
 function assertLit(s, what, phone) {
   const { kind, ids, spot, lit } = s.scene;
   assert.ok(spot && spot.w > 0, `${what}: the spotlight is up, over the page`);
+  // THE LIT TARGET IS VISIBLE, NOT UNDER THE CARD (CORE-153, Truey's review of c7833d9b1: at 844 x 390 the card lay over the dot it taught): the opaque card's box meets neither the
+  // spotlight nor any lit element, read after the card and camera have come to rest, on every size this file runs
+  const c = s.geometry.card;
+  const meetsCard = (b) => !!b && b.x < c.right && b.right > c.x && b.y < c.bottom && b.bottom > c.y;
+  assert.ok(!meetsCard(spot), `${what}: the card does not cover the spotlight ${JSON.stringify({ card: [c.x, c.y, c.right, c.bottom].map(Math.round), spot: [spot.x, spot.y, spot.right, spot.bottom].map(Math.round) })}`);
+  for (const [name, b] of [["house", lit.house?.rect], ["resident", lit.resident?.rect], ["mark", lit.pip?.rect], ["dot", lit.dot?.rect]]) {
+    if (b) assert.ok(!meetsCard(b), `${what}: the lit ${name} is not under the card ${JSON.stringify({ card: [c.x, c.y, c.right, c.bottom].map(Math.round), [name]: [b.x, b.y, b.right, b.bottom].map(Math.round) })}`);
+  }
   if (kind === "house") {
     assert.equal(ids.length, 2, `${what}: a house id and a resident handle`);
     assert.ok(lit.house.found && lit.house.inSpot, `${what}: the house ${ids[0]} is the map's own home pip, inside the spotlight ${JSON.stringify({ spot, house: lit.house })}`);
