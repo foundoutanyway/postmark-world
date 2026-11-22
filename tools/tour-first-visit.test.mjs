@@ -242,7 +242,8 @@ async function onThePage(t, { viewport, phone }) {
   assert.equal(s1.next, "next");
   assert.equal(s1.backDisabled, true, "nothing before the first step");
   contained(s1, "step 1");
-  assert.match(s1.text, /^The people and agents who live here write the world in words\.Everything on this map was made by a resident\.$/, "the welcome: the accepted sentence (the people, humans included, and the agents; Wright 2026-11-21 07:43) and one short true line (Darko 2026-11-22 00:31 cut the told-not-drawn line), nothing more");
+  assert.match(s1.text, /^The people and agents who live here build this world together\.$/, "the welcome: exactly one line (Darko 2026-11-22 10:27 EST, CORE-153: 'agreed with your rec on 153'; the people, humans included, and the agents), nothing more");
+  assert.doesNotMatch(s1.text, /write the world in words|made by a resident/i, "the two earlier lines stay replaced");
   assert.doesNotMatch(s1.text, /told, not drawn/i, "the cut line stays cut");
   // the join flow's big type (a large gold headline, a large soft caption)
   assert.ok(s1.type.title >= 27 && s1.type.body >= 17, `large type: headline ${s1.type.title}px, caption ${s1.type.body}px`);

@@ -3412,7 +3412,8 @@ export const TOUR_SLIDES = [
     title: "Welcome to the world",
     // Wright 2026-11-21 07:43: the people and agents who live here (the earlier wording excluded the humans)
     // Darko 2026-11-22 00:31: the line "The world is told, not drawn." is cut ("seems false when marks have images")
-    body: "The people and agents who live here write the world in words.<br>Everything on this map was made by a resident.",
+    // Darko 2026-11-22 10:27 EST (CORE-153, "agreed with your rec on 153"): the step's body is exactly this one line; it replaces both earlier lines
+    body: "The people and agents who live here build this world together.",
   },
   {
     // THE PAGE ITSELF (Darko 2026-11-21 22:01 EST: "the tour needs to take assets directly from the actual world page"; Wright 03:01Z): a step with a `stage` points at a piece of the

@@ -1367,7 +1367,7 @@ test("WLD-220: a phone is told only what a phone has (drag, tap, what is drawn);
   const all = TOUR_SLIDES.flatMap((s) => [s.title, s.body, s.phoneBody ?? ""]).map(TOUR_TEXT).join("\n");
   assert.doesNotMatch(all, /constitution|commons|stamp|Act As|Telling|context budget|sixty|crossing|MCP/i, "the cut lessons stay cut");
   // the welcome's one sentence (Wright 2026-11-21 07:43) says "the people and agents who live here"; it is exactly that sentence the guard permits, in the welcome only
-  const WELCOME_WHO = "The people and agents who live here write the world in words";
+  const WELCOME_WHO = "The people and agents who live here build this world together";
   assert.ok(TOUR_TEXT(welcome.body).includes(WELCOME_WHO), "the welcome names who lives here: people and agents");
   assert.equal(all.split(WELCOME_WHO).length - 1, 1, "and says it once");
   assert.doesNotMatch(all.replace(WELCOME_WHO, ""), /\b(someone|somebody|people|person)\b/i, "a resident is a resident, the welcome's own sentence aside");
@@ -1391,9 +1391,9 @@ test("WLD-220 (Darko 2026-11-21 09:12 EST, via Wright): the two map-meaning card
   const [welcome, parcels, marks, explore] = TOUR_SLIDES;
   assert.deepEqual(TOUR_SLIDES.slice(0, 4).map((s) => s.id), ["welcome", "parcels", "marks", "explore"], "the two new cards sit after the welcome and before Look around");
   // the welcome sentence is the accepted one, word for word
-  assert.ok(TOUR_TEXT(welcome.body).includes("The people and agents who live here write the world in words"));
-  // Darko 2026-11-22 00:31: "The world is told, not drawn." is cut ("seems false when marks have images"); the second line is short and true on this page
-  assert.equal(TOUR_TEXT(welcome.body), "The people and agents who live here write the world in words.Everything on this map was made by a resident.");
+  assert.ok(TOUR_TEXT(welcome.body).includes("The people and agents who live here build this world together"));
+  // Darko 2026-11-22 10:27 EST (CORE-153, "agreed with your rec on 153"): the body is exactly this one line (until then it was two: "...write the world in words." and "Everything on this map was made by a resident.")
+  assert.equal(TOUR_TEXT(welcome.body), "The people and agents who live here build this world together.");
   assert.match(TOUR_TEXT(explore.body), /Drag to move\.\s*Scroll to zoom\./);
   assert.match(TOUR_TEXT(explore.phoneBody), /Drag to move\./);
   // card 1 (a few large words; the picture is the live page's house and resident): a house is a parcel; green figures are residents. The WALKING LINE is not claimed: the map draws
