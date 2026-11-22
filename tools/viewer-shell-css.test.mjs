@@ -123,8 +123,11 @@ import { MARK_ICON_CSS } from "../spectator/mark-icons.mjs";
 // so main's count is 111168 + 4075 = 115243 (digest 9966505163…).
 // RE-PINNED FOR THE MERGE OF main f4e12a54 (CORE-127 and WLD-211 over this branch): the tour's own net change over main's old 111168 is +2550 bytes (113718 - 111168), all under .wv-tour / .wv-tour-body;
 // main's CORE-127 STYLE adds 4075 on top of 111168 (115243). The merge is line-clean in STYLE, so the expected count is 115243 + 2550 = 117793.
-const PINNED_MASKED_STYLE_SHA256 = "932bbdbeef898a20ea810e028a8da77abd7931264751732961b7d4d22605d97e";
-const PINNED_MASKED_STYLE_BYTES = 117793;
+// RE-PINNED IN CORE-147 (the icon dropdown, Darko 2026-11-21; accepted pin 6aaf9552), an INTENDED change to STYLE over main's 117793 (digest 932bbdbe…): the icon switches' CSS (`.wv-dlayers`, `.wv-dlayer*`,
+// the phone sheet's three columns) adds 1276 bytes of added lines (the 💬 button was markup, not STYLE): 117793 + 1276 = 119069 expected (the merge of main b4e1fa53 is line-clean in STYLE). The digest below is
+// the one this test's own masked-emission route printed for the merged tree (run through run-heavy on b4e1fa53 + this branch; full output /var/tmp/core-147-integrate/measure.out); not copied from either side.
+const PINNED_MASKED_STYLE_SHA256 = "fad76d8d99c9c33ceb8af4197ef4b308064346d6b565473d2d26bc62e3d584ad";
+const PINNED_MASKED_STYLE_BYTES = 119069;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";

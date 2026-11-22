@@ -228,8 +228,10 @@ test("wiring: the closure is gone, and the one call site passes the looked-up ro
 // MAIN'S OWN ACCOUNT, kept (CORE-127, refreshed at main 1054c91d): the display-filter opener, its desktop popover and its 390 px sheet add 4075 bytes to main's 111168 (115243, digest 9966505163…);
 // CREATURE_CSS and both of its neighbours untouched.
 // RE-PINNED FOR THE MERGE OF main f4e12a54 over this branch: main's 115243 plus the tour's net +2550 (113718 - 111168) = 117793 expected (line-clean in STYLE); tools/viewer-shell-css.test.mjs carries the account.
-const PINNED_MASKED_STYLE_SHA256 = "932bbdbeef898a20ea810e028a8da77abd7931264751732961b7d4d22605d97e";
-const PINNED_MASKED_STYLE_BYTES = 117793;
+// RE-PINNED IN CORE-147 (the icon dropdown): +1276 bytes of the icon switches' CSS over main's 117793 (932bbdbe…) = 119069, added lines only; tools/viewer-shell-css.test.mjs carries the account and measures the
+// digest below by the same masked route (CREATURE_CSS and both of its neighbours untouched).
+const PINNED_MASKED_STYLE_SHA256 = "fad76d8d99c9c33ceb8af4197ef4b308064346d6b565473d2d26bc62e3d584ad";
+const PINNED_MASKED_STYLE_BYTES = 119069;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";

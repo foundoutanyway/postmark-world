@@ -133,11 +133,12 @@ async function openViewer({ mode, storage = null, wait = true } = {}) {
   await page.waitForSelector(".wv-telling-pane", { state: "attached", timeout: 90_000 });
   await page.evaluate(() => { const el = document.querySelector(".wv-tour-skip"); if (el && el.offsetParent) el.click(); });
   await page.waitForFunction(() => !!window.__pmViewer, null, { timeout: 60_000 });
-  if (wait) await page.waitForFunction(() => !!document.querySelector(".wv-map-convo"), null, { timeout: 60_000 }).catch(() => {});
+  // the speech bubbles' switch lives in the Filters panel (CORE-147: the 💬 button is gone); it exists in the page whether or not the panel is open
+  if (wait) await page.waitForFunction(() => !!document.querySelector('[data-dsel-layer="conversation"]'), null, { timeout: 60_000 }).catch(() => {});
   return page;
 }
 const badgeIds = (page) => page.evaluate(() => [...document.querySelectorAll("[data-convo]")].map((g) => ({ id: g.getAttribute("data-convo"), cls: g.getAttribute("class") })));
-const ctl = (page) => page.evaluate(() => { const b = document.querySelector(".wv-map-convo"); return b ? { on: b.classList.contains("on") } : null; });
+const ctl = (page) => page.evaluate(() => { const b = document.querySelector('[data-dsel-layer="conversation"]'); return b ? { on: b.getAttribute("aria-pressed") === "true" } : null; });
 async function waitBadges(page, n, ms = 30_000) {
   await page.waitForFunction((want) => document.querySelectorAll("[data-convo]").length >= want, n, { timeout: ms }).catch(() => {});
   return badgeIds(page);
@@ -180,8 +181,8 @@ test("3. the reader's own choice: the toggle hides the badges and is remembered;
   const on = await openViewer({ mode: "plain" });
   assert.equal((await ctl(on))?.on, true, "on by default");
   assert.ok((await waitBadges(on, 12)).length >= 12);
-  await on.evaluate(() => document.querySelector(".wv-map-convo").click());
-  await on.waitForFunction(() => !document.querySelector(".wv-map-convo").classList.contains("on"), null, { timeout: 10_000 });
+  await on.evaluate(() => document.querySelector('[data-dsel-layer="conversation"]').click());
+  await on.waitForFunction(() => document.querySelector('[data-dsel-layer="conversation"]').getAttribute("aria-pressed") === "false", null, { timeout: 10_000 });
   assert.equal(await on.evaluate(() => getComputedStyle(document.querySelector("#wv-convo-layer")).display), "none", "hiding via the toggle hides the layer");
   assert.equal(await on.evaluate(() => localStorage.getItem("pm.world.conversations")), "off");
   await on.close();
