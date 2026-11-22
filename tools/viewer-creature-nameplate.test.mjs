@@ -212,13 +212,15 @@ test("wiring: the closure is gone, and the one call site passes the looked-up ro
 // hashed), not this test's code. That route reproduced the three digests it is checked against: 94d56a41… (107135 bytes) on the POS-945
 // merge-base, ed771ead… (107711 bytes, the pin above) on this main, and 37ddf8f8… (107954 bytes, the pin the reviewed head 6f4c906a
 // carried) on that head. A line diff of the masked texts, main to the merge, is exactly the 8 `.wv-bymail*` lines and none removed.
-// RE-PINNED FOR CORE-54, knowingly (the same intended STYLE change tools/viewer-shell-css.test.mjs re-pins, which carries the account): STYLE gains the
-// phone/touch hit-area rules, 108530 -> 110597 bytes, nothing removed; CREATURE_CSS and both of its neighbours are untouched (the chooser row's media rule
-// sits AFTER `.wv-choose-row.is-creature`, so the neighbour pin below still holds). The digest is the one viewer-shell-css measures by this same masked route.
-// RE-PINNED AGAIN FOR CORE-54 (the tour foot fit at 390 px, 110597 -> 111168, one media block of 6 added lines, nothing removed; tools/viewer-shell-css.test.mjs carries the account);
-// CREATURE_CSS and both of its neighbours are untouched.
-const PINNED_MASKED_STYLE_SHA256 = "d8d986315a723c01b0ee068dd93c499a1eb60338b8fa153a5306f4c3cf03c64b";
-const PINNED_MASKED_STYLE_BYTES = 111168;
+// RE-PINNED FOR CORE-54 (main), knowingly: phone/touch hit-area rules, 108530 -> 110597, then the tour foot fit, 110597 -> 111168 (main's own digest d8d98631…, 111168 bytes);
+// CREATURE_CSS and both of its neighbours untouched (tools/viewer-shell-css.test.mjs carries the account).
+// RE-PINNED IN CORE-127 (World viewer filters, PR #417), an INTENDED change to STYLE: the display-filter opener, its desktop popover and
+// its 390 px sheet (`.wv-filters-open`, `.wv-dpanel`, `.wv-dstrip`, `.wv-dfilter-host`) add 4075 bytes of CSS and nothing else moved (a line
+// diff of the masked texts, main 6928feab to the head, is added lines only).
+// MERGED WITH main 1054c91d (CORE-127 refresh): 111168 + 4075 = 115243 bytes (the merge is line-clean in STYLE); the digest is the one tools/viewer-shell-css.test.mjs measures
+// for the merged tree by the same masked route (printed 9966505163…, the pin below); it replaces CORE-127's pre-merge bb3ebfde….
+const PINNED_MASKED_STYLE_SHA256 = "9966505163545a4895b6e35b8db294d6108090a4af5a2a5a539008a641b181eb";
+const PINNED_MASKED_STYLE_BYTES = 115243;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";

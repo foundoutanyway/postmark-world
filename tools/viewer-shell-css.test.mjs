@@ -87,7 +87,10 @@ import { MARK_ICON_CSS } from "../spectator/mark-icons.mjs";
 // digests it is checked against: 94d56a41… (107135 bytes) on the POS-945 merge-base, ed771ead… (107711 bytes, the pin above) on this main,
 // and 37ddf8f8… (107954 bytes, the pin the reviewed head 6f4c906a carried) on that head. A line diff of the masked texts, main to the merge,
 // is exactly the 8 `.wv-bymail*` lines and none removed, the same 8 lines the reviewed head added over its own base.
-// RE-PINNED FOR CORE-54 (Darko 2026-11-20, "4. Small targets"), knowingly, an INTENDED change to STYLE over the pin above: the phone/touch hit-area
+// RE-PINNED IN CORE-127 (World viewer filters, PR #417), an INTENDED change to STYLE: the display-filter opener, its desktop popover and
+// its 390 px sheet (`.wv-filters-open`, `.wv-dpanel`, `.wv-dstrip`, `.wv-dfilter-host`) add 4075 bytes of CSS and nothing else moved (a line
+// diff of the masked texts, main 6928feab to the head, is added lines only).
+// CORE-54's account, as main carries it (Darko 2026-11-20, "4. Small targets"), knowingly, an INTENDED change to STYLE over the pin above: the phone/touch hit-area
 // rules (the round map controls and root mark, the tour's three buttons and step dots, the mark bubble's close) and the touch-reach constants' CSS
 // neighbours: 1877 bytes added (108530 -> 110407), nothing removed or changed; then the chooser row's 44 px reach (`.wv-choose-row`, one media rule,
 // 190 bytes, 110407 -> 110597) when the crowded press's choices joined the phone column (Wright 16:57Z). The digest below was measured by this test's own masked-emission route
@@ -99,8 +102,11 @@ import { MARK_ICON_CSS } from "../spectator/mark-icons.mjs";
 // RE-PINNED A THIRD TIME FOR CORE-54 (lead fix, 2026-11-20 20:01Z): the 390 px tour foot FIT. The published 0dae4132/c300 tour frame showed "next" spilling past the card (the 8 step dots at
 // 20 px plus skip/back/next at 192 px did not fit the ~160 px beside them). One media block gains 6 lines / 571 bytes (110597 -> 111168), nothing removed or changed: the foot may wrap, the
 // actions sit 4 px apart and right-aligned, skip's padding 6 px and back/next 8 px a side (each still at least 44 px wide and 44 px tall). Measured by this test's own masked-emission route.
-const PINNED_MASKED_STYLE_SHA256 = "d8d986315a723c01b0ee068dd93c499a1eb60338b8fa153a5306f4c3cf03c64b";
-const PINNED_MASKED_STYLE_BYTES = 111168;
+// MERGED WITH main 1054c91d (CORE-127 refresh): main's own pin is d8d98631… at 111168 bytes; CORE-127's STYLE adds 4075 bytes of added lines on top (the merge is line-clean in STYLE),
+// so the byte count is 111168 + 4075 = 115243 (it passed). The digest below is the one this test's own masked-emission route printed for the merged tree (run through run-heavy, full
+// output /var/tmp/core-127-refresh/shell-css-measure.out); it replaces CORE-127's pre-merge bb3ebfde….
+const PINNED_MASKED_STYLE_SHA256 = "9966505163545a4895b6e35b8db294d6108090a4af5a2a5a539008a641b181eb";
+const PINNED_MASKED_STYLE_BYTES = 115243;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";
