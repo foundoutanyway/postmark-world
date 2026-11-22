@@ -16859,6 +16859,9 @@ export function mountViewer(appEl) {
     const card = $(el, ".wv-tour-card");
     const spot = $(el, ".wv-tour-spot");
     const scrim = $(el, ".wv-tour-scrim");
+    // a size a placement sets (narrowed beside the target, or shortened above or below it) is forgotten at the start of the next one, the centred path included, so back, replay
+    // and the welcome always start from the card's natural size
+    card.style.width = ""; card.style.maxHeight = "";
     const slide = tourDeck[tourAt];
     const target = tourAnchor(slide);
     const r = target ? target.getBoundingClientRect() : tourStageRect?.();
@@ -16880,8 +16883,6 @@ export function mountViewer(appEl) {
       borderRadius: `${Math.min(hole.w, hole.h) / 2 <= 22 ? Math.min(hole.w, hole.h) / 2 : 10}px`,
     });
     card.classList.remove("is-centred");
-    // a size this call sets is forgotten on the next one, so each placement starts from the card's natural size
-    card.style.width = ""; card.style.maxHeight = "";
     const W = window.innerWidth, H = window.innerHeight, gap = pad + 16, edge = 14;
     const spot_ = placeBubble({
       anchor: { x: r.x + r.width / 2, y: r.y + r.height / 2 },

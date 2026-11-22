@@ -356,6 +356,7 @@ async function onAShortScreen(t, { viewport, phone }) {
   const { ctx, page, errors, settle, press, deckReady } = o;
   await settle();
   await deckReady(5);
+  let welcomeW = 0;
   for (let i = 0; i < 5; i++) {
     const s = await readTour(page);
     assert.equal(s.kicker, `The World · ${i + 1} / 5`);
@@ -370,11 +371,19 @@ async function onAShortScreen(t, { viewport, phone }) {
         assert.doesNotMatch(s.text, /scroll|zoom|click|hover/i);
       } else assert.match(s.text, /^Drag to move\.Scroll to zoom\.Click a dot to read it\.$/, "a cursor keeps its wheel and click");
     }
+    if (i === 0) welcomeW = s.geometry.card.w;
     if (i < 4) await press(".wv-tour-next");
   }
   await press(".wv-tour-back");
   assert.equal((await readTour(page)).kicker, "The World · 4 / 5", "back works at this size");
-  await press(".wv-tour-next");
+  // BACK TO THE WELCOME after steps whose card was narrowed or shortened to leave the target visible: the centred card starts from its natural size again, not the staged one
+  await press(".wv-tour-back"); await press(".wv-tour-back"); await press(".wv-tour-back");
+  const welcomeAgain = await readTour(page);
+  assert.equal(welcomeAgain.kicker, "The World · 1 / 5", "back reaches the welcome");
+  assert.equal(await page.evaluate(() => { const s = document.querySelector(".wv-tour-card").style; return `${s.width}|${s.maxHeight}`; }), "|", "no width or max-height left over from a staged step on the centred welcome");
+  assert.ok(Math.abs(welcomeAgain.geometry.card.w - welcomeW) < 1, `the welcome card is its natural width again (${Math.round(welcomeAgain.geometry.card.w)} against ${Math.round(welcomeW)})`);
+  contained(welcomeAgain, "the welcome again");
+  for (let k = 0; k < 4; k++) await press(".wv-tour-next");
   await press(".wv-tour-next");
   await page.waitForSelector(".wv-tour", { state: "hidden", timeout: 10_000 });
   assert.equal((await readTour(page)).open, false, "done closes it at this size");

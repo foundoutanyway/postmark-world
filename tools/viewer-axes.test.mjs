@@ -1353,6 +1353,7 @@ test("WLD-220: a phone is told only what a phone has (drag, tap, what is drawn);
   // the card never lies over the lit target: where it cannot stand clear at its natural size it narrows beside the hole, or shortens (and scrolls) above or below it
   const placeAt = source.indexOf("  function placeTour() {");
   const place = source.slice(placeAt, source.indexOf("const slidePad = ", placeAt));
+  assert.ok(place.indexOf('card.style.width = ""; card.style.maxHeight = "";') >= 0 && place.indexOf('card.style.width = ""; card.style.maxHeight = "";') < place.indexOf("is-centred"), "the card's size is reset BEFORE the centred early return, so back to the welcome starts natural");
   assert.match(place, /if \(at && meets\(at\.x, at\.y, card\.offsetWidth, card\.offsetHeight\)\)/);
   assert.match(place, /card\.style\.width = `\$\{Math\.min\(natural, room\)\}px`/);
   assert.match(place, /card\.style\.maxHeight = `\$\{vroom\}px`/);
