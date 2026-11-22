@@ -3386,30 +3386,33 @@ export const TOUR_SLIDES = [
   {
     id: "welcome",
     title: "Welcome to the world",
-    visual: "welcome",
     // Wright 2026-11-21 07:43: the people and agents who live here (the earlier wording excluded the humans)
     body: "The people and agents who live here write the world in words.<br><b>The world is told, not drawn.</b>",
   },
   {
-    // Darko's amendment (2026-11-21 09:12 EST, via Wright). Read against the viewer: a home is "a household's parcel of ground" (mark-icons: home); a resident is drawn as
-    // a green round frame on two stubby legs ("green is a resident"); a resident who is MOVING has a dashed leg drawn to where they are going (class wv-walk-leg, movers only).
+    // THE PAGE ITSELF (Darko 2026-11-21 22:01 EST: "the tour needs to take assets directly from the actual world page"; Wright 03:01Z): a step with a `stage` points at a piece of the
+    // MOUNTED map, found by the tour from the live scene when it is reached, lit in place by the spotlight and the viewer's own highlight. There is no picture drawn by the tour.
+    // A step whose stage finds nothing on the page is left out of the deck, never replaced by a stand-in. A home is "a household's parcel of ground" (mark-icons: home); a resident is
+    // drawn as a green round frame on two stubby legs ("green is a resident"). The walking line (`wv-walk-leg`) is drawn for movers only, so it is not claimed here: see the stage.
     id: "parcels",
+    stage: "house",
+    pad: 26,
     title: "Houses and residents",
-    visual: "parcels",
-    body: "A <b>house</b> is a parcel.<br><b>Green</b> figures are residents.<br>A <b>dotted line</b> means walking now.",
+    body: "A <b>house</b> is a parcel.<br><b>Green</b> figures are residents.",
   },
   {
     id: "marks",
+    stage: "picture",
+    pad: 10,
     title: "Everything is a mark",
-    visual: "marks",
     body: "Every picture and shape on the map is a <b>mark</b>, made by an <b>agent</b>.",
   },
   {
     // how to look around, in the words of the screen the visitor is on: a phone has no scroll wheel and no pinch zoom here, so its words say drag and tap
     id: "explore",
-    anchor: ".wv-mapctl",
+    stage: "dot",
+    pad: 26,
     title: "Look around",
-    visual: "explore",
     body: "<b>Drag</b> to move.<br><b>Scroll</b> to zoom.<br><b>Click</b> a dot to read it.",
     phoneBody: "<b>Drag</b> to move.<br><b>Tap</b> a dot to read it.",
   },
@@ -3418,76 +3421,11 @@ export const TOUR_SLIDES = [
     id: "next",
     anchor: ".wv-tour-open",
     title: "Where to go next",
-    visual: "next",
     // Wright 2026-11-21 06:17 (settled): the last step links the site's docs, /docs/, and nothing more: a plain link
     body: "<b>💬</b> is where the town is talking.<br><b>?</b> brings this tour back.<br><a href=\"/docs/\">Read the docs</a>",
   },
 ];
 
-// ── THE TOUR'S PICTURES (WLD-220 rebuild; Darko 2026-11-21 18:14 EST: use the actual visuals) ─────────────────────────────────────────────
-// Each is drawn with the map's OWN functions and classes, never a symbol of this module's own: the parcel footprint (`wv-fp t-home`), the home pip with the home glyph
-// (overlayPipSVG + iconSVG), a resident (walkerFrameSVG: the round frame on two legs; a mover is drawn as the map draws one), the dashed walking leg and its end ring
-// (`wv-walk-leg`, `wv-walk-dest`), a mark's picture (the record's own media-door image) and the map's control buttons. Pure; returns markup for the tour's picture panel.
-// The map's units are tiny (a pip is 11 units), so each piece is placed through a plain scale; nothing about the pieces themselves is changed.
-const TV_W = 400, TV_H = 230;
-const tvAt = (k, x, y, draw) => `<g transform="scale(${k})">${draw({ x: +(x / k).toFixed(2), y: +(y / k).toFixed(2) })}</g>`;
-const tvLabel = (x, y, text) => `<text class="tv-label" x="${x}" y="${y}" text-anchor="middle">${esc(text)}</text>`;
-const tvPip = (x, y, key, classes, k = 2.2) => tvAt(k, x, y, (at) => overlayPipSVG({ at, id: `tour-${key}`, classes, inner: iconSVG({ key }, { x: -6, y: -6, size: 12 }) }));
-const tvWalker = (x, y, moving, k = 2.6) => tvAt(k, x, y, (at) => walkerFrameSVG({ at, handle: moving ? "walking-resident" : "resident", moving }));
-const tvSvg = (inner, label) => `<svg class="tv-svg" viewBox="0 0 ${TV_W} ${TV_H}" role="img" aria-label="${esc(label)}">${inner}</svg>`;
-const tvControl = (glyph, word, big = false) => `<span class="tv-ctl-cell"><span class="tv-ctl${big ? " tv-big" : ""}">${glyph}</span><span class="tv-ctl-word">${esc(word)}</span></span>`;
-export function tourVisual(kind, { picture = null, phone = false } = {}) {
-  if (kind === "welcome") {
-    // words become the map: a sentence, an arrow, and the lit thing it puts on a parcel (the tour's old example, "the lamp is always lit")
-    return tvSvg(
-      `<rect class="tv-strip" x="36" y="12" width="328" height="50" rx="25"/><text class="tv-sentence" x="200" y="45" text-anchor="middle">the lamp is always lit</text>`
-      + `<path class="tv-arrow" d="M200 66 V104 M190 94 L200 106 L210 94"/>`
-      + `<polygon class="wv-fp t-home tv-parcel" points="112,116 290,108 320,172 252,214 132,210 92,162"/>`
-      + tvPip(200, 162, "thing", "t-home", 2.4),
-      "A sentence, 'the lamp is always lit', and the lit lamp it puts on the map");
-  }
-  if (kind === "parcels") {
-    // a parcel with its house; a resident (green) at home; a resident walking (the map draws a mover tinted, with the dashed leg to where they are going)
-    return tvSvg(
-      `<polygon class="wv-fp t-home tv-parcel" points="28,52 176,34 214,112 168,196 40,182"/>`
-      + `<line class="wv-walk-leg" x1="286" y1="150" x2="352" y2="76"/><circle class="wv-walk-dest" cx="352" cy="76" r="9"/>`
-      + tvWalker(286, 148, true) + tvWalker(122, 134, false)
-      + tvPip(78, 100, "home", "t-home", 2.2)
-      + tvLabel(78, 150, "house") + tvLabel(122, 188, "resident") + tvLabel(296, 210, "walking now"),
-      "A house on its parcel, a resident at home, and a resident walking with a dotted line to where they are going");
-  }
-  if (kind === "marks") {
-    // a mark's picture (the record's own) and a mark's shape (a footprint), each made by an agent
-    // WITHOUT a picture (none loaded yet, or its load failed) the step shows the shape alone, centred: no frame, no pip standing in for a picture, no "picture" label
-    const pill = `<rect class="tv-pill" x="96" y="190" width="208" height="32" rx="16"/><text class="tv-pilltext" x="200" y="212" text-anchor="middle">made by an agent</text>`;
-    if (!picture?.href) {
-      return tvSvg(
-        `<polygon class="wv-fp t-constitution tv-poly" points="120,46 224,34 272,96 230,152 130,146"/>` + tvPip(196, 92, "place", "t-constitution", 1.8)
-        + tvLabel(196, 178, "shape") + pill,
-        "A mark's shape on the map, made by an agent");
-    }
-    return tvSvg(
-      `<rect class="tv-frame" x="22" y="30" width="170" height="124" rx="8"/>`
-      + `<clipPath id="tv-art-clip"><rect x="28" y="36" width="158" height="112" rx="4"/></clipPath><image ${thumbImageAttrs(picture.href, null)} x="28" y="36" width="158" height="112" preserveAspectRatio="xMidYMid slice" clip-path="url(#tv-art-clip)" class="tv-art"/>`
-      + `<polygon class="wv-fp t-constitution tv-poly" points="228,46 332,34 380,96 338,152 238,146"/>` + tvPip(304, 92, "place", "t-constitution", 1.8)
-      + tvLabel(107, 178, "picture") + tvLabel(304, 178, "shape") + pill,
-      "A mark's picture and a mark's shape, each made by an agent");
-  }
-  if (kind === "explore") {
-    // the three things the words teach, shown on the map's own pieces (a home pip) with a minimal gesture mark: DRAG moves (a pip and the way it goes), SCROLL zooms (the same pip
-    // small, then large; a phone has no scroll wheel here, so its picture leaves this one out), CLICK / TAP a dot reads it (the pip with a pointer on it)
-    const cells = phone ? [110, 290] : [70, 200, 330];
-    const drag = (cx) => tvPip(cx - 30, 98, "home", "t-home", 2.2) + `<path class="tv-arrow" d="M${cx - 2} 98 H${cx + 36} M${cx + 26} 88 L${cx + 38} 98 L${cx + 26} 108"/>` + tvLabel(cx, 196, "drag");
-    const zoom = (cx) => tvPip(cx - 32, 106, "home", "t-home", 1.4) + `<path class="tv-arrow" d="M${cx - 14} 100 H${cx + 2} M${cx - 8} 94 L${cx + 2} 100 L${cx - 8} 106"/>` + tvPip(cx + 34, 94, "home", "t-home", 3.2) + tvLabel(cx, 196, "scroll");
-    const read = (cx) => tvPip(cx, 92, "home", "t-home", 2.6) + `<path class="tv-cursor" d="M${cx + 10} 100 l0 26 l7 -6 l5 12 l6 -3 l-5 -11 l9 -1 z"/>` + tvLabel(cx, 196, phone ? "tap" : "click");
-    return tvSvg(phone ? drag(cells[0]) + read(cells[1]) : drag(cells[0]) + zoom(cells[1]) + read(cells[2]),
-      phone ? "Drag a house to move the map; tap a dot to read it" : "Drag a house to move the map; scroll to make it bigger; click a dot to read it");
-  }
-  if (kind === "next") {
-    return `<div class="tv-controls" role="img" aria-label="The conversations button and the tour button"><span class="tv-ctls">${tvControl("💬", "talk", true)}${tvControl("?", "tour", true)}</span></div>`;
-  }
-  return "";
-}
 
 // The three marks the kinds slide points at, by id, so the slide cannot drift
 // from the record: if one of these is ever retired the highlight simply does not
@@ -6952,31 +6890,7 @@ ${WV_ENTER_CSS}
   text-transform:uppercase; color:rgba(232,196,139,.75); }
 .wv-tour-title { margin:0 0 .4em; font-size:clamp(1.7rem,5.2vw,2.5rem); line-height:1.12; color:#f6dcae;
   font-weight:700; text-shadow:0 0 34px rgba(232,196,139,.28); text-wrap:balance; }
-/* the picture: art on paper, as the join flow sets its art; the pieces inside are the map's own */
-.wv-tour-visual { margin:0 0 1em; padding:10px; border-radius:14px; background:#efe6d2; border:1px solid rgba(232,196,139,.4); }
-.wv-tour-visual[hidden] { display:none; }
-.tv-svg { display:block; width:100%; height:auto; }
-.tv-label { font:700 21px Georgia,serif; fill:#3b2f1c; }
-.tv-sentence { font:italic 600 25px Georgia,serif; fill:#3b2f1c; }
-.tv-strip { fill:#fffaf0; stroke:#c9b98e; stroke-width:2; }
-.tv-arrow { fill:none; stroke:#8a7a5e; stroke-width:3.5; stroke-linecap:round; stroke-linejoin:round; }
-.wv-tour-visual .tv-parcel { fill:rgba(132,201,143,.3); stroke-width:3.5; }   /* two classes, so they win over the map's own .wv-fp (fill:none; 1.4), which the stylesheet states later */
-.wv-tour-visual .tv-poly { fill:rgba(123,167,224,.28); stroke-width:3.5; }
-.tv-cursor { fill:#2b2418; stroke:#fffaf0; stroke-width:2; stroke-linejoin:round; }
-.tv-frame { fill:#fffaf0; stroke:#8a7a5e; stroke-width:3; }
-.tv-pill { fill:#2b2418; }
-.tv-pilltext { font:700 20px Georgia,serif; fill:#f6dcae; }
-.wv-tour-visual .wv-walk-leg { stroke-width:5; stroke-dasharray:1 10; stroke-linecap:round; opacity:1; }
-.wv-tour-visual .wv-walk-dest { fill:none; stroke:#e0507a; stroke-width:3; }
-.tv-controls { display:flex; flex-direction:column; align-items:center; gap:14px; padding:8px 0; }
-.tv-search { display:block; padding:.55em 1.1em; border-radius:999px; background:rgba(13,15,19,.9); color:rgba(232,196,139,.85); border:1px solid rgba(232,197,106,.4);
-  font-family:var(--mono); font-size:1.05rem; }
-.tv-ctls { display:flex; gap:22px; justify-content:center; }
-.tv-ctl-cell { display:flex; flex-direction:column; align-items:center; gap:6px; }
-.tv-ctl { display:inline-grid; place-items:center; width:2.6rem; height:2.6rem; font-family:var(--mono); font-size:1.3rem; line-height:1; color:rgba(232,197,106,.9);
-  background:rgba(13,15,19,.9); border:1px solid rgba(232,197,106,.45); border-radius:999px; box-shadow:0 2px 10px rgba(0,0,0,.3); }
-.tv-ctl.tv-big { width:3.6rem; height:3.6rem; font-size:1.8rem; }
-.tv-ctl-word { font:700 1.15rem Georgia,serif; color:#3b2f1c; }
+/* the words are large and few (the join flow's soft caption); the picture is the page itself, lit by the spotlight, so the tour draws none */
 .wv-tour-body { color:#b9ad95; font-size:clamp(1.15rem,3.4vw,1.4rem); line-height:1.45; }
 .wv-tour-body b { color:#f6dcae; font-weight:700; }
 .wv-tour-body em { color:var(--dim); }
@@ -7037,18 +6951,13 @@ ${WV_ENTER_CSS}
   .wv-tour-card { width:calc(100vw - 20px); padding:20px 18px 14px; }
   .wv-tour-title { font-size:clamp(1.55rem,7.4vw,2rem); }
   .wv-tour-body { font-size:1.15rem; }
-  .wv-tour-visual { padding:8px; }
 }
-/* a SHORT, WIDE screen (a phone on its side, a wide window with little height): the card goes wide and the picture sits beside the words rather than above them, still large;
-   a NARROW short screen (a 360 x 560 phone) stays one readable column, as the phone block above sets it. Whatever still does not fit scrolls inside the card
-   (.wv-tour-scroll), never off the screen */
-@media (max-height:600px) and (min-width:640px){
-  .wv-tour-card { width:min(52rem,calc(100vw - 20px)); padding:14px 22px 10px; }
+/* a SHORT screen (a phone on its side, a wide window with little height, a 360 x 560 phone): the card tightens its padding and title; whatever still does not fit scrolls inside
+   the card (.wv-tour-scroll), never off the screen. The words stay large: the picture is the page behind the spotlight, so there is no tour drawing to shrink. */
+@media (max-height:600px){
+  .wv-tour-card { padding:14px 22px 10px; }
   .wv-tour-kicker { margin-bottom:.3em; }
   .wv-tour-title { font-size:1.55rem; margin-bottom:.3em; }
-  .wv-tour-scroll { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); gap:0 22px; align-items:center; }
-  .wv-tour-visual { margin:0; }
-  .wv-tour-visual .tv-svg { max-height:calc(100vh - 190px); max-height:calc(100dvh - 190px); }
   .wv-tour-body { font-size:1.15rem; }
   .wv-tour-foot { margin-top:8px; padding-top:8px; }
 }
@@ -7971,7 +7880,6 @@ const MARKUP = `
     <p class="wv-tour-kicker">The World</p>
     <h2 class="wv-tour-title" id="wv-tour-title"></h2>
     <div class="wv-tour-scroll">
-      <div class="wv-tour-visual" hidden></div>
       <div class="wv-tour-body"></div>
     </div>
     <div class="wv-tour-foot">
@@ -16663,7 +16571,7 @@ export function mountViewer(appEl) {
     if (go && go.g.isConnected && mapCtx) mistsRollInPlay(go);
   }
   function stepTour(action) {
-    const next = tourStep(tourAt, action, TOUR_SLIDES.length);
+    const next = tourStep(tourAt, action, tourDeck.length);
     if (next < 0) { closeTour(); return; }
     tourAt = next;
     renderTour();
@@ -16688,7 +16596,96 @@ export function mountViewer(appEl) {
     tourUnstage = want === "telling" ? stageTelling()
       : want === "walk" ? stageWalk()
         : want === "kinds" ? stageKinds()
-          : null;
+          : want === "house" || want === "picture" || want === "dot" ? stageScene(want)
+            : null;
+  }
+  // ── THE TOUR POINTS AT THE PAGE ITSELF (WLD-220; Darko 2026-11-21 22:01 EST: "the tour needs to take assets directly from the actual world page"; Wright 03:01Z) ────────────
+  // Three stages find a piece of the MOUNTED map by reading the live scene, never by drawing one: a HOUSE (a home's pip in the overlay) with a RESIDENT standing at it (a
+  // `wv-walker-far` in the walk layer, the green round frame on two legs), a PICTURE (a mark drawn with its own picture on the map, found by its pictured pip, its ground read by
+  // footprintBoxFor), and a DOT (any home's pip) to read. Each target must lie wholly in the painting, clear of the map's controls, and the first by public id is taken, so the same page
+  // gives the same step. Nothing is moved: no camera, no selection, no walk. The only thing written is the viewer's own highlight layer, which the undo puts back as it was.
+  // A stage that finds nothing returns null and its step is left out of the deck: there is no stand-in picture.
+  const tourPane = () => {
+    const pane = $(root, ".wv-minimap")?.getBoundingClientRect();
+    if (!pane || !pane.width) return null;
+    const ctl = $(root, ".wv-mapctl")?.getBoundingClientRect();
+    return { left: pane.left + 8, right: pane.right - 8, top: Math.max(pane.top + 8, ctl && ctl.width ? ctl.bottom + 8 : 0), bottom: pane.bottom - 8 };
+  };
+  const tourWithin = (r, p) => !!p && r.width > 0 && r.height > 0 && r.left >= p.left && r.right <= p.right && r.top >= p.top && r.bottom <= p.bottom;
+  const tourUnion = (rs) => {
+    const left = Math.min(...rs.map((r) => r.left)), top = Math.min(...rs.map((r) => r.top));
+    const right = Math.max(...rs.map((r) => r.right)), bottom = Math.max(...rs.map((r) => r.bottom));
+    return { x: left, y: top, width: right - left, height: bottom - top };
+  };
+  const tourMid = (r) => ({ x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2 });
+  const tourById = (layer, sel, attr, id) => layer?.querySelector(`${sel}[${attr}="${CSS.escape(id)}"]`)?.getBoundingClientRect() ?? null;
+  function tourSceneTarget(kind) {
+    const pane = tourPane(), overlay = mapCtx?.overlay, walks = mapCtx?.walkLayer;
+    if (!pane || !overlay) return null;
+    const pips = (sel) => [...overlay.querySelectorAll(sel)].map((el) => ({ id: el.getAttribute("data-id"), r: el.getBoundingClientRect() })).filter((p) => p.id && tourWithin(p.r, pane));
+    const byIdAsc = (a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+    if (kind === "house") {
+      const homes = pips(".ov-pip-home");
+      if (!homes.length || !walks) return null;
+      const residents = [...walks.querySelectorAll(".wv-walker-far:not(.moving)")]
+        .map((el) => ({ id: el.getAttribute("data-handle"), r: el.getBoundingClientRect() })).filter((w) => w.id && tourWithin(w.r, pane)).sort(byIdAsc);
+      for (const w of residents) {
+        const c = tourMid(w.r);
+        let best = null, bestD = Infinity;
+        for (const h of homes) { const m = tourMid(h.r), d = Math.hypot(m.x - c.x, m.y - c.y); if (d < bestD) { bestD = d; best = h; } }
+        if (best && bestD <= 30) {
+          const house = best.id, handle = w.id;
+          return { kind, ids: [house, handle], highlightId: house, rect: () => {
+            const rs = [tourById(overlay, ".ov-pip", "data-id", house), tourById(walks, ".wv-walker-far", "data-handle", handle)].filter(Boolean);
+            return rs.length ? tourUnion(rs) : null;
+          } };
+        }
+      }
+      return null;
+    }
+    if (kind === "picture") {
+      const host = bubbleHost()?.getBoundingClientRect();
+      if (!host?.width) return null;
+      const ground = (id) => {
+        const b = footprintBoxFor(id);
+        return b ? { left: host.left + b.x, top: host.top + b.y, right: host.left + b.x + b.w, bottom: host.top + b.y + b.h, width: b.w, height: b.h } : null;
+      };
+      // a mark drawn with BOTH a picture and a ring is the whole lesson (a picture, and a shape): such marks come first
+      const ranked = pips(".ov-pip-pictured").sort((a, b) => ((polygonOf(byId.get(b.id)) ? 1 : 0) - (polygonOf(byId.get(a.id)) ? 1 : 0)) || byIdAsc(a, b));
+      for (const p of ranked) {
+        const r = ground(p.id);
+        if (r && tourWithin(r, pane)) {
+          const id = p.id;
+          return { kind, ids: [id], highlightId: id, rect: () => { const g = ground(id); return g ? { x: g.left, y: g.top, width: g.width, height: g.height } : null; } };
+        }
+      }
+      return null;
+    }
+    if (kind === "dot") {
+      const mid = tourMid({ left: pane.left, right: pane.right, top: pane.top, bottom: pane.bottom });
+      const home = pips(".ov-pip-home").sort((a, b) => {
+        const da = Math.hypot(tourMid(a.r).x - mid.x, tourMid(a.r).y - mid.y), db = Math.hypot(tourMid(b.r).x - mid.x, tourMid(b.r).y - mid.y);
+        return da - db || byIdAsc(a, b);
+      })[0];
+      if (!home) return null;
+      const id = home.id;
+      return { kind, ids: [id], highlightId: null, rect: () => { const r = tourById(overlay, ".ov-pip", "data-id", id); return r ? tourUnion([r]) : null; } };
+    }
+    return null;
+  }
+  const tourDeckNow = () => TOUR_SLIDES.filter((s) => !s.stage || !!tourSceneTarget(s.stage));
+  let tourDeck = TOUR_SLIDES, tourSceneInfo = null;
+  function stageScene(kind) {
+    const t = tourSceneTarget(kind);
+    if (!t) return null;
+    const wasHTML = t.highlightId ? mapCtx.hlLayer?.innerHTML ?? "" : null;
+    if (t.highlightId && mapCtx.hlLayer) writeHighlight(renderOneMarkHighlight(t.highlightId));
+    tourStageRect = t.rect;
+    tourSceneInfo = { kind: t.kind, ids: t.ids };
+    return () => {
+      tourSceneInfo = null;
+      if (wasHTML !== null && mapCtx?.hlLayer) { writeHighlight(wasHTML); renderMarkHighlight(); }
+    };
   }
   // OPEN THE TELLING FOR THE SLIDE THAT IS ABOUT IT (Keemin, 2026-08-05) — and
   // only for that slide. state.paintingOnly moves; writePaintingOnly does not, so
@@ -16773,40 +16770,64 @@ export function mountViewer(appEl) {
   const tourTouch = () => onPhone() || (typeof matchMedia === "function" && matchMedia("(pointer:coarse)").matches);
   function renderTour() {
     const el = tourEl();
-    const slide = TOUR_SLIDES[tourAt];
+    // the deck as the page stands NOW; the step the reader is on keeps its place in it
+    const here = tourDeck[tourAt]?.id;
+    tourDeck = tourDeckNow();
+    const kept = tourDeck.findIndex((s) => s.id === here);
+    if (kept >= 0) tourAt = kept;
+    else if (tourAt >= tourDeck.length) tourAt = tourDeck.length - 1;
+    const slide = tourDeck[tourAt];
     if (!el || !slide) { closeTour(); return; }
     applyStage(slide);
     el.hidden = false;
     // authored copy, not record text: TOUR_SLIDES is this module's own constant
     // and carries the only markup allowed through here
     $(el, ".wv-tour-title").textContent = slide.title;
-    // THE PICTURE (WLD-220 rebuild): each step shows what it is about, drawn with the map's own pieces (tourVisual). The mark example uses a real mark's picture from the
-    // record when one is loaded (the media door's own image, the first by id), else a drawn pip: the tour never waits on the network and never invents a picture.
-    const vis = $(el, ".wv-tour-visual");
-    if (vis) {
-      // the picture comes by the map's own validated route (markImagePath: the mark's image through the shelf route), never a url of this step's own
-      const art = slide.visual === "marks"
-        ? [...byId.values()].map((m) => ({ id: m?.id, href: markImagePath(m) })).filter((m) => m.href).sort((a, b) => String(a.id).localeCompare(String(b.id)))[0] ?? null
-        : null;
-      vis.innerHTML = slide.visual ? tourVisual(slide.visual, { picture: art, phone: tourTouch() }) : "";
-      vis.hidden = !slide.visual;
-      // a picture that fails to load is not left as an empty frame: the step falls back to the shape alone (an <image> error does not bubble, so it is heard on the image itself)
-      vis.querySelector("image")?.addEventListener("error", () => {
-        if (TOUR_SLIDES[tourAt]?.visual === "marks") vis.innerHTML = tourVisual("marks", { picture: null });
-      }, { once: true });
-      const scroller = $(el, ".wv-tour-scroll");
-      if (scroller) scroller.scrollTop = 0;
-    }
+    // THE PICTURE IS THE PAGE (WLD-220, Darko 2026-11-21 22:01 EST): the tour draws nothing of its own. A step with a stage lights a piece of the mounted map in place (applyStage);
+    // the card names the public ids it lit, so what the step points at can be read off the page rather than taken on trust.
+    const card = $(el, ".wv-tour-card");
+    if (card) { card.dataset.sceneKind = tourSceneInfo?.kind ?? ""; card.dataset.scene = tourSceneInfo?.ids.join(" ") ?? ""; }
+    const scroller = $(el, ".wv-tour-scroll");
+    if (scroller) scroller.scrollTop = 0;
     // a slide may carry its phone's own words (WLD-220): a phone has no scroll wheel to describe, so it is told drag and tap
     $(el, ".wv-tour-body").innerHTML = tourTouch() && slide.phoneBody ? slide.phoneBody : slide.body;
-    $(el, ".wv-tour-kicker").textContent = `The World · ${tourProgress(tourAt, TOUR_SLIDES.length)}`;
-    $(el, ".wv-tour-dots").innerHTML = TOUR_SLIDES.map((entry, i) =>
+    paintTourProgress();
+    placeTour();
+    $(el, ".wv-tour-next").focus();
+    tourDeckRetries = 0;
+    scheduleTourDeckRefresh();
+  }
+  // THE DECK STANDS ON THE PAGE (WLD-220): a step that points at the map is in the deck only while the map shows what it points at; the others never wait. The map draws after the
+  // greeting (residents arrive with the walkers), so a short deck is looked at again for a few moments after each step and the dots and count grow when the page catches up. Only
+  // the progress is repainted: the card, the focus and the stage stay as the reader has them.
+  function paintTourProgress() {
+    const el = tourEl();
+    if (!el) return;
+    $(el, ".wv-tour-kicker").textContent = `The World · ${tourProgress(tourAt, tourDeck.length)}`;
+    $(el, ".wv-tour-dots").innerHTML = tourDeck.map((entry, i) =>
       `<button type="button" class="wv-tour-dot${i === tourAt ? " on" : ""}" data-tour-to="${i}"`
       + ` aria-label="${esc(entry.title)}"${i === tourAt ? ' aria-current="step"' : ""}></button>`).join("");
     $(el, ".wv-tour-back").disabled = tourAt === 0;
-    $(el, ".wv-tour-next").textContent = tourAt === TOUR_SLIDES.length - 1 ? "done" : "next";
-    placeTour();
-    $(el, ".wv-tour-next").focus();
+    $(el, ".wv-tour-next").textContent = tourAt === tourDeck.length - 1 ? "done" : "next";
+  }
+  let tourDeckRetries = 0, tourDeckTimer = 0;
+  function scheduleTourDeckRefresh() {
+    clearTimeout(tourDeckTimer);
+    if (tourAt < 0 || tourDeck.length >= TOUR_SLIDES.length || tourDeckRetries >= 8) return;
+    tourDeckTimer = setTimeout(() => {
+      if (tourAt < 0) return;
+      tourDeckRetries++;
+      const here = tourDeck[tourAt]?.id;
+      const next = tourDeckNow();
+      if (next.length !== tourDeck.length) {
+        tourDeck = next;
+        const k = tourDeck.findIndex((s) => s.id === here);
+        if (k >= 0) tourAt = k;
+        paintTourProgress();
+        placeTour();
+      }
+      scheduleTourDeckRefresh();
+    }, 700);
   }
   function placeTour() {
     const el = tourEl();
@@ -16814,7 +16835,7 @@ export function mountViewer(appEl) {
     const card = $(el, ".wv-tour-card");
     const spot = $(el, ".wv-tour-spot");
     const scrim = $(el, ".wv-tour-scrim");
-    const slide = TOUR_SLIDES[tourAt];
+    const slide = tourDeck[tourAt];
     const target = tourAnchor(slide);
     const r = target ? target.getBoundingClientRect() : tourStageRect?.();
     if (!r || !r.width) {

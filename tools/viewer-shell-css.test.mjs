@@ -110,8 +110,12 @@ import { MARK_ICON_CSS } from "../spectator/mark-icons.mjs";
 // RE-PINNED FOR THE WLD-220 NARROW-SHORT FIX: +134 bytes (115553 -> 115687): the side-by-side reflow's media query gains `and (min-width:640px)` and its comment now names the narrow
 // short phone (a 360 x 560 phone keeps one column); nothing else in STYLE moves. Whole account over the prior tour's 111364: +4323. The earlier "+2634" figure here and
 // "113998" in tools/viewer-creature-nameplate.test.mjs were stale intermediate measurements (111364 -> 113998 is +2634; the pin that landed was 114143, +2779).
-const PINNED_MASKED_STYLE_SHA256 = "8a478a7033d29a9e63b91cd93cf4b65b46352960c9089f5c92b6eacf24d3f21b";
-const PINNED_MASKED_STYLE_BYTES = 115687;
+// RE-PINNED FOR THE WLD-220 REAL-PAGE CORRECTION (Darko 2026-11-21 22:01 EST: "the tour needs to take assets directly from the actual world page"): the tour no longer draws pictures, so
+// every `.wv-tour-visual` / `.tv-*` rule (the paper panel, the labels, the controls row, the pointer) and the short-screen two-column reflow are REMOVED, and the short-screen block
+// is a plain tightening at every width: -2411 bytes (115687 -> 113276). Whole account over the prior tour's 111364: +1912 (the join-flow theme, the bounded scrolling card and the
+// compact short-screen block, less the removed picture rules). Only .wv-tour rules move; measured by this test's own masked-emission route.
+const PINNED_MASKED_STYLE_SHA256 = "f054d1d989de1f59a9ce8c13913be1fa7f6a07cdbe1d2067f09e66565f9a2804";
+const PINNED_MASKED_STYLE_BYTES = 113276;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";

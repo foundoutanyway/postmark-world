@@ -66,7 +66,6 @@ import {
   walkDestinationLabel,
   worldFrameReading,
   TOUR_SLIDES,
-  tourVisual,
   tourStep,
   tourProgress,
   readTourSeen,
@@ -1289,18 +1288,17 @@ test("the first-visit deck is five short steps; every slide is complete, and its
       // the rebuild (Darko 2026-11-21 18:14 EST: "minimize the # of words"): a few large words under a picture, never a paragraph
       assert.ok(words <= 24, `${slide.id}.${key} is ${words} words: a few words under the picture, not a paragraph`);
     }
-    // picture-led: every step shows what it explains (tourVisual draws it); a text-only step is the failure Darko rejected
-    assert.ok(["welcome", "parcels", "marks", "explore", "next"].includes(slide.visual), `${slide.id} has a picture`);
-    assert.ok(tourVisual(slide.visual).length > 100, `${slide.id}'s picture is really drawn`);
-    // no stage, and nothing that teaches law or a resident-only act before a visitor can look
-    assert.equal(slide.stage, undefined, `${slide.id} stages nothing: the page stays as the visitor found it`);
+    // THE PAGE IS THE PICTURE (Darko 2026-11-21 22:01 EST): a slide carries no drawing of its own (no `visual`); the three that teach by example point at the MOUNTED map by a
+    // stage the viewer resolves from the live scene, and the welcome and the last step point at nothing drawn by the tour
+    assert.equal(slide.visual, undefined, `${slide.id} carries no tour-drawn picture`);
+    assert.ok(slide.stage === undefined || ["house", "picture", "dot"].includes(slide.stage), `${slide.id}'s stage is one the viewer resolves from the live page`);
     if (slide.anchor === undefined) continue;
     assert.match(slide.anchor, /^\.[a-z-]+$/, `${slide.id} anchor must be one class selector`);
     anchors.push(slide.anchor.slice(1));
   }
-  // only the map's own controls are pointed at: every rail anchor is display:none on a phone, so the deck never leans on one
-  assert.deepEqual([...new Set(anchors)].sort(), ["wv-mapctl", "wv-tour-open"]);
-  assert.ok(anchors.length >= 2, "a tour that points at nothing may as well be a page of prose");
+  // the ? is the one control the deck points at (no control is explained), and the example steps stage the live map
+  assert.deepEqual([...new Set(anchors)].sort(), ["wv-tour-open"]);
+  assert.deepEqual(TOUR_SLIDES.map((s) => s.stage ?? null), [null, "house", "picture", "dot", null], "the three examples are the live page's own house + resident, picture, and dot");
 
   // The copy is prose and stays true on its own; an anchor is a PROMISE ABOUT
   // MARKUP, and it is the one part of a slide a refactor can quietly break. A
@@ -1324,9 +1322,6 @@ test("WLD-220: a phone is told only what a phone has (drag, tap, what is drawn);
   assert.match(TOUR_TEXT(explore.body), /\bScroll\b.*\bzoom\b/i, "the desktop is told its wheel");
   assert.match(TOUR_TEXT(explore.body), /\bClick\b/);
   for (const slide of [welcome, parcels, marks, next]) assert.equal(slide.phoneBody, undefined, `${slide.id} has one wording: nothing in it names an input`);
-  // the last step's picture shows only controls the map really draws: the conversations lens and the ? itself (drawn from the real glyphs)
-  const nextSvg = tourVisual("next");
-  for (const glyph of ["💬", "?"]) assert.ok(nextSvg.includes(`>${glyph}</span>`), `the last step draws the ${glyph} control`);
   assert.match(next.body, /<b>💬<\/b>/);
   const { readFile } = await import("node:fs/promises");
   const source = await readFile(new URL("../spectator/viewer.mjs", import.meta.url), "utf8");
@@ -1334,12 +1329,25 @@ test("WLD-220: a phone is told only what a phone has (drag, tap, what is drawn);
   assert.ok(source.includes('class="ctl wv-tour-open"'), "and the ? the last step points at");
   // the tour's own input mode (words AND picture): phone width OR a coarse pointer; the shared width test stays the width test the bell and menu use
   assert.match(source, /const tourTouch = \(\) => onPhone\(\) \|\| \(typeof matchMedia === "function" && matchMedia\("\(pointer:coarse\)"\)\.matches\);/);
-  assert.match(source, /tourVisual\(slide\.visual, \{ picture: art, phone: tourTouch\(\) \}\)/);
   assert.match(source, /\$\(el, "\.wv-tour-body"\)\.innerHTML = tourTouch\(\) && slide\.phoneBody/);
   assert.match(source, /const onPhone = \(\) => typeof matchMedia === "function" && matchMedia\(PHONE\)\.matches;/, "onPhone itself is unchanged");
-  // the side-by-side reflow needs width as well as shortness: a narrow short phone keeps its single column
-  assert.match(source, /@media \(max-height:600px\) and \(min-width:640px\)\{/);
-  assert.doesNotMatch(source, /@media \(max-height:600px\)\{/);
+  // THE TOUR DRAWS NOTHING OF ITS OWN (Darko 2026-11-21 22:01 EST): no illustration function, no tv-* drawing classes, no picture panel; the examples are read off the mounted map
+  assert.doesNotMatch(source, /export function tourVisual|\btvSvg\b|\btvPip\b|\btvWalker\b|class="tv-|wv-tour-visual/, "the tour carries no illustration code, markup or style");
+  for (const stage of ["house", "picture", "dot"]) assert.ok(source.includes(`want === "${stage}"`), `the viewer resolves the ${stage} stage from the live page`);
+  // each stage reads the page's own pieces: home pips and resident frames in the overlay and walk layers, a pictured mark's pip and ground; none is built here
+  assert.match(source, /overlay\.querySelectorAll\(sel\)/);
+  assert.match(source, /walks\.querySelectorAll\("\.wv-walker-far:not\(\.moving\)"\)/);
+  assert.match(source, /pips\("\.ov-pip-pictured"\)/);
+  assert.match(source, /footprintBoxFor\(id\)/);
+  // the page stays as the visitor had it: the stage moves no camera, selection or walk, and writes only the viewer's own highlight layer back as it was
+  const stageScene = source.slice(source.indexOf("function stageScene(kind)"), source.indexOf("function stageScene(kind)") + 900);
+  assert.doesNotMatch(stageScene, /setView|walkState|selectedId|markInteraction/, "staging a scene touches no camera, walk or selection");
+  assert.match(stageScene, /writeHighlight\(wasHTML\)/, "and the highlight is put back");
+  // a step whose stage finds nothing is left out, never replaced by a stand-in
+  assert.match(source, /const tourDeckNow = \(\) => TOUR_SLIDES\.filter\(\(s\) => !s\.stage \|\| !!tourSceneTarget\(s\.stage\)\);/);
+  // the short screen tightens the card and scrolls inside it; there is no tour drawing to shrink
+  assert.match(source, /@media \(max-height:600px\)\{/);
+  assert.doesNotMatch(source, /@media \(max-height:600px\) and/);
   // no law and no resident-only act before a visitor can look: those are said where they are used, not in the greeting
   const all = TOUR_SLIDES.flatMap((s) => [s.title, s.body, s.phoneBody ?? ""]).map(TOUR_TEXT).join("\n");
   assert.doesNotMatch(all, /constitution|commons|stamp|Act As|Telling|context budget|sixty|crossing|MCP/i, "the cut lessons stay cut");
@@ -1371,64 +1379,26 @@ test("WLD-220 (Darko 2026-11-21 09:12 EST, via Wright): the two map-meaning card
   assert.ok(TOUR_TEXT(welcome.body).includes("The people and agents who live here write the world in words"));
   assert.match(TOUR_TEXT(explore.body), /Drag to move\.\s*Scroll to zoom\./);
   assert.match(TOUR_TEXT(explore.phoneBody), /Drag to move\./);
-  // card 1 (a few large words under the parcel picture): a house is a parcel; green figures are residents; a dotted line means walking now (and the picture labels them)
+  // card 1 (a few large words; the picture is the live page's house and resident): a house is a parcel; green figures are residents. The WALKING LINE is not claimed: the map draws
+  // `wv-walk-leg` for a resident who is moving, and the pinned public snapshot has none moving (294 residents, 0 moving, 0 legs), so there is no real example to light and the
+  // sentence is left out rather than shown with a drawn stand-in (reported on the issue). Sentences are said in the order Darko said them.
   const p = TOUR_TEXT(parcels.body);
   assert.match(p, /A house is a parcel\./, "a house is a parcel");
   assert.match(p, /Green figures are residents\./, "the green figures are the residents");
-  assert.match(p, /A dotted line means walking now\./, "a dotted line means walking now");
-  assert.match(parcels.body, /<b>house<\/b>[^]*<b>Green<\/b>[^]*<b>dotted line<\/b>/, "each meaning is set in bold, once, in the order Darko said them");
+  assert.doesNotMatch(p, /dotted|walking/i, "no walking-line claim without a real mover to light");
+  assert.match(parcels.body, /<b>house<\/b>[^]*<b>Green<\/b>/, "each meaning is set in bold, once, in the order Darko said them");
   // card 2: every picture and shape on the map is a mark, made by an agent
   const m = TOUR_TEXT(marks.body);
   assert.match(m, /^Every picture and shape on the map is a mark, made by an agent\.$/);
   assert.match(marks.body, /<b>mark<\/b>[^]*<b>agent<\/b>/);
-  // THE PICTURES say it too, and are drawn with the map's own pieces (not this module's symbols): the parcel footprint and the home pip for the house, the resident's round frame on
-  // two legs (a mover drawn as the map draws one) with its dashed leg and end ring, and a mark's picture and shape each labelled as made by an agent
-  const parcelsSvg = tourVisual("parcels");
-  assert.match(parcelsSvg, /<polygon class="wv-fp t-home tv-parcel"/, "the parcel is the map's footprint");
-  assert.match(parcelsSvg, /class="ov-pip t-home"/, "the house is the map's pip");
-  assert.match(parcelsSvg, /class="ov-ic ic-home"/, "with the map's home glyph");
-  assert.equal((parcelsSvg.match(/class="wv-walker-frame"/g) ?? []).length, 2, "two residents: one at home, one walking");
-  assert.match(parcelsSvg, /class="wv-walker-far moving"/, "the walker is drawn as the map draws a mover");
-  assert.match(parcelsSvg, /class="wv-walk-leg"/, "with the dashed leg");
-  assert.match(parcelsSvg, /class="wv-walk-dest"/, "and the ring where they are going");
-  for (const word of ["house", "resident", "walking now"]) assert.ok(parcelsSvg.includes(`>${word}</text>`), `the picture labels the ${word}`);
-  const marksPic = tourVisual("marks", { picture: { href: "/shelf/x/y.jpg" } });
-  assert.match(marksPic, /<image [^>]*href="\/shelf\/x\/y\.jpg"/, "a mark's picture is the record's own image by the map's shelf route (markImagePath)");
-  assert.match(marksPic, /<polygon class="wv-fp t-constitution tv-poly"/, "a mark's shape is the map's footprint");
-  assert.match(marksPic, />made by an agent<\/text>/);
-  for (const word of ["picture", "shape"]) assert.ok(marksPic.includes(`>${word}</text>`), `the picture labels the ${word}`);
-  // no picture (absent, or its load failed): the shape alone, honestly; no image, no "picture" label, no frame, no pip standing in for a picture
-  const shapeOnly = tourVisual("marks");
-  assert.doesNotMatch(shapeOnly, /<image |tv-frame|>picture<\/text>/, "with no picture it draws no image, no empty frame and no 'picture' label");
-  assert.match(shapeOnly, /<polygon class="wv-fp t-constitution tv-poly"/);
-  assert.equal((shapeOnly.match(/class="ov-pip /g) ?? []).length, 1, "the one pip is the shape's own, not a stand-in for a picture");
-  assert.match(shapeOnly, />shape<\/text>/);
-  assert.match(shapeOnly, />made by an agent<\/text>/);
-  // Look around teaches its three gestures on the map's own pieces (a home pip), with a pointer and arrows, and no toolbar of buttons
-  const lookDesk = tourVisual("explore"), lookPhone = tourVisual("explore", { phone: true });
-  for (const word of ["drag", "scroll", "click"]) assert.ok(lookDesk.includes(`>${word}</text>`), `the desktop picture teaches ${word}`);
-  assert.deepEqual([...lookPhone.matchAll(/class="tv-label"[^>]*>([^<]*)</g)].map((m) => m[1]), ["drag", "tap"], "a phone is taught drag and tap only: no scroll wheel");
-  assert.ok((lookDesk.match(/class="ov-pip t-home/g) ?? []).length >= 4, "the map's home pip is the thing being moved, zoomed and read");
-  assert.match(lookDesk, /class="tv-cursor"/);
-  assert.doesNotMatch(lookDesk, /tv-ctl|tv-search|⛶|💬/, "not a repeated toolbar");
-  assert.match(tourVisual("welcome"), /the lamp is always lit/);
-  // every picture is well-formed (each opened tag is closed): an SVG that does not parse draws nothing
-  for (const kind of ["welcome", "parcels", "marks", "explore", "next"]) {
-    const html = tourVisual(kind, { picture: { href: "https://media.postmark.town/media/x/y.jpg" } });
-    const stack = [];
-    for (const m of html.matchAll(/<(\/?)([A-Za-z][A-Za-z0-9]*)\b([^>]*?)(\/?)>/g)) {
-      const [, closing, name, , selfClosing] = m;
-      if (selfClosing) continue;
-      if (closing) assert.equal(stack.pop(), name, `${kind}: </${name}> closes the tag that was open`);
-      else stack.push(name);
-    }
-    assert.deepEqual(stack, [], `${kind}: every tag is closed`);
-  }
+  // THE PICTURES ARE THE LIVE PAGE (no tour drawing to assert on): the stages the page test resolves against the mounted map name the house + resident, the picture and the dot
+  assert.equal(parcels.stage, "house");
+  assert.equal(marks.stage, "picture");
+  assert.equal(explore.stage, "dot");
   // both are the same words on a phone and a desktop, so they name no input and no control a phone lacks, and teach nothing a visitor cannot see
   for (const slide of [parcels, marks]) {
     assert.equal(slide.phoneBody, undefined, `${slide.id}: one wording, nothing in it names an input`);
-    assert.equal(slide.anchor, undefined, `${slide.id}: no anchor (every rail anchor is hidden on a phone; the card simply centres)`);
-    assert.equal(slide.stage, undefined);
+    assert.equal(slide.anchor, undefined, `${slide.id}: no anchor (the stage finds the live target)`);
     assert.doesNotMatch(TOUR_TEXT(slide.body), /click|tap|drag|scroll|zoom|hover|wheel|Act As|Telling|stamp|sign in/i, `${slide.id} names no input and no resident-only control`);
   }
   // true to the map (the three source facts the words stand on): a home IS "a household's parcel of ground"; a resident is drawn GREEN as a round frame on two legs;
