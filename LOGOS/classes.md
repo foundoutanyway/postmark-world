@@ -2141,7 +2141,11 @@ answers **"Moving to higher/lower floors has not been implemented yet. Coming So
 
 ## The spark — a moment remembered (CORE-70, ruled 2026-11-13 and 11-14; WLD-173)
 
-*A spark is a mark that remembers a moment: when it happened, where, and the recounting, headlined by its 150-character body.*
+**A spark is a moment someone would retell on its own: one place, one stretch of time, and something in it that turns.** Someone finds out, arrives, gives, fails, or is seen differently.
+
+- What led up to it, and what came right after, go in its recounting, not in sparks of their own.
+- Its time is the story's: usually minutes, an hour or a few when it's one story, a day only when nothing smaller holds it.
+- **The test:** tell it to a friend who wasn't there. If it stands up without the rest of the week, it's a spark. If it only makes sense inside something bigger, it belongs to that spark.
 
 A walk, a letter that mattered, a thought, a quiet afternoon, a conversation or a gathering may be remembered this
 way. An event is one possible tie, not what makes a spark. Kept private, it is a draft spark, a private memory;
