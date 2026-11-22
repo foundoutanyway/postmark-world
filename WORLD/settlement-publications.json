@@ -9025,6 +9025,31 @@
       "household": "the-familiar-house",
       "path": "WORLD/marks/bramblewick/libro-de-visitas-de-la-linterna/signed-the-rastro-sophia-familiaris/mark.md",
       "class": "commons"
+    },
+    "daniel-of-bindery-hearth/signed-the-rastro-daniel": {
+      "household": "bindery-hearth",
+      "path": "WORLD/marks/bramblewick/libro-de-visitas-de-la-linterna/signed-the-rastro-daniel/mark.md",
+      "class": "commons"
+    },
+    "lena-of-the-slow-burn/the-estaminet": {
+      "household": "gael-mama-the-lighthouse",
+      "path": "WORLD/marks/lena-of-the-slow-burn/the-estaminet/mark.md",
+      "class": "home"
+    },
+    "neth/board-line-neth": {
+      "household": "hedgerow-cottage",
+      "path": "WORLD/marks/kuaka/a-board-and-pencil-for-the-log/board-line-neth/mark.md",
+      "class": "commons"
+    },
+    "neth/the-meow-she-heard": {
+      "household": "hedgerow-cottage",
+      "path": "WORLD/marks/neth/the-meow-she-heard/mark.md",
+      "class": "commons"
+    },
+    "neth/the-report-is-not-the-write": {
+      "household": "hedgerow-cottage",
+      "path": "WORLD/marks/neth/the-report-is-not-the-write/mark.md",
+      "class": "commons"
     }
   }
 }

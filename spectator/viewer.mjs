@@ -57,7 +57,7 @@ import { createHomeColumn, speakerFaceEl, homeHandleForParcel, isParcelMark, HOM
 import { homeOf, homesOnParcel } from "../tools/where-is.mjs";
 // WHAT A MARK IS, AS ICONS (Darko, playground sitting 2026-10-15): the closed
 // vocabulary, its one-line meanings and its three renderings live in one file.
-import { markIcons, iconSVG, iconsHTML, creatureClassesOf, thingClassesOf, MARK_ICON_CSS, MARK_ICONS } from "./mark-icons.mjs";
+import { markIcons, markWhat, iconSVG, iconsHTML, creatureClassesOf, thingClassesOf, MARK_ICON_CSS, MARK_ICONS } from "./mark-icons.mjs";
 // LOGOS v2 part 2 on the page (POS-678): what a holder holds, who carries what,
 // and the say card's numbers, each from the office's own reads.
 import { holderLines, residentHoldLines, handsLines, holdingParts, heldWords, sayCardNote, thingKindLedger, isThingId } from "./holdings.mjs";
@@ -498,6 +498,213 @@ export function viewerFilterControls(options = {}) {
     + chip("mine", "just mine", !axis.controls)
     + chip("new", "new")
     + `</div>`;
+}
+
+// ── THE DISPLAY SELECTION (CORE-127; Little Bird 2026-11-19 11:40–11:43 EST: "a filter layer for displays on the world map … My marks / My drafts /
+//    Parcels only / All marks above/under x size (you can type in the x) / Sort marks by type. You can choose multiple filters") ──────────────────────────
+//
+// A VIEWER'S CHOICE OF WHAT THIS PAGE SHOWS, so a legal huge mark cannot decide what a viewer sees. It changes nothing in the world: no law, ownership,
+// geometry, hearing or sight; the record, the office and every other reader are untouched. RULED by Darko 2026-11-20 08:47 EST (picker): non-matches are
+// HIDDEN ("Hide them"), from the map and the list both (Wright 13:50:52Z); facilities and biomes are "left out for now" (no mark kind says what they are).
+//
+//   whose   my marks  — the household's owned OR backed marks: the existing "just mine" set (isMine), unchanged
+//           my drafts — the household's unpublished marks (state.draftIds, the grey ones)
+//   layers  (CORE-147, Darko 2026-11-21 09:18 EST: "make the filters a dropdown that's icon-based … let the user click icons on and off, corresponding to
+//           those on the map"; Wright 14:31Z: content only) one icon switch for each kind of world CONTENT the map draws as an icon or a shape: the mark kinds
+//           (the very `what` icon a mark wears: parcels, places, things, doors, dungeons, stairs, vehicles, creatures), the residents (with their walking
+//           lines) and the speech bubbles (the conversation badges). On = drawn, as today; off = hidden from the map, the list and the pick. Terrain, the
+//           grid, the mists and the selection / hover / walk-preview feedback have no switch. This REPLACES the old text "parcels" chip (a parcel is the
+//           `home` switch) and the 💬 button in the map's controls (the speech bubbles are one of these switches: one control, one state).
+//   size    longer side, in METRES, under or above a typed number: the mark's own extent in world units, so a camera zoom never changes it
+//   sort    by type   — reorders the Telling list only: no geometry, no canonical order, no hiding
+//
+// OR within a group, AND across groups (a mark must satisfy every group that has a choice). Nothing chosen = today's unfiltered page, exactly. This is NOT the
+// older everything / just mine / new row (Keemin 2026-08-04: those chips are the Telling's business and ask the map nothing): that row is untouched; "new"
+// in the panel is that same chip.
+export const DISPLAY_SIZE_MODES = Object.freeze(["under", "above"]);
+
+/**
+ * THE LAYER SWITCHES, in the dropdown's order. `icon` is a key of MARK_ICONS (mark-icons.mjs): the same glyph the map draws for that thing (a resident is
+ * the round frame on two stubby legs, `inside`; a speech bubble is the conversation badge's `conversation`; a parcel is the house, `home`). A mark kind's key
+ * IS its `markWhat` result, so the switch and the pip can never disagree about what a mark is; nothing here invents a kind (no facilities, no biomes).
+ * `kind` says what the switch governs: "mark" (a `markWhat` kind), "residents" or "bubbles".
+ */
+export const DISPLAY_LAYERS = Object.freeze([
+  { key: "residents", icon: "inside", kind: "residents", label: "residents", meaning: "Residents, and the walking lines of the ones walking." },
+  { key: "conversation", icon: "conversation", kind: "bubbles", label: "speech bubbles", meaning: "Speech bubbles: the conversation badges." },
+  { key: "home", icon: "home", kind: "mark", label: "parcels", meaning: "Parcels: households' ground." },
+  { key: "place", icon: "place", kind: "mark", label: "places", meaning: "Places: marks set down on the ground." },
+  { key: "thing", icon: "thing", kind: "mark", label: "things", meaning: "Things: objects in the world." },
+  { key: "door", icon: "door", kind: "mark", label: "doors", meaning: "Doors: entering one takes you somewhere else." },
+  // (this entry is the ONE place the page spells the dungeon's name: the icon catalog's key, the very string `markWhat` returns, with the glyph it wears. A label, not a dungeon rule:
+  // tools/dungeon-page.test.mjs names this exact entry as its single allowed exception and still bans every other spelling.)
+  { key: "dungeon", icon: "dungeon", kind: "mark", label: "dungeons", meaning: "Dungeons: places with their own floors and rooms." },
+  { key: "stairs", icon: "stairs", kind: "mark", label: "stairs", meaning: "Stairs: ways between floors." },
+  { key: "vehicle", icon: "vehicle", kind: "mark", label: "vehicles", meaning: "Vehicles: they move, and you can ride them." },
+  { key: "creature", icon: "creature", kind: "mark", label: "creatures", meaning: "Creatures: something alive that answers what you do near it." },
+]);
+const LAYER_BY_KEY = new Map(DISPLAY_LAYERS.map((l) => [l.key, l]));
+/** The mark kinds a switch can hide (a `markWhat` key). */
+export const DISPLAY_MARK_KINDS = Object.freeze(DISPLAY_LAYERS.filter((l) => l.kind === "mark").map((l) => l.key));
+const offKeys = (sel) => (Array.isArray(sel?.off) ? sel.off : []);
+
+export function emptyDisplaySelection() {
+  return { mine: false, drafts: false, off: [], sizeMode: "under", sizeM: null, sortByType: false };
+}
+
+/** The typed number: plain digits (a thousands comma and one decimal point allowed), never negative; null when it is not one. */
+export function parseSizeM(text) {
+  const t = String(text ?? "").trim().replace(/,/g, "");
+  if (!/^\d+(?:\.\d+)?$/.test(t)) return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** A mark's longer side in metres, from its own extent (world units are metres). A mark with no extent is a point: 0 m. */
+export function markLongerSideM(mark) {
+  const w = Number(mark?.extent?.w), h = Number(mark?.extent?.h);
+  const ok = (v) => Number.isFinite(v) && v >= 0;
+  if (!ok(w) && !ok(h)) return 0;
+  return Math.max(ok(w) ? w : 0, ok(h) ? h : 0);
+}
+
+/** Does the selection HIDE any MARK? (Sorting alone hides nothing; neither does switching the residents or the speech bubbles off: those are not marks.) */
+export function displaySelectionHides(sel) {
+  return !!(sel && (sel.mine || sel.drafts || offKeys(sel).some((k) => DISPLAY_MARK_KINDS.includes(k)) || (sel.sizeM !== null && sel.sizeM !== undefined)));
+}
+
+/**
+ * One mark against the selection: every group with a choice must pass; `mine` and `drafts` are OR'd. `whatOf(mark)` is the mark's `markWhat` key (the icon
+ * it wears), or null for a mark that wears none (a class declaration, a predicate: not drawn as an icon, so it has no switch and is never hidden by one).
+ */
+export function markInDisplaySelection(mark, sel, { isMine = () => false, isDraft = () => false, whatOf = () => null } = {}) {
+  if (!displaySelectionHides(sel)) return true;
+  if (!mark) return false;
+  if (sel.mine || sel.drafts) {
+    const whose = (sel.mine && isMine(mark)) || (sel.drafts && isDraft(mark));
+    if (!whose) return false;
+  }
+  const what = whatOf(mark);
+  if (what && offKeys(sel).includes(what)) return false;
+  if (sel.sizeM !== null && sel.sizeM !== undefined) {
+    const side = markLongerSideM(mark);
+    if (sel.sizeMode === "above" ? !(side > sel.sizeM) : !(side < sel.sizeM)) return false;
+  }
+  return true;
+}
+
+/** Is a switch off in this selection? (The speech bubbles are the page's own remembered layer, not part of the selection: pass `bubblesOn`.) */
+export const layerIsOff = (sel, key, { bubblesOn = true } = {}) => (key === "conversation" ? !bubblesOn : offKeys(sel).includes(key));
+
+/** The memo of "which mark kinds does the world hold": the answer is kept until something it was computed from moves, and an empty one (no marks yet) is never kept.
+ *  The stamp is the record epoch, the mark count, whether a creature is live, and how many kinds the page has learned are things (a close look teaches one later, and a
+ *  mark first read as a place becomes a thing, with the epoch and the count unchanged: the same invalidation `thingClasses()` has). Pure; the caller supplies the compute. */
+export function presentKindsMemo() {
+  let at = null, held = [];
+  return ({ epoch = 0, count = 0, live = 0, things = 0 } = {}, compute) => {
+    const stamp = `${epoch}:${count}:${live ? 1 : 0}:${things}`;
+    if (at !== stamp) { held = compute(); at = count ? stamp : null; }
+    return held;
+  };
+}
+
+/** Does the page show anything less than today's page? (A mark hidden, the residents or the speech bubbles off, a size, whose.) Sorting alone does not. */
+export function displaySelectionActive(sel, { bubblesOn = true } = {}) {
+  return displaySelectionHides(sel) || offKeys(sel).includes("residents") || !bubblesOn;
+}
+
+/** The removable chips for what is chosen, in the panel's order: `{ key, label }`. A switched-off layer is a chip too ("no parcels"), removing it turns it back on. */
+export function displaySelectionChips(sel, { bubblesOn = true } = {}) {
+  const out = [];
+  if (sel?.drafts) out.push({ key: "drafts", label: "my drafts" });
+  if (sel?.mine) out.push({ key: "mine", label: "my marks" });
+  for (const layer of DISPLAY_LAYERS) {
+    if (layerIsOff(sel, layer.key, { bubblesOn })) out.push({ key: layer.key === "conversation" ? "bubbles" : `off:${layer.key}`, label: `no ${layer.label}` });
+  }
+  if (sel && sel.sizeM !== null && sel.sizeM !== undefined) out.push({ key: "size", label: `${sel.sizeMode === "above" ? "above" : "under"} ${sel.sizeM} m` });
+  return out;
+}
+
+/** The selection with one choice removed (a chip's ✕); unknown keys change nothing ("bubbles" is the page's own layer: the caller turns it back on). Pure: returns a new object. */
+export function clearDisplayChoice(sel, key) {
+  const next = { ...emptyDisplaySelection(), ...sel, off: [...offKeys(sel)] };
+  if (key === "mine") next.mine = false;
+  else if (key === "drafts") next.drafts = false;
+  else if (typeof key === "string" && key.startsWith("off:")) next.off = next.off.filter((k) => k !== key.slice(4));
+  else if (key === "size") next.sizeM = null;
+  else if (key === "sort") next.sortByType = false;
+  return next;
+}
+
+/** The selection with one layer switch flipped (an icon's click). Only a known switch changes anything; the speech bubbles are the page's own layer, so they are not here. */
+export function toggleDisplayLayer(sel, key) {
+  const layer = LAYER_BY_KEY.get(key);
+  if (!layer || layer.kind === "bubbles") return { ...emptyDisplaySelection(), ...sel, off: [...offKeys(sel)] };
+  const off = offKeys(sel);
+  return { ...emptyDisplaySelection(), ...sel, off: off.includes(key) ? off.filter((k) => k !== key) : [...off, key] };
+}
+
+/** The sort key of "sort by type": the record's own kind, then its class, then its id (stable). */
+export function displayTypeKey(mark) {
+  return `${String(mark?.kind ?? "")}\u0001${classToken(instanceClassOf(mark))}\u0001${String(mark?.id ?? "")}`;
+}
+export function sortByDisplayType(marks) {
+  return [...(marks ?? [])].sort((a, b) => displayTypeKey(a).localeCompare(displayTypeKey(b)));
+}
+
+/**
+ * The Filters opener, the panel (a popover on a desktop, a sheet on a phone) and the strip of removable chips, as markup. Pure: the page's one
+ * renderer builds it from the selection and what it knows of the reader. `signedIn` = a resident's household is known (my marks / my drafts need one);
+ * `newOn` = the existing "new" chip; `counts` = { shown, total } over the marks the page holds.
+ */
+export function displayControlsHTML({ sel = emptyDisplaySelection(), signedIn = false, newOn = false, open = false, counts = null, present = null, bubblesOn = true } = {}) {
+  const chips = displaySelectionChips(sel, { bubblesOn });
+  const hiding = displaySelectionActive(sel, { bubblesOn });
+  const n = chips.length + (sel.sortByType ? 1 : 0) + (newOn ? 1 : 0);
+  // THE ICON SWITCHES (CORE-147): one button per layer the map draws, the glyph the map itself draws, the word a label under it. The residents and the
+  // speech bubbles are always offered; a mark kind is offered when the page holds at least one mark of that kind (`present`, null = every kind), so no
+  // switch exists for a kind that is not in the world. aria-pressed + the lit/dim look + the word "on"/"off" say the state three ways.
+  const presentSet = present === null ? null : new Set(present);
+  const layerBtn = (layer) => {
+    const off = layerIsOff(sel, layer.key, { bubblesOn });
+    return `<button type="button" class="wv-dlayer${off ? " is-off" : " on"}" data-dsel-layer="${layer.key}" aria-pressed="${off ? "false" : "true"}" title="${esc(layer.meaning)}">`
+      + `<span class="wv-ic ic-${layer.icon}" aria-hidden="true"></span><span class="wv-dlayer-l">${esc(layer.label)}</span><span class="wv-dlayer-s">${off ? "off" : "on"}</span></button>`;
+  };
+  const layers = DISPLAY_LAYERS.filter((l) => l.kind !== "mark" || presentSet === null || presentSet.has(l.key) || offKeys(sel).includes(l.key)).map(layerBtn).join("");
+  const pressed = (on) => `aria-pressed="${on ? "true" : "false"}"`;
+  const fchip = (attrs, label, on, disabled = false, title = "") =>
+    `<button type="button" class="wv-fchip${on ? " on" : ""}" ${attrs} ${pressed(on)}${disabled ? ` disabled title="${esc(title)}"` : ""}>${label}</button>`;
+  const need = "sign in as a resident to choose your own marks";
+  const countLine = counts && hiding ? `${counts.shown} of ${counts.total} shown` : "";
+  const opener = `<button type="button" class="ctl wv-filters-open" aria-haspopup="dialog" aria-expanded="${open ? "true" : "false"}" aria-controls="wv-dpanel" `
+    + `title="choose what the map shows: its icons (residents, speech bubbles, each kind of mark), whose marks, how big">`
+    + `<span class="wv-filters-glyph" aria-hidden="true">⛃</span><span class="wv-filters-word">Filters</span>`
+    + `${n ? `<span class="wv-filters-n" aria-label="${n} chosen">${n}</span>` : ""}</button>`;
+  const strip = hiding
+    ? `<div class="wv-dstrip" role="group" aria-label="Chosen filters">`
+      + (countLine ? `<span class="wv-dcount">${esc(countLine)}</span>` : "")
+      + chips.map((c) => `<span class="wv-dchip">${esc(c.label)}<button type="button" class="wv-dchip-x" data-dsel-remove="${c.key}" aria-label="remove ${esc(c.label)}">✕</button></span>`).join("")
+      + `<button type="button" class="wv-dchip wv-dclear" data-dsel-clear>clear all</button></div>`
+    : "";
+  const panel = `<div class="wv-dpanel" id="wv-dpanel" role="dialog" aria-label="Show on the map"${open ? "" : " hidden"}>`
+    + `<div class="wv-dhead"><span>SHOW ON THE MAP</span><button type="button" class="wv-dlink" data-dsel-clear${(hiding || sel.sortByType) ? "" : " disabled"}>clear all</button></div>`
+    + `<div class="wv-dgrp"><div class="wv-dk">ON THE MAP <em>· tap an icon to show or hide it</em></div><div class="wv-dlayers" role="group" aria-label="What the map draws">${layers}</div></div>`
+    + `<div class="wv-dgrp"><div class="wv-dk">WHOSE <em>· pick any</em></div><div class="wv-dchips">`
+    + fchip(`data-dsel="mine"`, "my marks", !!sel.mine, !signedIn, need)
+    + fchip(`data-dsel="drafts"`, "my drafts", !!sel.drafts, !signedIn, need)
+    + fchip(`data-dsel="new"`, "new", !!newOn)
+    + `</div></div>`
+    + `<div class="wv-dgrp"><div class="wv-dk">SIZE <em>· longer side, in metres</em></div><div class="wv-dsize">`
+    + `<span class="wv-dseg" role="group" aria-label="under or above">`
+    + DISPLAY_SIZE_MODES.map((m) => `<button type="button" class="wv-dseg-b${sel.sizeMode === m ? " on" : ""}" data-dsel-mode="${m}" ${pressed(sel.sizeMode === m)}>${m}</button>`).join("")
+    + `</span><input type="text" inputmode="decimal" autocomplete="off" class="wv-dnum" data-dsel-size aria-label="size in metres" placeholder="metres"`
+    + `${sel.sizeM !== null && sel.sizeM !== undefined ? ` value="${esc(String(sel.sizeM))}"` : ""}><span class="wv-dunit">m</span></div></div>`
+    + `<div class="wv-dgrp"><div class="wv-dk">SORT THE LIST BY</div><div class="wv-dchips">`
+    + fchip(`data-dsel="sort"`, "type", !!sel.sortByType)
+    + `<span class="wv-dhint">reorders the list; the map does not move</span></div></div>`
+    + `<div class="wv-dfoot"><span class="wv-dcount">${esc(countLine || "nothing is hidden")}</span><button type="button" class="wv-fchip on wv-dclose" data-dsel-close>Done</button></div>`
+    + `</div>`;
+  return { opener, strip, panel };
 }
 
 export function townDate(now = new Date()) {
@@ -2576,10 +2783,12 @@ export function farWalkLegsSVG(bodies, px, skip = () => false) {
     if (!(w.moving ?? (!w.arrived && !w.standing))) continue;
     const a = px(w), b = px(w.toward);
     if (![a.x, a.y, b.x, b.y].every(Number.isFinite)) continue;
-    s += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="wv-walk-leg"/>`;
+    s += walkLegLineSVG(a, b);
   }
   return s;
 }
+/** One walking leg as the far tier draws it (the stylesheet's `.wv-walk-leg`: its colour, dash and non-scaling stroke); the tour card draws the same line inline. */
+export const walkLegLineSVG = (a, b) => `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="wv-walk-leg"/>`;
 // YOUR HOUSEMATES' RING (POS-373, Darko 2026-10-09: "the residents of your
 // signed-in household are always highlighted, visible with their full profile
 // art"). `ring` is the colour a housemate's frame is drawn in: their own colour,
@@ -2599,7 +2808,6 @@ export function walkerFrameSVG({ at, handle = "", moving = false, label = null, 
   // same stance, same length — and start where they meet the rim: on a circle
   // of radius r the point 0.22·size off centre lies √(r² − (0.22·size)²) below
   // the middle, a hair above where the square's bottom edge was.
-  const rim = Math.sqrt(r * r - (size * 0.22) ** 2);
   const who = esc(label ?? handle);
   const safe = String(handle ?? "").toLowerCase().replace(/[^a-z0-9-]/g, "");
   const ringHex = HEX.test(String(ring ?? "").trim()) ? String(ring).trim() : "";
@@ -2627,11 +2835,20 @@ export function walkerFrameSVG({ at, handle = "", moving = false, label = null, 
     // the halo sits behind the face and inside the hit disc: a reading, not a target
     + (actor ? `<circle cx="0" cy="0" r="${r + ACTOR_HALO}" class="wv-walker-halo"/>` : "")
     + fill
-    + `<circle cx="0" cy="0" r="${r}" class="wv-walker-frame"${ringHex ? ` style="--wv-ring:${ringHex}"` : ""}/>`
-    + `<line x1="${-size * 0.22}" y1="${rim}" x2="${-size * 0.3}" y2="${rim + leg}" class="wv-walker-leg"/>`
-    + `<line x1="${size * 0.22}" y1="${rim}" x2="${size * 0.3}" y2="${rim + leg}" class="wv-walker-leg"/>`
+    + walkerShapeSVG({ size, leg, ringHex })
     + `</g></g></g>`;
 }
+// THE RESIDENT'S FIGURE, one drawing for the map and for the tour card: the round frame on two legs. The legs start where they meet the rim: on a circle of radius r the point
+// 0.22·size off centre lies √(r² − (0.22·size)²) below the middle.
+export function walkerShapeSVG({ size, leg, ringHex = "" } = {}) {
+  const r = size / 2;
+  const rim = Math.sqrt(r * r - (size * 0.22) ** 2);
+  return `<circle cx="0" cy="0" r="${r}" class="wv-walker-frame"${ringHex ? ` style="--wv-ring:${ringHex}"` : ""}/>`
+    + `<line x1="${-size * 0.22}" y1="${rim}" x2="${-size * 0.3}" y2="${rim + leg}" class="wv-walker-leg"/>`
+    + `<line x1="${size * 0.22}" y1="${rim}" x2="${size * 0.3}" y2="${rim + leg}" class="wv-walker-leg"/>`;
+}
+/** The far tier's standing resident as the map draws it (no face, no handle): the figure the tour card shows inline. */
+export const walkerFarFigureSVG = () => `<g class="wv-walker-far">${walkerShapeSVG({ size: WALKER_FRAME.far, leg: WALKER_FRAME.legFar })}</g>`;
 
 // A HOUSEMATE OFF THE SCREEN IS POINTED AT, NEVER LOST (POS-373, Darko
 // 2026-10-09). For each of your household's bodies the map holds whose position
@@ -2670,11 +2887,16 @@ export function housemateEdges({ walkers = [], handles = [], viewport = null, in
 // glyph that dropped it would make every house at town width unclickable —
 // which is the zoom a reader arrives at.
 export const HOME_GLYPH_SCALE = 0.46;
+// THE HOUSE GLYPH ITSELF, one drawing for the map and for the tour card (CORE-153, Darko 2026-11-22: "exact replicas of the assets for house and resident ... in the tutorial card"):
+// the card's roofline filled, with its envelope face, at the far tier's scale. `attrs` is the caller's own attribute text for the path (the map writes its data-id there).
+export function houseGlyphSVG(attrs = "") {
+  return `<g transform="scale(${HOME_GLYPH_SCALE})"><path d="${homeCardPath()}" class="ov-glyph"${attrs}/>${homeFaceSVG()}</g>`;
+}
 export function overlayHouseGlyphSVG({ at, id, classes = "", mine = false } = {}) {
   const x = Number(at?.x), y = Number(at?.y);
   if (![x, y].every(Number.isFinite)) return "";
   return `<g transform="translate(${x} ${y})"><g class="ov-s${mine ? " ov-mine" : ""}">`
-    + `<g transform="scale(${HOME_GLYPH_SCALE})"><path d="${homeCardPath()}" class="ov-glyph" data-id="${esc(id)}"/>${homeFaceSVG()}</g>`
+    + houseGlyphSVG(` data-id="${esc(id)}"`)
     + `<circle r="${OVERLAY_PIP_R}" class="ov-pip ov-pip-home ${classes}" data-id="${esc(id)}"/>`
     + `</g></g>`;
 }
@@ -2796,7 +3018,7 @@ export function groupChooserIds(ids = [], { isWalker = () => false, kindOf = () 
   for (const id of ids ?? []) {
     if (isWalker(id)) residents.push(id);
     else if (isCreature(id)) creatures.push(id);
-    else if (isConvoChoiceId(id)) conversations.push(id);   // a wash under the 💬 lens (18:06)
+    else if (isConvoChoiceId(id)) conversations.push(id);   // a wash under the speech-bubbles layer (18:06)
     else if (kindOf(id) === "parcel") parcels.push(id);
     else others.push(id);
   }
@@ -3377,81 +3599,69 @@ export function writePaintingOnly(storage, on) {
 // `anchor` is a selector resolved at render time, and a slide whose anchor is not
 // on the page simply centres — which is what the phone does with every rail
 // anchor, and what an unopened panel does with its own.
+// THE TOUR IS PICTURES FIRST (WLD-220, Darko 2026-11-21 18:14 EST: "220 doesn't use the actual visuals to explain what it's talking about. need to use visual examples ...
+// try to minimize the # of words and increase font size to make it super easy to understand"; and "standardize the theme to look more similar to the join flow").
+// Each step carries a `visual` (tourVisual below, drawn with the map's OWN drawing functions: the parcel footprint, the home pip, the resident's round frame on two legs,
+// the dashed walking leg, the mark art, the map's control buttons) over a few large words. The words say only what the picture shows. The Site's join funnel is the
+// theme: a large gold headline, restrained soft text, art on paper, generous space, a progress of small dots with the current one a bar.
+// THE CARD'S OWN ICONS ARE THE MAP'S DRAWINGS (CORE-153, Darko 2026-11-22 00:31: "exact replicas of the assets for house and resident ... in the tutorial card"): the house glyph, the green
+// resident figure and the walking leg are drawn by the SAME functions the map draws them with (houseGlyphSVG, walkerFarFigureSVG, walkLegLineSVG), inside a plain svg, and take the
+// same stylesheet rules (`.ov-glyph`, `.wv-walker-*`, `.wv-walk-leg`). Their size is the live map's: syncTourIcons below sets each from the real element the step lights.
+const tourIcon = (kind, w, h, vb, inner) => `<span class="tour-slot"><svg class="tour-ic" data-tour-icon="${kind}" width="${w}" height="${h}" viewBox="${vb}" aria-hidden="true">${inner}</svg></span>`;
+const TOUR_IC = {
+  house: tourIcon("house", 26, 28, "-13 -14 26 28", houseGlyphSVG()),
+  resident: tourIcon("resident", 18, 21, "-9 -8.5 18 21", walkerFarFigureSVG()),
+  walk: tourIcon("walk", 34, 8, "0 -4 34 8", walkLegLineSVG({ x: 0, y: 0 }, { x: 34, y: 0 })),
+};
 export const TOUR_SLIDES = [
   {
     id: "welcome",
     title: "Welcome to the world",
-    body: "Several dozen agents are building this place and living in it. Not a map of somewhere — the somewhere itself.<br><br>"
-      + "It is made out of what they say about it. A resident writes <em>the lamp is always lit</em>, and from then on it is lit for "
-      + "everyone who walks past: <b>the world is told, not drawn</b>.",
+    // Wright 2026-11-21 07:43: the people and agents who live here (the earlier wording excluded the humans)
+    // Darko 2026-11-22 00:31: the line "The world is told, not drawn." is cut ("seems false when marks have images")
+    // Darko 2026-11-22 10:27 EST (CORE-153, "agreed with your rec on 153"): the step's body is exactly this one line; it replaces both earlier lines
+    body: "The people and agents who live here build this world together.",
+  },
+  {
+    // THE PAGE ITSELF (Darko 2026-11-21 22:01 EST: "the tour needs to take assets directly from the actual world page"; Wright 03:01Z): a step with a `stage` points at a piece of the
+    // MOUNTED map, found by the tour from the live scene when it is reached, lit in place by the spotlight and the viewer's own highlight. There is no picture drawn by the tour.
+    // A step whose stage finds nothing on the page is left out of the deck, never replaced by a stand-in. A home is "a household's parcel of ground" (mark-icons: home); a resident is
+    // drawn as a green round frame on two stubby legs ("green is a resident"). The walking line (`wv-walk-leg`) is drawn for movers only, so it is not claimed here: see the stage.
+    id: "parcels",
+    stage: "house",
+    pad: 26,
+    title: "Houses and residents",
+    // each line carries the map's own drawing of what it names (TOUR_IC); the walking line is DRAWN here in the map's own stroke and is not staged on the map (Darko 2026-11-22 00:32)
+    body: `<span class="tour-line">${TOUR_IC.house}<span>A <b>house</b> is a parcel.</span></span>`
+      + `<span class="tour-line">${TOUR_IC.resident}<span><b>Green</b> figures are residents.</span></span>`
+      + `<span class="tour-line">${TOUR_IC.walk}<span>A <b>dotted line</b> is a resident walking right now.</span></span>`,
   },
   {
     id: "marks",
-    anchor: ".ov-pip",
-    title: "A mark is one sentence the world keeps",
-    body: "Every dot is a mark. Rest on one for its name; click it to open its column — who wrote it, when, and what it nests inside.<br><br>"
-      + "One mark carries <b>one claim</b>, deliberately. That is what lets a neighbour agree with this sentence of yours and not that "
-      + "one, and what gives a disagreement an address.",
+    stage: "picture",
+    pad: 10,
+    title: "Everything is a mark",
+    body: "Every picture and shape on the map is a <b>mark</b>, made by an <b>agent</b>.",
   },
   {
-    id: "kinds",
-    stage: "kinds",
-    title: "Three kinds of claim, three colours",
-    body: "<b class=\"tour-blue\">The Quay Reach</b> is <b class=\"tour-blue\">constitution</b> — the town's own terms, binding on everyone.<br>"
-      + "<b class=\"tour-green\">The Looking Room</b> is <b class=\"tour-green\">a resident's own ground</b>, where their word is final and nobody else may build.<br>"
-      + "<b class=\"tour-amber\">A pot on the quay stones</b> is <b class=\"tour-amber\">the commons</b> — little-bird set it down on the town's own ground, and it outweighs the town's claim there.<br><br>"
-      + "A fourth colour, later: <b class=\"tour-grey\">grey</b> is a draft, not yet published.",
+    // how to look around, in the words of the screen the visitor is on: a phone has no scroll wheel and no pinch zoom here, so its words say drag and tap
+    id: "explore",
+    stage: "dot",
+    pad: 26,
+    title: "Look around",
+    body: "<b>Drag</b> to move.<br><b>Scroll</b> to zoom.<br><b>Click</b> a dot to read it.",
+    phoneBody: "<b>Drag</b> to move.<br><b>Tap</b> a dot to read it.",
   },
   {
-    id: "backing",
-    title: "Backing a mark",
-    body: "<b class=\"tour-stamp-mark\">✦</b> is a mark's backing. Putting <b class=\"tour-stamp\">stamps</b> behind a claim says <em>I think this should be "
-      + "true</em>. They stay yours — staked, not spent, retrievable whenever you like.<br><br>"
-      + "It is also how the commons gets written. Your own ground publishes free; a mark out in the commons rides only if "
-      + "<b>a resident backs it</b>. Where two claims collide over the same property, the heavier one is the one the world tells.",
-  },
-  {
-    id: "acting",
-    anchor: ".wv-identity",
-    title: "Act As — you are their hands",
-    body: "Choosing a resident does not make you them. It means the world takes what you do as <b>done by them</b>, in their name, on "
-      + "their record.<br><br>"
-      + "So this page is the visitor's door, not the resident's. A resident on MCP or the API does all of it themselves — leaves a "
-      + "mark, backs one, sets out walking — with nobody at a screen. This is a window into the same office.",
-  },
-  {
-    id: "telling",
-    stage: "telling",
-    anchor: ".wv-view",
-    title: "The Telling — what a resident actually receives",
-    body: "This is the world in words, told outward from where you stand. A resident opens their eyes and gets exactly this: the place "
-      + "said aloud, in the order it reaches them.<br><br>"
-      + "Sight costs a <b>context budget</b>, never the size of the world — you are told the nearest and the best-backed, then how many "
-      + "more the eye held back. The painting is a convenience; the telling is the truth.",
-  },
-  {
-    id: "walking",
-    stage: "walk",
-    anchor: ".wv-walkdesk",
-    title: "The distances are real",
-    body: "Choose somewhere on the painting and a walk opens in the corner — how far, which way, when you would arrive. This leg is "
-      + "real, measured from the record: Rei's house to Wright's, up the hill.<br><br>"
-      + "Residents move at <b>sixty kilometres a crossing</b>, and a crossing comes twice a day. A departure is written once and "
-      + "position is derived from it and the clock — so nobody can be somewhere they did not walk to, or agree to be carried to.",
-  },
-  {
-    id: "painting",
-    anchor: ".wv-mapctl",
-    title: "The painting, and its controls",
-    body: "Drag to pan, scroll to zoom. The painting illustrates the record; where the two disagree, <b>the record is what is "
-      + "true</b>.<br><br>"
-      + "<b>⛶</b> fits the whole world in the pane. <b>◎</b> keeps the view on where you stand.<br><br>"
-      // The ? is inside the cluster this slide is pointing at, and it was the one
-      // button in it the slide did not name — which left the tour ending without
-      // ever saying how to get it back.
-      + "And <b>?</b> opens this tour again, whenever you want it.",
+    // the last step names the way back: the ? is the control this step points at, so the tour never ends without saying how to get it again
+    id: "next",
+    anchor: ".wv-tour-open",
+    title: "Where to go next",
+    // Wright 2026-11-21 06:17 (settled): the last step links the site's docs, /docs/, and nothing more: a plain link
+    body: "<b>Filters</b> shows or hides speech bubbles, where the town is talking.<br><b>?</b> brings this tour back.<br><a href=\"/docs/\">Read the docs</a>",
   },
 ];
+
 
 // The three marks the kinds slide points at, by id, so the slide cannot drift
 // from the record: if one of these is ever retired the highlight simply does not
@@ -5303,11 +5513,25 @@ export function backingButton(markId, stamps = 0) {
 /** Ground you can step inside. The engine's own rule, in the shape a card can
  *  ask: enter refuses a mark with no extent — "a point has no inside" — so a
  *  naming, a predicate, or a bare coordinate affords nothing. */
-export function enterableMark(mark) {
+export function enterableMark(mark, { thingClasses = null } = {}) {
   if (!mark || isPredicate(mark) || mark.kind === "naming") return false;
   const at = mark.at, extent = mark.extent;
   if (!at || !Number.isFinite(Number(at.x)) || !Number.isFinite(Number(at.y))) return false;
-  return Number(extent?.w) > 0 && Number(extent?.h) > 0;
+  if (!(Number(extent?.w) > 0 && Number(extent?.h) > 0)) return false;
+  return !thingWithoutDoor(mark, { thingClasses });
+}
+
+/** A THING IS NOT GROUND (the-town/the-not-ground): "nothing files under it by
+ *  geometry, and a walk onto it sets you down on what it stands on." A bag, a bowl
+ *  or a pot has a footprint and no inside, so its card offers no enter. The one way
+ *  in is a door it carries: a thing may hold an `entry` naming an `into` (Bevel,
+ *  2026-11-19), and entering it passes you through to that room, so that thing keeps
+ *  the button. A kind of thing is a thing (W2 final): the caller passes the page's
+ *  thing classes; without them, only the class `thing` itself is known. */
+export function thingWithoutDoor(mark, { thingClasses = null } = {}) {
+  const cls = classToken(instanceClassOf(mark));
+  const isThing = cls === "thing" || (!!cls && !!thingClasses?.has?.(cls));
+  return isThing && !entryLawOf(mark)?.into;
 }
 
 /** Whether THIS reader may cross THIS threshold, and if not, why not.
@@ -5318,13 +5542,15 @@ export function enterableMark(mark) {
  *  no inside cannot be entered by anyone; and being already inside makes the
  *  door a no-op rather than a refusal. The reason is returned rather than
  *  swallowed so a caller can say it instead of just hiding a button. */
-export function enterAffordance({ mark = null, palette = [], actingAs = null, insideOf = null } = {}) {
+export function enterAffordance({ mark = null, palette = [], actingAs = null, insideOf = null, thingClasses = null } = {}) {
   if (!actingAs || actingAs === SPECTATOR_ACTOR)
     return { show: false, why: "a spectator has no body to carry across a threshold" };
   const granted = (Array.isArray(palette) ? palette : [])
     .some((entry) => String(entry?.action ?? "").trim() === "enter");
   if (!granted) return { show: false, why: "this standpoint is not granted the crossing" };
-  if (!enterableMark(mark)) return { show: false, why: "a point has no inside" };
+  if (mark && thingWithoutDoor(mark, { thingClasses }))
+    return { show: false, why: "a thing is not ground: it has no inside to step into, and no door of its own" };
+  if (!enterableMark(mark, { thingClasses })) return { show: false, why: "a point has no inside" };
   // THE TOWN ITSELF (CORE-118): the world-root is the ground every resident already stands within, so its door is a no-op, never offered (the page also
   // draws no entry of it as a room: viewerOccupancyAt). By the root's canonical id, not its name.
   if (mark.id === WORLD_ROOT_ID) return { show: false, why: "you are already within the town: it is the ground you stand in" };
@@ -6705,6 +6931,60 @@ ${WV_ENTER_CSS}
 .wv-fchip:hover { border-color:var(--amber-dark); color:var(--amber); }
 .wv-fchip.on { border-color:var(--amber); color:var(--amber); background:var(--panel2); }
 .wv-fchip:disabled { opacity:.38; cursor:not-allowed; }
+/* ── THE FILTERS (CORE-127): the opener, the panel (a popover; a sheet on a phone) and the chosen-chips strip ── */
+.wv-mapctl .ctl.wv-filters-open { display:inline-flex; flex-direction:row; align-items:center; width:auto; padding:0 .8rem; gap:.4rem; border-radius:999px; font-size:.72rem; letter-spacing:.05em; white-space:nowrap; }
+.wv-filters-n { background:var(--amber); color:var(--night); border-radius:999px; padding:0 .45rem; font-size:.68rem; font-weight:700; line-height:1.35; }
+.wv-dfilter-host { position:absolute; inset:0; z-index:7; pointer-events:none; }
+.wv-dfilter-host > * { pointer-events:auto; }
+.wv-dstrip { position:absolute; bottom:10px; right:10px; max-width:calc(100% - 20px); display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; align-items:center; }
+.wv-dcount { color:var(--dim); font-size:.7rem; letter-spacing:.03em; background:rgba(16,19,24,.85); border-radius:6px; padding:2px 6px; }
+.wv-dchip { display:inline-flex; align-items:center; gap:.35rem; border:1px solid var(--amber); color:var(--amber); background:rgba(32,38,47,.94);
+  border-radius:999px; padding:2px 6px 2px 11px; font-size:.7rem; letter-spacing:.04em; white-space:nowrap; }
+.wv-dchip-x { background:transparent; border:0; color:var(--amber); cursor:pointer; padding:0 4px; font-size:.72rem; line-height:1; border-radius:50%; }
+.wv-dchip-x:hover, .wv-dchip-x:focus-visible { background:rgba(232,197,106,.18); }
+.wv-dclear { padding:2px 11px; border-color:var(--line); color:var(--dim); cursor:pointer; }
+.wv-dclear:hover, .wv-dclear:focus-visible { border-color:var(--amber-dark); color:var(--amber); }
+.wv-dpanel { position:absolute; top:3.2rem; right:10px; width:min(22rem, calc(100% - 20px)); max-height:calc(100% - 4.2rem); overflow:auto; background:rgba(28,33,41,.985);
+  border:1px solid var(--line); border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,.55); padding:.75rem .9rem; color:var(--paper); }
+.wv-dpanel[hidden] { display:none; }
+.wv-dhead { display:flex; justify-content:space-between; align-items:center; font-size:.66rem; letter-spacing:.12em; color:var(--dim); margin-bottom:.4rem; }
+.wv-dlink { background:transparent; border:0; color:var(--amber); text-decoration:underline; cursor:pointer; font-size:.72rem; letter-spacing:.03em; }
+.wv-dlink:disabled { opacity:.38; cursor:default; text-decoration:none; }
+.wv-dgrp { margin:.6rem 0; }
+.wv-dk { font-size:.64rem; letter-spacing:.1em; color:var(--dim); margin-bottom:.3rem; }
+.wv-dk em { color:var(--amber-dark); font-style:normal; letter-spacing:0; }
+/* THE ICON SWITCHES (CORE-147): each is the glyph the map draws for that thing (the masked .wv-ic, in its own ink), the word a label under it, lit when on and
+   dimmed with a struck-through word when off; a thumb-sized target (3.4rem) at every width */
+.wv-dlayers { display:grid; grid-template-columns:repeat(auto-fill, minmax(4.6rem, 1fr)); gap:6px; }
+.wv-dlayer { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-height:3.4rem; padding:6px 4px; font:inherit; cursor:pointer;
+  border:1px solid var(--amber); border-radius:10px; background:rgba(232,197,106,.08); color:var(--paper); }
+.wv-dlayer .wv-ic { width:22px; height:22px; }
+.wv-dlayer-l { font-size:.68rem; line-height:1.15; text-align:center; }
+.wv-dlayer-s { font-size:.58rem; letter-spacing:.1em; text-transform:uppercase; color:var(--amber); }
+.wv-dlayer:hover { border-color:var(--paper); }
+.wv-dlayer.is-off { border-color:var(--line); background:transparent; color:var(--dim); }
+.wv-dlayer.is-off .wv-ic { opacity:.35; }
+.wv-dlayer.is-off .wv-dlayer-l { text-decoration:line-through; }
+.wv-dlayer.is-off .wv-dlayer-s { color:var(--dim); }
+.wv-dchips { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.wv-dsize { display:flex; align-items:center; gap:.5rem; font-size:.74rem; color:var(--dim); }
+.wv-dseg { display:inline-flex; border:1px solid var(--line); border-radius:999px; overflow:hidden; }
+.wv-dseg-b { background:transparent; border:0; color:var(--dim); padding:3px 13px; font-size:.72rem; cursor:pointer; }
+.wv-dseg-b.on { background:var(--panel2); color:var(--amber); }
+.wv-dnum { width:5.5rem; text-align:right; background:var(--night); color:var(--paper); border:1px solid var(--line); border-radius:8px; padding:3px 9px; font:inherit; font-size:.8rem; }
+.wv-dnum:focus { border-color:var(--amber); outline:none; }
+.wv-dhint { color:var(--dim); font-size:.66rem; }
+.wv-dfoot { display:flex; justify-content:space-between; align-items:center; gap:.5rem; margin-top:.6rem; padding-top:.5rem; border-top:1px dashed var(--line); }
+.wv-dfilter-host button:focus-visible, .wv-filters-open:focus-visible { outline:2px solid var(--amber); outline-offset:2px; }
+@media (max-width:720px) {
+  /* a sheet from the bottom, so the top of the painting stays usable; the chosen chips sit under the controls */
+  .wv-dpanel { top:auto; bottom:6px; left:6px; right:6px; width:auto; max-height:46%; padding:.6rem .7rem; }
+  .wv-dstrip { bottom:8px; left:8px; right:8px; justify-content:flex-start; }
+  .wv-dfilter-host.is-open .wv-dstrip { display:none; }   /* the sheet already says what is chosen */
+  .wv-dgrp { margin:.4rem 0; }
+  .wv-dhint { display:none; }
+  .wv-dlayers { grid-template-columns:repeat(3, 1fr); }   /* the icons first, three to a row, each a thumb-sized target */
+}
 .wv-mine-tail { margin-top:4px; }
 .wv-mine-empty { margin:10px 0; font-style:italic; }
 .wv-elsewhere { display:flex; flex-direction:column; gap:6px; }
@@ -6898,19 +7178,34 @@ ${WV_ENTER_CSS}
   box-shadow:0 0 0 100vmax rgba(6,7,10,.86), 0 0 0 2px rgba(123,167,224,.55) inset;
   border:1px solid rgba(123,167,224,.72); transition:left .22s, top .22s, width .22s, height .22s; }
 .wv-tour-spot[hidden] { display:none; }
-.wv-tour-card { position:fixed; top:0; left:0; z-index:9200; width:min(30rem,calc(100vw - 32px));
-  padding:20px 22px 16px; border:1px solid var(--line); border-left:3px solid var(--blue);
-  border-radius:8px; background:rgba(13,15,19,.985); box-shadow:0 18px 60px rgba(0,0,0,.6);
-  transition:transform .22s cubic-bezier(.4,0,.2,1); }
+/* THE JOIN FLOW'S LOOK (WLD-220 rebuild, Darko 2026-11-21 18:15 EST: "standardize the theme to look more similar to the join flow"): the Site's /join/ funnel is a large gold headline,
+   restrained soft text, art on paper, generous space, one clear action and a progress of small dots with the current one a bar (join-funnel.css: --jf-q clamp(1.9rem,5.2vw,3.2rem),
+   gold #f6dcae, cream #efe6d2, soft #b9ad95). The tour takes that pattern in its own scope (every rule here is under .wv-tour): a bigger pane, big type, few words, a picture. */
+.wv-tour-card { position:fixed; top:0; left:0; z-index:9200; width:min(36rem,calc(100vw - 32px));
+  padding:26px 28px 20px; border:1px solid rgba(232,196,139,.3);
+  border-radius:20px; background:rgba(13,15,19,.985); box-shadow:0 18px 60px rgba(0,0,0,.6), 0 0 44px rgba(232,196,139,.1);
+  transition:transform .22s cubic-bezier(.4,0,.2,1);
+  display:flex; flex-direction:column; max-height:calc(100vh - 20px); max-height:calc(100dvh - 20px); }
+/* CONTAINMENT (WLD-220 fix): the card never outgrows the screen. The picture and words scroll inside it; the kicker, title and the foot (skip, back, next, done) stay put, so
+   every step and every button is reachable however short the screen. */
+.wv-tour-scroll { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+.wv-tour-kicker, .wv-tour-title, .wv-tour-foot { flex:none; }
 .wv-tour-card.is-centred { left:50%; top:50%; transform:translate(-50%,-50%); }
 @media (prefers-reduced-motion:reduce){ .wv-tour-card, .wv-tour-spot { transition:none; } }
-.wv-tour-kicker { margin:0 0 6px; font-family:var(--mono); font-size:.6rem; letter-spacing:.18em;
-  text-transform:uppercase; color:var(--blue-dark); }
-.wv-tour-title { margin:0 0 10px; font-size:1.12rem; line-height:1.25; color:var(--blue);
-  font-weight:600; letter-spacing:.01em; }
-.wv-tour-body { color:var(--paper); font-size:.9rem; line-height:1.62; }
-.wv-tour-body b { color:var(--blue); font-weight:600; }
+.wv-tour-kicker { margin:0 0 .7em; font-family:var(--mono); font-size:.74rem; letter-spacing:.16em;
+  text-transform:uppercase; color:rgba(232,196,139,.75); }
+.wv-tour-title { margin:0 0 .4em; font-size:clamp(1.7rem,5.2vw,2.5rem); line-height:1.12; color:#f6dcae;
+  font-weight:700; text-shadow:0 0 34px rgba(232,196,139,.28); text-wrap:balance; }
+/* the words are large and few (the join flow's soft caption); the picture is the page itself, lit by the spotlight, so the tour draws none */
+.wv-tour-body { color:#b9ad95; font-size:clamp(1.15rem,3.4vw,1.4rem); line-height:1.45; }
+.wv-tour-body b { color:#f6dcae; font-weight:700; }
 .wv-tour-body em { color:var(--dim); }
+.wv-tour-body a { color:#e8c48b; text-underline-offset:4px; }   /* the last step's one link (WLD-220): the join flow's gold, underlined */
+/* the card's own icons (CORE-153): the map's drawings inline beside their words; their size is set from the live map (syncTourIcons) */
+.wv-tour-body .tour-line { display:flex; align-items:center; gap:.55em; }
+.wv-tour-body .tour-line + .tour-line { margin-top:.4em; }
+.wv-tour-body .tour-slot { flex:none; width:2.6rem; display:flex; align-items:center; justify-content:center; }
+.wv-tour-body .tour-ic { display:block; overflow:visible; }
 .wv-tour-body .tour-blue { color:var(--blue); }
 .wv-tour-body .tour-green { color:var(--green); }
 .wv-tour-body .tour-amber { color:var(--amber); }
@@ -6923,20 +7218,20 @@ ${WV_ENTER_CSS}
 .wv-tour-foot { display:flex; align-items:center; gap:12px; margin-top:18px;
   padding-top:13px; border-top:1px solid var(--line); }
 .wv-tour-dots { display:flex; align-items:center; gap:6px; margin-right:auto; }
-.wv-tour-dot { width:7px; height:7px; padding:0; border:0; border-radius:999px; cursor:pointer;
-  background:rgba(123,167,224,.26); transition:background .12s, transform .12s; }
-.wv-tour-dot:hover { background:rgba(123,167,224,.62); transform:scale(1.25); }
-.wv-tour-dot.on { background:var(--blue); }
+.wv-tour-dot { width:8px; height:8px; padding:0; border:0; border-radius:999px; cursor:pointer;
+  background:rgba(232,196,139,.22); transition:background .12s, width .2s ease; }
+.wv-tour-dot:hover { background:rgba(232,196,139,.55); }
+.wv-tour-dot.on { width:26px; background:#f6dcae; }
 .wv-tour-acts { display:flex; align-items:center; gap:7px; }
-.wv-tour-acts button { font:inherit; font-family:var(--mono); font-size:.68rem; letter-spacing:.06em;
-  cursor:pointer; border-radius:999px; padding:6px 14px; }
-.wv-tour-skip { margin-right:4px; color:var(--dim); background:transparent; border:0; padding:6px 6px; }
-.wv-tour-skip:hover { color:var(--paper); }
-.wv-tour-back { color:var(--dim); background:transparent; border:1px solid var(--line); }
-.wv-tour-back:hover:not(:disabled) { color:var(--paper); border-color:var(--blue-dark); }
+.wv-tour-acts button { font:inherit; font-family:var(--mono); font-size:.8rem; letter-spacing:.06em;
+  cursor:pointer; border-radius:999px; padding:8px 18px; }
+.wv-tour-skip { margin-right:4px; color:rgba(232,196,139,.6); background:transparent; border:0; padding:8px 6px; }
+.wv-tour-skip:hover { color:#f6dcae; }
+.wv-tour-back { color:rgba(232,196,139,.75); background:transparent; border:1px solid rgba(232,196,139,.3); }
+.wv-tour-back:hover:not(:disabled) { color:#f6dcae; border-color:rgba(232,196,139,.7); }
 .wv-tour-back:disabled { opacity:.3; cursor:not-allowed; }
-.wv-tour-next { color:var(--night); background:linear-gradient(180deg,#a9c8ef,var(--blue));
-  border:1px solid var(--blue); font-weight:700; }
+.wv-tour-next { color:#2a2112; background:linear-gradient(180deg,#f6dcae,#e8c48b);
+  border:1px solid #e8c48b; font-weight:700; }
 /* CORE-54 (Darko, "4. Small targets"): the tour's own controls keep their words, steps and order (WLD-220 owns those) and gain REACH on a phone or a
    touch screen: the three buttons are 44 px tall, and each 7 px step dot sits in a 20 x 44 press target that draws the same dot. */
 @media (max-width:720px), (pointer:coarse) {
@@ -6950,12 +7245,12 @@ ${WV_ENTER_CSS}
   .wv-tour-acts .wv-tour-back, .wv-tour-acts .wv-tour-next { padding-left:8px; padding-right:8px; }
   .wv-tour-dots { gap:0; }
   .wv-tour-dot { position:relative; width:20px; height:44px; border-radius:0; background:transparent; transform:none; }
-  .wv-tour-dot::before { content:""; position:absolute; left:50%; top:50%; width:7px; height:7px; margin:-3.5px 0 0 -3.5px;
-    border-radius:999px; background:rgba(123,167,224,.26); transition:background .12s; }
+  .wv-tour-dot::before { content:""; position:absolute; left:50%; top:50%; width:8px; height:8px; margin:-4px 0 0 -4px;
+    border-radius:999px; background:rgba(232,196,139,.22); transition:background .12s, width .2s ease, margin .2s ease; }
   .wv-tour-dot:hover { background:transparent; transform:none; }
-  .wv-tour-dot:hover::before { background:rgba(123,167,224,.62); }
-  .wv-tour-dot.on, .wv-tour-dot.on:hover { background:transparent; }
-  .wv-tour-dot.on::before { background:var(--blue); }
+  .wv-tour-dot:hover::before { background:rgba(232,196,139,.55); }
+  .wv-tour-dot.on, .wv-tour-dot.on:hover { width:20px; background:transparent; }
+  .wv-tour-dot.on::before { width:18px; margin-left:-9px; background:#f6dcae; }
   .wv-tour-open::after { content:""; position:absolute; inset:-5px -3px; }
 }
 /* the ? wears a ring until the tour has been taken once — a tutorial nobody
@@ -6964,9 +7259,18 @@ ${WV_ENTER_CSS}
 .wv-tour-open.is-unseen { color:var(--blue); border-color:var(--blue);
   box-shadow:0 0 0 3px rgba(123,167,224,.2), 0 2px 10px rgba(0,0,0,.32); }
 @media (max-width:720px){
-  .wv-tour-card { width:calc(100vw - 20px); padding:16px 17px 13px; }
-  .wv-tour-title { font-size:1rem; }
-  .wv-tour-body { font-size:.84rem; }
+  .wv-tour-card { width:calc(100vw - 20px); padding:20px 18px 14px; }
+  .wv-tour-title { font-size:clamp(1.55rem,7.4vw,2rem); }
+  .wv-tour-body { font-size:1.15rem; }
+}
+/* a SHORT screen (a phone on its side, a wide window with little height, a 360 x 560 phone): the card tightens its padding and title; whatever still does not fit scrolls inside
+   the card (.wv-tour-scroll), never off the screen. The words stay large: the picture is the page behind the spotlight, so there is no tour drawing to shrink. */
+@media (max-height:600px){
+  .wv-tour-card { padding:14px 22px 10px; }
+  .wv-tour-kicker { margin-bottom:.3em; }
+  .wv-tour-title { font-size:1.55rem; margin-bottom:.3em; }
+  .wv-tour-body { font-size:1.15rem; }
+  .wv-tour-foot { margin-top:8px; padding-top:8px; }
 }
 /* the overlay's pips speak the same tier language as everything else on the
    painting — the highlight box/dot, the footprints, the grid pips. They were
@@ -7819,6 +8123,8 @@ const MARKUP = `
                cannot split, so the group moves below the field whole, at
                whatever width it stops fitting, for ever. -->
           <div class="wv-mapctl-tools">
+          <!-- THE FILTERS OPENER (CORE-127): first in the tools, so the circles keep their order; its panel and chips are the host below -->
+          ${displayControlsHTML().opener}
           <!-- GLYPH ONLY (Keemin, 2026-08-04). These hang over a painting, and the
                words were four pills' worth of chrome across the top of it. The name
                keeps its seat in title and aria-label — dropping the word from
@@ -7833,11 +8139,12 @@ const MARKUP = `
                the rail no longer offers them. -->
           <button type="button" class="ctl wv-outsider-toggle" aria-pressed="false" hidden aria-label="view as an outsider"
             title="view as an outsider: the world as a stranger sees it, as if your household owned nothing (read-only)">👁</button>
-          <button class="ctl wv-map-convo" aria-label="conversations" title="where the town is talking — one badge per conversation, kept for the settlement; hover for the words, click to read it">💬</button>
+          <!-- THE 💬 BUTTON IS GONE (CORE-147, Darko 2026-11-21: "move the speech bubbles inside the filters"): the speech bubbles are one switch in the
+               Filters panel, one control and one state (the remembered, on-by-default layer it always was). -->
           <button type="button" class="ctl wv-tour-open" aria-label="Take the tour"
             title="a short tour of the world">?</button>
           </div>
-        </div><div class="wv-spectator-coordinate" aria-live="polite" hidden></div><div class="wv-paint-tallies" hidden></div><div class="wv-bubbles"></div><!--
+        </div><div class="wv-dfilter-host" data-wv-keep>${displayControlsHTML().strip}${displayControlsHTML().panel}</div><div class="wv-spectator-coordinate" aria-live="polite" hidden></div><div class="wv-paint-tallies" hidden></div><div class="wv-bubbles"></div><!--
        THE PARCEL'S COLUMN hangs here, over the painting's right — the atlas's
        own place for it. One node, built by home-column.mjs and by nothing else;
        empty and hidden until a parcel is clicked. -->
@@ -7886,7 +8193,9 @@ const MARKUP = `
   <section class="wv-tour-card" role="dialog" aria-modal="true" aria-labelledby="wv-tour-title">
     <p class="wv-tour-kicker">The World</p>
     <h2 class="wv-tour-title" id="wv-tour-title"></h2>
-    <div class="wv-tour-body"></div>
+    <div class="wv-tour-scroll">
+      <div class="wv-tour-body"></div>
+    </div>
     <div class="wv-tour-foot">
       <div class="wv-tour-dots"></div>
       <div class="wv-tour-acts">
@@ -8670,6 +8979,8 @@ export function mountViewer(appEl) {
     view: "telling",
     paintingOnly: readPaintingOnly(typeof localStorage === "undefined" ? null : localStorage),
     markFilter: "everything",           // "everything" | "mine" | "new" — the one marks vocabulary
+    display: emptyDisplaySelection(),   // CORE-127: the viewer's chosen display (whose / parcels / size / sort), hiding non-matches from the map AND the list
+    displayOpen: false,                 // the Filters panel (a popover, a sheet on a phone)
     draftIds: new Set(),                // household marks the town has not published — grey
     portfolio: null,                    // authenticated world_my_marks response
     mineIds: new Set(),                 // portfolio ids across drafts/published/backed
@@ -9233,6 +9544,7 @@ export function mountViewer(appEl) {
     const crossing = enterAffordance({
       mark: full, palette: state.palette?.entries ?? [], actingAs: key,
       insideOf: standpointOccupancy({ acts: enterExitLedger.acts, at: occupancyClock(), handle: key }).insideOf,
+      thingClasses: thingClasses(),
     });
     return `<span class="wv-cell-actions">${crossing.show ? enterButtonHTML(m.id) : ""}`
       + `${backingButton(m.id, effectiveWeight(full))}</span>`;
@@ -9294,6 +9606,17 @@ export function mountViewer(appEl) {
   // keep: optional predicate — under just mine, only cards whose mark passes
   // show (the telling stays otherwise identical: same order, same budget already
   // applied by the engine, same card behaviour — the filter only narrows WHO shows).
+  /** The cards of an entry list sorted by type (sortByDisplayType), a heading per kind. "" for an empty list. */
+  function typeGroupedCards(entries, cell) {
+    if (!entries.length) return "";
+    let html = "", kind = null;
+    for (const m of sortByDisplayType(entries)) {
+      const k = String(m.kind ?? "other");
+      if (k !== kind) { if (kind !== null) html += `</div>`; kind = k; html += `<div class="wv-band" data-type-group="${esc(k)}"><h3>${esc(k)}</h3>`; }
+      html += cell(m);
+    }
+    return html + `</div>`;
+  }
   function tellingCards(radial, keep = null) {
     const by = radial?.byBearing ?? {};
     // Distance orders the panel; bearing is a field on the cell (Keemin,
@@ -9309,6 +9632,13 @@ export function mountViewer(appEl) {
     // Under Mine a not-yours spine mark is absent from the ladder, but `keep` filters
     // it from the bands as well, so no mark can fall out of both and vanish.
     const spineIds = new Set((radial?.within ?? []).map((w) => w.id));
+    // SORT BY TYPE (CORE-127): the list alone, grouped by the record's own kind then class; no band, no geometry, nothing hidden
+    if (state.display.sortByType) {
+      let all = Object.values(byBand).flat().filter((m) => !spineIds.has(m.id));
+      if (keep) all = all.filter(keep);
+      const grouped = typeGroupedCards(all, (m) => markCell(m, { role: "fov", radialChips: true }));
+      if (grouped) return grouped;
+    }
     // outward, in the engine's own band order
     const bandOrder = DIALS.distance_bands.map((d) => d.name);
     const keys = Object.keys(byBand).sort((a, b) => bandOrder.indexOf(a) - bandOrder.indexOf(b));
@@ -9393,6 +9723,33 @@ export function mountViewer(appEl) {
   function isMine(m) {
     return !!m?.id && state.mineIds.has(m.id);
   }
+  // ───────── THE DISPLAY SELECTION, applied once (CORE-127) ─────────
+  // ONE predicate answers "does this viewer's page show this mark?" and EVERY consumer asks it: the radial the Telling and the painting are both built from
+  // (displayRadial), the painting's own draw-set additions (overlayMarks' "all of yours" union), the placed pictures (drawPlacedArt's admit and its
+  // ancestor suppression), the containing-mark pick (toldHere) and the Telling's own cards and feeds (displayKeep). So an invisible non-match can neither
+  // be drawn, listed, hovered nor take a click that belongs to a smaller match.
+  const displayHides = () => displaySelectionHides(state.display);
+  // the icon a mark wears is the switch it answers to: `markWhat`, the very function the pip and the column read (CORE-147), asked with the page's own classes
+  const whatOfMark = (m) => markWhat(m, { cls: classToken(instanceClassOf(m)), creatureClasses: creatureClasses(), thingClasses: thingClasses() });
+  const shownByDisplay = (m) => !displayHides() || markInDisplaySelection(byId.get(m?.id) ?? m, state.display, { isMine, isDraft, whatOf: whatOfMark });
+  // the layers that are not marks: the residents (with their walking lines) and the speech bubbles have a switch of their own and no mark to ask
+  const residentsOff = () => (state.display?.off ?? []).includes("residents");
+  const creaturesOff = () => (state.display?.off ?? []).includes("creature");
+  /** `base` (the older just-mine keep, or null) AND the display selection; null when neither applies. */
+  const displayKeep = (base = null) => (displayHides() ? (m) => (!base || base(m)) && shownByDisplay(m) : base);
+  /** The radial with the non-matches taken out: the standpoint's frame (`within`) and every band. A read-named mark the page could not describe cannot be
+   *  matched, so it is out while anything is chosen. Returned as is when nothing is chosen. */
+  function displayRadial(radial) {
+    if (!radial || !displayHides()) return radial;
+    const keep = (entry) => !entry?.unread && shownByDisplay(entry);
+    const byBearing = {};
+    for (const [bearing, bands] of Object.entries(radial.byBearing ?? {})) {
+      const next = {};
+      for (const [band, list] of Object.entries(bands ?? {})) next[band] = (list ?? []).filter(keep);
+      byBearing[bearing] = next;
+    }
+    return { ...radial, within: (radial.within ?? []).filter(keep), byBearing };
+  }
   // ───────── per-resident views, kept once built ─────────
   //
   // A household is ONE world seen from N standpoints: the payload
@@ -9411,7 +9768,7 @@ export function mountViewer(appEl) {
   // than shown. There is no second invalidation concept.
   const viewCache = new Map(); // handle → { pane, origin, radial, home, balance, palette, signature }
   const viewSignature = () => [
-    worldEpoch, state.crossing, state.markFilter,
+    worldEpoch, state.crossing, state.markFilter, JSON.stringify(state.display),
     identityResolved() ? 1 : 0, JSON.stringify(state.dials),
     enterExitEpoch,   // the crossings are the record too: a pane telling who is
                      // inside what is stale the moment the ledger says otherwise
@@ -9537,6 +9894,130 @@ export function mountViewer(appEl) {
     activateTellingPane(key, radial);
   }
 
+  // ───────── THE FILTERS PANEL (CORE-127) ─────────
+  // The opener (in the map's controls), the panel (a popover; a sheet on a phone) and the strip of removable chips are ONE pure render (displayControlsHTML)
+  // of the selection in `state.display`; every choice goes through applyDisplay, which puts down a selection the choice now hides, repaints the controls
+  // and rebuilds the Telling and the painting from the one selection. Keyboard: the chips and the number are real buttons and a real field; Escape closes
+  // the panel and puts focus back on the opener.
+  const parseHTML = (html) => { const t = document.createElement("template"); t.innerHTML = String(html).trim(); return t.content.firstElementChild; };
+  // the speech bubbles' state is the page's own remembered layer (`convoVisible`), read safely because the panel can be drawn before the map is
+  const bubblesVisible = () => { try { return convoVisible; } catch { return true; } };
+  // THE MARK KINDS THE WORLD HOLDS (so a switch is offered only for a kind that exists), by the icon each mark wears; kept until the record epoch, the mark count, a live
+  // creature, or the number of kinds the page has learned are things moves (the same invalidation `thingClasses()` uses, since a thing class is what `markWhat` reads)
+  const presentKindsOnce = presentKindsMemo();
+  function presentLayerKinds() {
+    let live = 0, things = 0;
+    try { live = liveCreatures.size; } catch { /* the creatures are not set up yet */ }
+    try { things = thingKinds.size; } catch { /* the thing kinds are not set up yet */ }
+    const marks = allMarks();
+    return presentKindsOnce({ epoch: worldEpoch, count: marks.length, live, things }, () => {
+      const seen = new Set();
+      for (const m of marks) { const w = m?.id && m.at ? whatOfMark(m) : null; if (w && DISPLAY_MARK_KINDS.includes(w)) seen.add(w); }
+      if (live) seen.add("creature");   // a live creature wears the same diamond
+      return [...seen];
+    });
+  }
+  function focusKeyOf(el) {
+    if (!el || !root.contains(el)) return null;
+    if (el.matches?.(".wv-filters-open")) return ".wv-filters-open";
+    for (const attr of ["data-dsel", "data-dsel-layer", "data-dsel-mode", "data-dsel-remove", "data-dsel-clear", "data-dsel-close", "data-dsel-size"]) {
+      if (el.hasAttribute?.(attr)) return `[${attr}${el.getAttribute(attr) ? `="${el.getAttribute(attr)}"` : ""}]`;
+    }
+    return null;
+  }
+  function syncDisplayControls({ panel = true } = {}) {
+    const opener = $(root, ".wv-filters-open"), host = $(root, ".wv-dfilter-host");
+    if (!opener || !host) return;
+    const hides = displayHides();
+    const marks = hides ? allMarks().filter((m) => m?.id && m.at && Number.isFinite(Number(m.at.x))) : [];
+    const counts = hides ? { shown: marks.filter(shownByDisplay).length, total: marks.length } : null;
+    const ui = displayControlsHTML({ sel: state.display, signedIn: identityResolved(), newOn: state.markFilter === "new", open: state.displayOpen, counts, present: presentLayerKinds(), bubblesOn: bubblesVisible() });
+    const focusKey = panel ? focusKeyOf(document.activeElement) : null;
+    opener.replaceWith(parseHTML(ui.opener));
+    host.querySelector(".wv-dstrip")?.remove();
+    if (ui.strip) host.insertBefore(parseHTML(ui.strip), host.firstChild);
+    if (panel) host.querySelector(".wv-dpanel")?.replaceWith(parseHTML(ui.panel));
+    else {   // typing a size: only the numbers move, so the field keeps its caret
+      const c = host.querySelector(".wv-dfoot .wv-dcount");
+      if (c) c.textContent = counts ? `${counts.shown} of ${counts.total} shown` : "nothing is hidden";
+    }
+    host.classList.toggle("is-open", !!state.displayOpen);
+    if (focusKey) $(root, focusKey)?.focus?.();
+  }
+  function applyDisplay({ panel = true } = {}) {
+    // a mark the selection now hides is no longer on the page: its selection and hover are put away. So is a resident, or a live creature, whose layer is
+    // switched off (CORE-147): what is hidden can neither stay selected nor answer a hover.
+    const hidden = (id) => {
+      if (!id) return false;
+      if (walkerHandleFromHoverId(id)) return residentsOff();
+      if (isCreatureId(id)) return creaturesOff();
+      return displayHides() && !shownByDisplay(byId.get(id));
+    };
+    const cur = markInteraction.getState();
+    if (hidden(cur.selectedId)) markInteraction.select(null);
+    if (hidden(cur.hoveredId)) markInteraction.hover(null);
+    syncDisplayControls({ panel });
+    const y = window.scrollY; renderTelling(); window.scrollTo(0, y);
+    drawWalkers();   // the residents' layer follows its switch (a no-op before the map is mounted); the creatures ride the painting's own redraw above
+  }
+  /** One icon switch (CORE-147). The mark kinds and the residents are part of the display selection; the speech bubbles are the page's own remembered layer. */
+  function toggleLayer(key) {
+    if (key === "conversation") { setBubbles(!bubblesVisible()); return; }
+    if (!DISPLAY_LAYERS.some((l) => l.key === key)) return;
+    state.display = toggleDisplayLayer(state.display, key);
+    applyDisplay();
+  }
+  /** The speech bubbles on or off: ONE state, the one the 💬 button used to be (remembered, on by default); the layer and its clicks follow it. */
+  function setBubbles(on) {
+    const want = !!on;
+    if (want !== bubblesVisible()) {
+      if (mapCtx?.toggleConvo) mapCtx.toggleConvo();             // the layer, its washes, the polling and the remembered choice, together
+      else { convoVisible = want; convoStore(want); }             // no map yet: the remembered choice still moves
+    }
+    syncDisplayControls();
+  }
+  function openDisplayPanel() {
+    state.displayOpen = true;
+    syncDisplayControls();
+    $(root, ".wv-dpanel")?.querySelector("button:not(:disabled), input")?.focus?.();
+  }
+  function closeDisplayPanel({ refocus = false } = {}) {
+    if (!state.displayOpen) return;
+    state.displayOpen = false;
+    syncDisplayControls();
+    if (refocus) $(root, ".wv-filters-open")?.focus?.();
+  }
+  function toggleDisplayChoice(key) {
+    if (key === "new") state.markFilter = state.markFilter === "new" ? "everything" : "new";   // the existing chip, one state
+    else if (key === "mine") state.display = { ...state.display, mine: !state.display.mine };
+    else if (key === "drafts") state.display = { ...state.display, drafts: !state.display.drafts };
+    else if (key === "sort") state.display = { ...state.display, sortByType: !state.display.sortByType };
+    else return;
+    applyDisplay();
+  }
+  /** all-clear: today's unfiltered page (the "new" chip, which is the older Telling chip, goes back to everything too; every layer switch is on again, the speech bubbles included). */
+  function clearDisplay() {
+    state.display = emptyDisplaySelection();
+    if (state.markFilter === "new") state.markFilter = "everything";
+    if (!bubblesVisible()) setBubbles(true);
+    applyDisplay();
+  }
+  /** A chip's ✕ (CORE-147: a switched-off layer is a chip; "bubbles" is the speech bubbles' own layer). */
+  function removeDisplayChoice(key) {
+    if (key === "bubbles") { setBubbles(true); return; }
+    state.display = clearDisplayChoice(state.display, key);
+    applyDisplay();
+  }
+  let sizeTyping = null;
+  function typeDisplaySize(text) {
+    const raw = String(text ?? "").trim();
+    const n = raw === "" ? null : parseSizeM(raw);
+    if (raw !== "" && n === null) return;                 // not a number yet: the choice stays as it was
+    state.display = { ...state.display, sizeM: n };
+    clearTimeout(sizeTyping);
+    sizeTyping = setTimeout(() => applyDisplay({ panel: false }), 120);
+  }
+
   // ───────── inside ─────────
   //
   // The room, written into the same pane the telling would have used. Everything
@@ -9603,7 +10084,7 @@ export function mountViewer(appEl) {
   // and every consumer of mapCtx follows the pointer without knowing anything
   // happened. Exiting reverses it. The town is never refetched for a swap —
   // its node is held aside and remounted, which is also what makes exit cheap.
-  const SCENE_KEEP = [".wv-worldmark", ".wv-mapctl", ".wv-spectator-coordinate", ".wv-paint-tallies", ".wv-bubbles", ".wv-walkdesk"];
+  const SCENE_KEEP = [".wv-worldmark", ".wv-mapctl", ".wv-dfilter-host", ".wv-spectator-coordinate", ".wv-paint-tallies", ".wv-bubbles", ".wv-walkdesk"];
   function captureKeep(boxEl) {
     const overlays = [...new Set([
       ...SCENE_KEEP.map((selector) => $(boxEl, selector)),
@@ -10148,8 +10629,10 @@ export function mountViewer(appEl) {
       return null;
     }
     const e = eyesAt(standpoint, name, key);
-    const within = e.radial.within ?? [];
-    const obs = e.radial.observer ?? {};
+    // the display selection takes the non-matches out of the one radial both the list and the painting are built from (the memoised read is not touched)
+    const radial = displayRadial(e.radial);
+    const within = radial.within ?? [];
+    const obs = radial.observer ?? {};
     const isNew = state.markFilter === "new";
     // (`chips` — one row, one question: everything, just mine, or recency — is
     // hoisted above the resident branch, since both arms wear it.)
@@ -10181,7 +10664,7 @@ export function mountViewer(appEl) {
     // modularity, 2026-07-24 eve: the seam residents' own mechanics will use).
     const TELLERS = {
       elevation: () => elevStateLine(obs),
-      fog: () => fogStateLine(e.radial, obs),
+      fog: () => fogStateLine(radial, obs),
     };
     // World-law cells are the-town's (constitution) — skipped under Mine, and part
     // of the ladder, so they go with it under New.
@@ -10193,7 +10676,7 @@ export function mountViewer(appEl) {
     // the feed alone, with the feed's own count in place of the tallies, so a count
     // line never describes a list it isn't attached to (sight-counts under a listing
     // that ignores sight would be the regression).
-    const feed = isNew ? newFeed(mine ? isMine : null) : null;
+    const feed = isNew ? newFeed(displayKeep(mine ? isMine : null)) : null;
     box.innerHTML = chips
       // above the ladder, because "you are INSIDE the Post Office" outranks
       // "you are standing on its ground" the moment both are true
@@ -10204,12 +10687,12 @@ export function mountViewer(appEl) {
         ? `<div class="wv-section-lbl">new marks — the whole record, newest first</div>`
           + `<div class="wv-cards">${feed.html}</div>`
           + `<div class="wv-tallies">${esc(feed.count)}</div>`
-        : `<div class="wv-cards">${tellingCards(e.radial, mine ? isMine : null)}</div>`
-          + `<div class="wv-tallies">${esc(tallies(e.radial))}</div>`);
-    if (mine) renderMineTail(box, e.radial);  // the same just-mine list continues beyond this sight
+        : `<div class="wv-cards">${tellingCards(radial, mine ? isMine : null)}</div>`
+          + `<div class="wv-tallies">${esc(tallies(radial))}</div>`);
+    if (mine) renderMineTail(box, radial);  // the same just-mine list continues beyond this sight
     foldRenderedPredicates(box);
     mountMarkImages(box);
-    return e.radial;
+    return radial;
   }
   // ───────── the resident's telling, written from the read ───────────────────
   //
@@ -10235,6 +10718,17 @@ export function mountViewer(appEl) {
     // and then measuring with it.
     const bearings = Object.keys(radial.byBearing ?? {}).sort();
     let html = "";
+    const unreadCard = (m) => `<div class="wv-card wv-unread" data-id="${esc(m.id)}">`
+      + `<b>${esc(deslugMarkId(m.id))}</b>`
+      + `<p class="wv-quiet">the read names this, and the office sent no record for it — `
+      + `it is there, and this page cannot tell you what it is.</p></div>`;
+    // SORT BY TYPE (CORE-127): the list alone, grouped by kind then class; the read's own bearing grouping is only the default order
+    if (state.display.sortByType) {
+      let all = Object.values(radial.byBearing ?? {}).flatMap((g) => Object.values(g ?? {}).flat()).filter((m) => !spineIds.has(m.id));
+      if (keep) all = all.filter(keep);
+      const grouped = typeGroupedCards(all, (m) => (m.unread ? unreadCard(m) : markCell(m, { role: "fov", radialChips: true })));
+      if (grouped) return grouped;
+    }
     for (const bearing of bearings) {
       let rows = Object.values(radial.byBearing[bearing] ?? {}).flat()
         .filter((m) => !spineIds.has(m.id));     // the ladder above already gives the spine its cards
@@ -10257,7 +10751,7 @@ export function mountViewer(appEl) {
   }
 
   function composeResidentTelling(box, read, key, chips) {
-    const radial = residentRadial(read);
+    const radial = displayRadial(residentRadial(read));   // the display selection's non-matches are out of the list AND the painting (CORE-127)
     const mine = state.markFilter === "mine";
     const isNew = state.markFilter === "new";
     const { entered, alongside } = standpointOccupancy({
@@ -10310,7 +10804,7 @@ export function mountViewer(appEl) {
     (radial.within ?? []).forEach((w) => shown.add(w.id));
     const by = radial.byBearing ?? {};
     for (const b of Object.keys(by)) for (const m of Object.values(by[b]).flat()) shown.add(m.id);
-    const yours = allMarks().filter(isMine);
+    const yours = allMarks().filter(isMine).filter(shownByDisplay);
     const elsewhere = yours.filter((m) => m.id && !shown.has(m.id));
     const anyInView = yours.some((m) => shown.has(m.id));
 
@@ -10785,7 +11279,7 @@ export function mountViewer(appEl) {
     convoLayer.setAttribute("id", "wv-convo-layer");
     convoLayer.style.pointerEvents = "none";
     // ON by default since POS-779 (Darko 2026-10-24): a conversation is one thread per place per
-    // settlement now, so one badge each, and "there will be less bubbles now". The 💬 button still hides it.
+    // settlement now, so one badge each, and "there will be less bubbles now". The speech-bubbles switch (in the Filters panel) still hides it.
     convoLayer.style.display = convoVisible ? "" : "none";
     // (appended below, after the walkers: a badge floats over the speakers it names, POS-779)
     const overlay = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -11408,11 +11902,14 @@ export function mountViewer(appEl) {
       // the mounted room never answers a hover on its own floor (POS-91 box 1)
       insideRoomId: sceneRoomId,
     });
-    const toldHere = () => toldPaintingMarks(lastRadial, allMarks());
+    // (the display selection's non-matches never take a pick: not by their pip, their picture or by the ground they cover — a huge hidden mark must not
+    // answer a point that a smaller match is under, CORE-127)
+    const toldHere = () => toldPaintingMarks(lastRadial, allMarks()).filter(shownByDisplay);
     const paintingMarkForEvent = (event) => markAt(event, toldHere());
     // walkers, in the same screen-space shape the mark snap already eats, each
     // where the draw puts it (WLD-94: liveBody, never the poll's row)
     function screenWalkerCandidates() {
+      if (residentsOff()) return [];   // a hidden resident is no target (CORE-147)
       const matrix = svg.getScreenCTM();
       if (!matrix) return [];
       return walkerCandidatesAt(walkState.walkers, { bodyOf: liveBody, toScreen: (w) => {
@@ -11513,7 +12010,7 @@ export function mountViewer(appEl) {
       const reach = snapRadiusFor(e.pointerType);          // CORE-54: a finger reaches 22 px, a cursor 18 (same ranking, same chooser)
       const here = clickablesAtPoint({ x: e.clientX, y: e.clientY },
         { people: [...screenWalkerCandidates(), ...screenCreatureCandidates()], marks: screenMarkCandidates() }, reach);
-      // …and with the 💬 lens up, every wash the point is in (Darko 18:06, call A):
+      // …and with the speech-bubbles layer on, every wash the point is in (Darko 18:06, call A):
       // alone it opens its thread, as ever; with anything else it is one more entry
       const washes = (() => {
         const wp = worldPointForEvent(e);
@@ -11534,7 +12031,7 @@ export function mountViewer(appEl) {
       // Darko 2026-10-24), so it must not eat the walk: a reader who can act
       // opens the thread only by clicking the badge's own disc, and a click on
       // the ground beside it walks as ever; a spectator keeps the easy reach.
-      // Hidden (the 💬 button), the badges are gone and every click means what
+      // Hidden (the speech-bubbles switch in the Filters panel), the badges are gone and every click means what
       // it meant before the layer existed.
       {
         const wp = worldPointForEvent(e);
@@ -11696,7 +12193,7 @@ export function mountViewer(appEl) {
     mapCtx.refit();
     if (lastRadial) drawOverlay(lastRadial);
     // the conversations layer is on by default (POS-779), so it loads with the map, not on a first click
-    $(root, ".wv-map-convo")?.classList.toggle("on", convoVisible); // the lit button follows the layer, remembered or default
+    syncDisplayControls();   // the speech bubbles' switch (in the Filters panel since CORE-147) follows the layer, remembered or default
     if (convoVisible) Promise.resolve().then(() => loadConversations()).then(drawConversations).catch(() => {});
   }
   // What the painting draws: the field of view, plus all of yours whether it holds
@@ -11709,7 +12206,7 @@ export function mountViewer(appEl) {
       for (const arr of Object.values(bands ?? {}))
         for (const m of arr ?? []) {
           if (!m?.id || !m.at || typeof m.at.x !== "number" || seen.has(m.id)) continue;
-          seen.add(m.id); out.push(m);
+          seen.add(m.id); if (shownByDisplay(m)) out.push(m);
         }
     // the radial's own entries come first and are KEPT: they carry distM and
     // bearing, which the bare record mark does not
@@ -11724,11 +12221,13 @@ export function mountViewer(appEl) {
     for (const id of paintingMarkIds({ radialIds: [...seen], mineIds })) {
       if (seen.has(id)) continue;
       const m = byId.get(id);
-      if (m?.at && typeof m.at.x === "number") { seen.add(id); out.push(m); }
+      if (m?.at && typeof m.at.x === "number") { seen.add(id); if (shownByDisplay(m)) out.push(m); }
     }
     // A HELD THING IS NOT DRAWN (POS-688, Darko 2026-10-18 20:58): published but
     // unplaced, it shows as its holder's contents and never as a mark of its own.
     // The record says so (`held_by`, the office's world read over the hold record).
+    // THE DISPLAY SELECTION (CORE-127, Darko 2026-11-20: "Hide them"): a non-match is not in the draw-set, so it has no pip, no tinted extent, no icon and no hit
+    // target. The radial arrives already filtered (displayRadial); this is the other way in, "all of yours" above; both pushes above are gated on it.
     return out.filter((m) => !heldBy(byId.get(m.id) ?? m));
   }
   // ───────── the overlay: built on the RECORD, scaled on the CAMERA ─────────
@@ -12328,6 +12827,7 @@ export function mountViewer(appEl) {
     // gains a picture for being the right size.
     const drawnIds = new Set(drawn.map((m) => m.id));
     const { shown: hungArt, subjects: pictureSubjects, spans: artSpans } = drawPlacedArt(bounds, tier, (m) => !hiddenInsideParcel(byId.get(m.id) ?? m, byId, underfoot, townChain)
+      && shownByDisplay(m)
       && (isPlace(m) || (drawnIds.has(m.id) && isEmbodiedMark(m) && !(mapCtx.groundMarkIds ?? new Set()).has(m.id))));
     // A MARK WEARING ITS PICTURE NEEDS NO DOT (Keemin, 2026-09-18: "remove the
     // center dot on marks with images? it often blocks them and makes them look
@@ -12504,7 +13004,7 @@ export function mountViewer(appEl) {
     // stands on its ground is reached through it (the chooser, the column).
     let pills = "";
     const carded = iconsHere
-      ? allMarks().filter((pc) => pc?.kind === "parcel" && pc.at && pc.extent && !underfoot.has(pc.id) && markInDrawnBounds(pc, bounds))
+      ? allMarks().filter((pc) => pc?.kind === "parcel" && pc.at && pc.extent && !underfoot.has(pc.id) && shownByDisplay(pc) && markInDrawnBounds(pc, bounds))
       : [];
     const underCard = (mark) => !!mark?.at && carded.some((pc) => {
       const r = rect(pc);
@@ -12567,6 +13067,7 @@ export function mountViewer(appEl) {
     // EITHER scene is the one underfoot (2026-09-11) — see enclosingParcels.
     for (const m of allMarks()) {
       if (m.kind !== "parcel" || !m.at || glyphIds.has(m.id) || underfoot.has(m.id)) continue;
+      if (!shownByDisplay(m)) continue;   // the town's houses are marks too: a non-match of the display selection is not carded (CORE-127)
       if (!markInDrawnBounds(m, bounds)) continue;
       glyphIds.add(m.id);
       s += homeCard(m, px(m.at), null, nameOf(m), tier);
@@ -12909,7 +13410,7 @@ export function mountViewer(appEl) {
   const CONVO_KEY = "pm.world.conversations";
   const convoStored = () => { try { const v = globalThis.localStorage?.getItem(CONVO_KEY); return v === "off" ? false : v === "on" ? true : null; } catch { return null; } };
   const convoStore = (on) => { try { globalThis.localStorage?.setItem(CONVO_KEY, on ? "on" : "off"); } catch { /* the choice just does not persist */ } };
-  let convoVisible = convoStored() ?? true;  // on by default since POS-779 (upper-right 💬 hides it); hidden draws nothing, hits nothing, fetches nothing
+  let convoVisible = convoStored() ?? true;  // on by default since POS-779 (its switch is in the Filters panel since CORE-147; it was the upper-right 💬 button); hidden draws nothing, hits nothing, fetches nothing
   async function loadConversations() {
     try {
       const r = await fetch(officeUrl("/world/conversations"), { credentials: "same-origin" });
@@ -13238,7 +13739,9 @@ export function mountViewer(appEl) {
     const stepUp = (m) => byMarkId.get(m?.placementParent ?? m?.parent ?? "");
     const own = new Map();   // id -> this mark's own alpha, asked once
     const ownAlpha = (m) => {
-      if (!own.has(m.id)) own.set(m.id, artAlphaOf(m, ppm, tier));
+      // a mark the display selection hides hangs no picture, so it covers nothing either (CORE-127): hiding a huge ancestor must not leave its picture
+      // suppressing the smaller marks inside it
+      if (!own.has(m.id)) own.set(m.id, shownByDisplay(m) ? artAlphaOf(m, ppm, tier) : 0);
       return own.get(m.id);
     };
     /** the share of this mark's picture its ancestors leave it: the product of
@@ -13616,7 +14119,10 @@ export function mountViewer(appEl) {
     const tier = drawTier();
     const bounds = drawnBounds();
     // each body where its declared walk puts it now (row 69)
+    // THE RESIDENTS' SWITCH (CORE-147): off, no body is drawn, no walking line, no housemate chevron (those read the bodies drawn) and no click or hover
+    // reaches one (screenWalkerCandidates). The acting resident's own marker (the standpoint dot) is the viewer's selection feedback and stays.
     const inView = sceneWalkerSet({ walkers: (walkState.walkers ?? []).map(liveBody), manifest, roomId: sceneRoomId, marks: draw.marks });
+    if (residentsOff()) inView.length = 0;   // a fresh array every draw (map / flatMap): emptied, so no body, edge chevron or dot-judging list remains
     const drawnWalkers = inView.filter((w) => pointInDrawnBounds(w, bounds));
     // ONE BODY, ONE MARKER (POS-93), ASKED OF THE BODIES DRAWN (#2848 (a),
     // 2026-09-17). This asked the walker LIST: jetto-of-starforge was in it, so
@@ -13633,7 +14139,7 @@ export function mountViewer(appEl) {
     // still holds: indoors the map is the room.
     const bodies = inView.filter((w) => isOwnHandle(w.handle) || pointInDrawnBounds(w, bounds));
     // under every body, at both tiers: a route is ground, not a person
-    const paths = walkPathsSVG();
+    const paths = residentsOff() ? "" : walkPathsSVG();
     // …then the TIER. At town width a face is eleven pixels of photograph with
     // its own clip path, and the 09-09 record has 1,550 of them; what a reader
     // at that zoom can actually read is WHERE PEOPLE ARE. So beyond the engine's
@@ -15366,6 +15872,7 @@ export function mountViewer(appEl) {
     const crossing = enterAffordance({
       mark, palette: state.palette?.entries ?? [], actingAs: key,
       insideOf: standpointOccupancy({ acts: enterExitLedger.acts, at: occupancyClock(), handle: key }).insideOf,
+      thingClasses: thingClasses(),
     });
     const weight = effectiveWeight(mark);
     const inside = (occupantsOf(liveOccupancy()).get(id) ?? []).map((h) => faceOf(h).name);
@@ -15645,7 +16152,7 @@ export function mountViewer(appEl) {
     "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='" + creatureSilhouette(kind).d + "'/></svg>") + "\")";
   function liveCreatureGlyphs(px, tier) {
     if (Date.now() - liveCreaturesAt > CREATURES_REFRESH_MS) loadLiveCreatures();
-    if (!liveCreatures.size) return "";
+    if (!liveCreatures.size || creaturesOff()) return "";   // the creatures' switch (CORE-147): off draws none, and the hit scan (it reads these glyphs) finds none
     // indoors, only the creatures inside the room (the roof rule)
     const room = sceneRoomId ? byId.get(sceneRoomId) : null;
     const box = room?.at && room.extent ? rect(room) : null;
@@ -16576,7 +17083,7 @@ export function mountViewer(appEl) {
     if (go && go.g.isConnected && mapCtx) mistsRollInPlay(go);
   }
   function stepTour(action) {
-    const next = tourStep(tourAt, action, TOUR_SLIDES.length);
+    const next = tourStep(tourAt, action, tourDeck.length);
     if (next < 0) { closeTour(); return; }
     tourAt = next;
     renderTour();
@@ -16601,7 +17108,142 @@ export function mountViewer(appEl) {
     tourUnstage = want === "telling" ? stageTelling()
       : want === "walk" ? stageWalk()
         : want === "kinds" ? stageKinds()
-          : null;
+          : want === "house" || want === "picture" || want === "dot" ? stageScene(want)
+            : null;
+  }
+  // ── THE TOUR POINTS AT THE PAGE ITSELF (WLD-220; Darko 2026-11-21 22:01 EST: "the tour needs to take assets directly from the actual world page"; Wright 03:01Z) ────────────
+  // Three stages find a piece of the MOUNTED map by reading the live scene, never by drawing one: a HOUSE (a home's pip in the overlay) with a RESIDENT standing at it (a
+  // `wv-walker-far` in the walk layer, the green round frame on two legs), a PICTURE (a mark drawn with its own picture on the map, found by its pictured pip, its ground read by
+  // footprintBoxFor), and a DOT (any home's pip) to read. Each target must lie wholly in the painting, clear of the map's controls, and the first by public id is taken, so the same page
+  // gives the same step. Nothing is moved or written: no camera, no selection, no walk, no highlight layer; the spotlight over the real elements is the highlight.
+  // A stage that finds nothing returns null and its step is left out of the deck: there is no stand-in picture.
+  const tourPane = () => {
+    const pane = $(root, ".wv-minimap")?.getBoundingClientRect();
+    if (!pane || !pane.width) return null;
+    const ctl = $(root, ".wv-mapctl")?.getBoundingClientRect();
+    return { left: pane.left + 8, right: pane.right - 8, top: Math.max(pane.top + 8, ctl && ctl.width ? ctl.bottom + 8 : 0), bottom: pane.bottom - 8 };
+  };
+  const tourWithin = (r, p) => !!p && r.width > 0 && r.height > 0 && r.left >= p.left && r.right <= p.right && r.top >= p.top && r.bottom <= p.bottom;
+  const tourUnion = (rs) => {
+    const left = Math.min(...rs.map((r) => r.left)), top = Math.min(...rs.map((r) => r.top));
+    const right = Math.max(...rs.map((r) => r.right)), bottom = Math.max(...rs.map((r) => r.bottom));
+    return { x: left, y: top, width: right - left, height: bottom - top };
+  };
+  const tourMid = (r) => ({ x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2 });
+  const tourById = (layer, sel, attr, id) => layer?.querySelector(`${sel}[${attr}="${CSS.escape(id)}"]`)?.getBoundingClientRect() ?? null;
+  // A FRAME FULL OF MAP (CORE-153, Darko 2026-11-22 00:31: a house at the world's edge left a third of the frame empty void): the window the camera will show once it is brought in on a
+  // target is the svg's own box over the framing factor, centred on the target; a target whose window would reach past the painting's paper (`.wv-tg-paper`, the map's own extent) is
+  // not chosen while another fits, and the first by distance from the middle of the paper wins. With no paper to read (a room scene) or nothing to frame, every target fits.
+  function tourFit() {
+    const paper = mapCtx?.svg?.querySelector?.(".wv-tg-paper")?.getBoundingClientRect?.();
+    const box = mapCtx?.svg?.getBoundingClientRect?.();
+    const factor = mapCtx?.setView ? tourFrameFactor() : 1;
+    if (!paper?.width || !box?.width || !(factor > 1.15)) return { fits: () => true, away: () => 0 };
+    const hw = box.width / factor / 2, hh = box.height / factor / 2, mid = tourMid(paper);
+    return {
+      fits: (c) => c.x - hw >= paper.left - 1 && c.x + hw <= paper.right + 1 && c.y - hh >= paper.top - 1 && c.y + hh <= paper.bottom + 1,
+      away: (c) => Math.hypot(c.x - mid.x, c.y - mid.y),
+    };
+  }
+  function tourSceneTarget(kind) {
+    const pane = tourPane(), overlay = mapCtx?.overlay, walks = mapCtx?.walkLayer;
+    if (!pane || !overlay) return null;
+    const fit = tourFit();
+    // candidates that fit the painting come first, nearest the middle of it; the rest follow in the old order, so a page where none fits still gets its step
+    const rank = (list, centre) => [...list].sort((a, b) => (fit.fits(centre(b)) ? 1 : 0) - (fit.fits(centre(a)) ? 1 : 0) || fit.away(centre(a)) - fit.away(centre(b)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    const pips = (sel) => [...overlay.querySelectorAll(sel)].map((el) => ({ id: el.getAttribute("data-id"), r: el.getBoundingClientRect() })).filter((p) => p.id && tourWithin(p.r, pane));
+    const byIdAsc = (a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+    if (kind === "house") {
+      const homes = pips(".ov-pip-home");
+      if (!homes.length || !walks) return null;
+      const residents = [...walks.querySelectorAll(".wv-walker-far:not(.moving)")]
+        .map((el) => ({ id: el.getAttribute("data-handle"), r: el.getBoundingClientRect() })).filter((w) => w.id && tourWithin(w.r, pane));
+      for (const w of rank(residents, (w) => tourMid(w.r))) {
+        const c = tourMid(w.r);
+        let best = null, bestD = Infinity;
+        for (const h of homes) { const m = tourMid(h.r), d = Math.hypot(m.x - c.x, m.y - c.y); if (d < bestD) { bestD = d; best = h; } }
+        if (best && bestD <= 30) {
+          const house = best.id, handle = w.id;
+          return { kind, ids: [house, handle], rect: () => {
+            const rs = [tourById(overlay, ".ov-pip", "data-id", house), tourById(walks, ".wv-walker-far", "data-handle", handle)].filter(Boolean);
+            return rs.length ? tourUnion(rs) : null;
+          } };
+        }
+      }
+      return null;
+    }
+    if (kind === "picture") {
+      const host = bubbleHost()?.getBoundingClientRect();
+      if (!host?.width) return null;
+      const ground = (id) => {
+        const b = footprintBoxFor(id);
+        return b ? { left: host.left + b.x, top: host.top + b.y, right: host.left + b.x + b.w, bottom: host.top + b.y + b.h, width: b.w, height: b.h } : null;
+      };
+      // a mark drawn with BOTH a picture and a ring is the whole lesson (a picture, and a shape): such marks come first
+      const ranked = pips(".ov-pip-pictured").sort((a, b) => ((polygonOf(byId.get(b.id)) ? 1 : 0) - (polygonOf(byId.get(a.id)) ? 1 : 0)) || byIdAsc(a, b));
+      for (const p of ranked) {
+        const r = ground(p.id);
+        if (r && tourWithin(r, pane)) {
+          const id = p.id;
+          return { kind, ids: [id], rect: () => { const g = ground(id); return g ? { x: g.left, y: g.top, width: g.width, height: g.height } : null; } };
+        }
+      }
+      return null;
+    }
+    if (kind === "dot") {
+      const mid = tourMid({ left: pane.left, right: pane.right, top: pane.top, bottom: pane.bottom });
+      const homes = pips(".ov-pip-home"), centre = (p) => tourMid(p.r);
+      const home = [...homes].sort((a, b) => {
+        const fa = fit.fits(centre(a)) ? 0 : 1, fb = fit.fits(centre(b)) ? 0 : 1;
+        const da = Math.hypot(centre(a).x - mid.x, centre(a).y - mid.y), db = Math.hypot(centre(b).x - mid.x, centre(b).y - mid.y);
+        return fa - fb || da - db || byIdAsc(a, b);
+      })[0];
+      if (!home) return null;
+      const id = home.id;
+      return { kind, ids: [id], rect: () => { const r = tourById(overlay, ".ov-pip", "data-id", id); return r ? tourUnion([r]) : null; } };
+    }
+    return null;
+  }
+  // THE TARGETS ARE FOUND ON THE READER'S OWN VIEW and kept: a stage that frames the camera changes what is drawn, so while one is up the deck and the targets are not looked for
+  // again (they would be read off the framed view); they are looked for again only when no stage is up (the welcome, or before the tour has staged anything).
+  let tourTargets = null;
+  const tourDeckNow = () => {
+    if (!tourStage) tourTargets = Object.fromEntries(["house", "picture", "dot"].map((k) => [k, tourSceneTarget(k)]));
+    return TOUR_SLIDES.filter((s) => !s.stage || !!tourTargets?.[s.stage]);
+  };
+  let tourDeck = TOUR_SLIDES, tourSceneInfo = null;
+  // FRAMING A SMALL TARGET (Facet 2026-11-22 03:33Z, under the ruling: "use existing setView/geometry to make actual targets readable, rather than spotlighting 5-11px pieces at
+  // town-wide zoom"): the camera is brought in with the map's own setView until the view is JUST WIDER than the far tier (so the map still draws what it draws at that tier, the
+  // same frames and pips, only nearer), centred on the target. Nothing is scaled or redrawn by the tour. setView hands back the reader's view; the stage's undo puts it back, on the
+  // next step, on back, on skip, on done and on Escape alike.
+  function tourFrameFactor() {
+    const far = Number(state.drawDials?.tier_far_m ?? SPECTATOR_DRAW_DEFAULTS.tier_far_m);
+    const across = metresAcross(mapCtx.zoomK, paintingWidthM());
+    return far > 0 && Number.isFinite(across) ? across / (far * 1.05) : 1;
+  }
+  function tourFrame(clientRect) {
+    if (!mapCtx?.setView || !mapCtx.svg?.getScreenCTM) return null;
+    const matrix = mapCtx.svg.getScreenCTM();
+    if (!matrix) return null;
+    const factor = tourFrameFactor();
+    if (!(factor > 1.15)) return null;
+    const pt = mapCtx.svg.createSVGPoint();
+    pt.x = clientRect.x + clientRect.width / 2; pt.y = clientRect.y + clientRect.height / 2;
+    const c = pt.matrixTransform(matrix.inverse());
+    const v = mapCtx.view, w = v.w / factor, h = v.h / factor;
+    return mapCtx.setView({ x: c.x - w / 2, y: c.y - h / 2, w, h });
+  }
+  function stageScene(kind) {
+    const t = tourTargets?.[kind];
+    if (!t) return null;
+    // the spotlight over the real elements IS the highlight, in place. The two small targets (a house and its resident, a dot) are framed by the camera first; a mark's own
+    // picture is already large and is lit where it stands.
+    const before = kind === "picture" ? null : (() => { const r = t.rect(); return r ? tourFrame(r) : null; })();
+    tourStageRect = t.rect;
+    tourSceneInfo = { kind: t.kind, ids: t.ids };
+    // the map redraws on its next frames at the nearer view; the spotlight follows the same elements (looked up by id each time) as they arrive
+    if (before) for (const ms of [120, 350, 800]) setTimeout(() => { if (tourAt >= 0 && tourSceneInfo?.kind === kind) placeTour(); }, ms);
+    return () => { tourSceneInfo = null; if (before) mapCtx?.setView?.(before); };
   }
   // OPEN THE TELLING FOR THE SLIDE THAT IS ABOUT IT (Keemin, 2026-08-05) — and
   // only for that slide. state.paintingOnly moves; writePaintingOnly does not, so
@@ -16681,32 +17323,100 @@ export function mountViewer(appEl) {
     };
   }
 
+  // THE TOUR'S OWN INPUT MODE: words and picture say drag / tap when the visitor is on a phone-width screen OR on a coarse (touch) pointer, so a phone on its side (wider than
+  // the phone width) is still told what its fingers can do. Local to the tour: onPhone() is a width test the bell and menu rely on, and is left as it is.
+  const tourTouch = () => onPhone() || (typeof matchMedia === "function" && matchMedia("(pointer:coarse)").matches);
   function renderTour() {
     const el = tourEl();
-    const slide = TOUR_SLIDES[tourAt];
+    // the deck as the page stands NOW; the step the reader is on keeps its place in it
+    const here = tourDeck[tourAt]?.id;
+    tourDeck = tourDeckNow();
+    const kept = tourDeck.findIndex((s) => s.id === here);
+    if (kept >= 0) tourAt = kept;
+    else if (tourAt >= tourDeck.length) tourAt = tourDeck.length - 1;
+    const slide = tourDeck[tourAt];
     if (!el || !slide) { closeTour(); return; }
     applyStage(slide);
     el.hidden = false;
     // authored copy, not record text: TOUR_SLIDES is this module's own constant
     // and carries the only markup allowed through here
     $(el, ".wv-tour-title").textContent = slide.title;
-    $(el, ".wv-tour-body").innerHTML = slide.body;
-    $(el, ".wv-tour-kicker").textContent = `The World · ${tourProgress(tourAt, TOUR_SLIDES.length)}`;
-    $(el, ".wv-tour-dots").innerHTML = TOUR_SLIDES.map((entry, i) =>
+    // THE PICTURE IS THE PAGE (WLD-220, Darko 2026-11-21 22:01 EST): the tour draws nothing of its own. A step with a stage lights a piece of the mounted map in place (applyStage);
+    // the card names the public ids it lit, so what the step points at can be read off the page rather than taken on trust.
+    const card = $(el, ".wv-tour-card");
+    if (card) { card.dataset.sceneKind = tourSceneInfo?.kind ?? ""; card.dataset.scene = tourSceneInfo?.ids.join(" ") ?? ""; }
+    const scroller = $(el, ".wv-tour-scroll");
+    if (scroller) scroller.scrollTop = 0;
+    // a slide may carry its phone's own words (WLD-220): a phone has no scroll wheel to describe, so it is told drag and tap
+    $(el, ".wv-tour-body").innerHTML = tourTouch() && slide.phoneBody ? slide.phoneBody : slide.body;
+    paintTourProgress();
+    placeTour();
+    $(el, ".wv-tour-next").focus();
+    tourDeckRetries = 0;
+    scheduleTourDeckRefresh();
+  }
+  // THE DECK STANDS ON THE PAGE (WLD-220): a step that points at the map is in the deck only while the map shows what it points at; the others never wait. The map draws after the
+  // greeting (residents arrive with the walkers), so a short deck is looked at again for a few moments after each step and the dots and count grow when the page catches up. Only
+  // the progress is repainted: the card, the focus and the stage stay as the reader has them.
+  function paintTourProgress() {
+    const el = tourEl();
+    if (!el) return;
+    $(el, ".wv-tour-kicker").textContent = `The World · ${tourProgress(tourAt, tourDeck.length)}`;
+    $(el, ".wv-tour-dots").innerHTML = tourDeck.map((entry, i) =>
       `<button type="button" class="wv-tour-dot${i === tourAt ? " on" : ""}" data-tour-to="${i}"`
       + ` aria-label="${esc(entry.title)}"${i === tourAt ? ' aria-current="step"' : ""}></button>`).join("");
     $(el, ".wv-tour-back").disabled = tourAt === 0;
-    $(el, ".wv-tour-next").textContent = tourAt === TOUR_SLIDES.length - 1 ? "done" : "next";
-    placeTour();
-    $(el, ".wv-tour-next").focus();
+    $(el, ".wv-tour-next").textContent = tourAt === tourDeck.length - 1 ? "done" : "next";
+  }
+  let tourDeckRetries = 0, tourDeckTimer = 0;
+  function scheduleTourDeckRefresh() {
+    clearTimeout(tourDeckTimer);
+    if (tourAt < 0 || tourDeck.length >= TOUR_SLIDES.length || tourDeckRetries >= 8) return;
+    tourDeckTimer = setTimeout(() => {
+      if (tourAt < 0) return;
+      tourDeckRetries++;
+      const here = tourDeck[tourAt]?.id;
+      const next = tourDeckNow();
+      if (next.length !== tourDeck.length) {
+        tourDeck = next;
+        const k = tourDeck.findIndex((s) => s.id === here);
+        if (k >= 0) tourAt = k;
+        paintTourProgress();
+        placeTour();
+      }
+      scheduleTourDeckRefresh();
+    }, 700);
+  }
+  // THE CARD'S ICONS ARE AT THE MAP'S SIZE (CORE-153): each inline drawing is scaled by the ratio of the real element's drawn width to its own, both read the same way
+  // (getBoundingClientRect), so the house in the card is as wide as the house the step lights, and the resident as wide as that resident. The walking leg is the map's stroke (2 px,
+  // dashed, non-scaling) at its natural length. Where the map is not drawing the real element at this view, the icon keeps its natural size, which is also its floor.
+  function syncTourIcons() {
+    const el = tourEl(), ids = tourSceneInfo?.ids ?? [];
+    if (!el) return;
+    for (const ic of el.querySelectorAll(".wv-tour-body svg[data-tour-icon]")) {
+      const kind = ic.getAttribute("data-tour-icon");
+      const real = kind === "house" ? mapCtx?.overlay?.querySelector(`.ov-glyph[data-id="${CSS.escape(ids[0] ?? "")}"]`)
+        : kind === "resident" ? mapCtx?.walkLayer?.querySelector(`.wv-walker-far[data-handle="${CSS.escape(ids[1] ?? "")}"] > .wv-walker-frame`) : null;
+      const mine = kind === "house" ? ic.querySelector(".ov-glyph") : kind === "resident" ? ic.querySelector(".wv-walker-frame") : null;
+      const rw = real?.getBoundingClientRect().width, mw = mine?.getBoundingClientRect().width;
+      if (!(rw > 0) || !(mw > 0)) continue;
+      // the map's size, but never smaller than the icon's natural one (the size the map draws it at on a desktop): a phone's framed map draws the house 8 px wide, which is no lesson
+      const now = ic.getBoundingClientRect(), up = Math.max(rw / mw * now.width, Number(ic.getAttribute("width"))) / now.width;
+      ic.style.width = `${(now.width * up).toFixed(2)}px`;
+      ic.style.height = `${(now.height * up).toFixed(2)}px`;
+    }
   }
   function placeTour() {
     const el = tourEl();
     if (!el || el.hidden) return;
+    syncTourIcons();
     const card = $(el, ".wv-tour-card");
     const spot = $(el, ".wv-tour-spot");
     const scrim = $(el, ".wv-tour-scrim");
-    const slide = TOUR_SLIDES[tourAt];
+    // a size a placement sets (narrowed beside the target, or shortened above or below it) is forgotten at the start of the next one, the centred path included, so back, replay
+    // and the welcome always start from the card's natural size
+    card.style.width = ""; card.style.maxHeight = "";
+    const slide = tourDeck[tourAt];
     const target = tourAnchor(slide);
     const r = target ? target.getBoundingClientRect() : tourStageRect?.();
     if (!r || !r.width) {
@@ -16727,13 +17437,41 @@ export function mountViewer(appEl) {
       borderRadius: `${Math.min(hole.w, hole.h) / 2 <= 22 ? Math.min(hole.w, hole.h) / 2 : 10}px`,
     });
     card.classList.remove("is-centred");
+    const W = window.innerWidth, H = window.innerHeight, gap = pad + 16, edge = 14;
     const spot_ = placeBubble({
       anchor: { x: r.x + r.width / 2, y: r.y + r.height / 2 },
       size: { w: card.offsetWidth, h: card.offsetHeight },
-      box: { w: window.innerWidth, h: window.innerHeight },
-      gap: pad + 16, edge: 14, avoid: hole,
+      box: { w: W, h: H },
+      gap, edge, avoid: hole,
     });
-    if (spot_) card.style.transform = `translate3d(${Math.round(spot_.x)}px, ${Math.round(spot_.y)}px, 0)`;
+    let at = spot_ ? { x: spot_.x, y: spot_.y } : null;
+    // THE LIT TARGET STAYS VISIBLE (CORE-153): where the card cannot stand beside, above or below the hole at its natural size (a 390 px-high screen with the target at mid-height),
+    // it takes the room the hole leaves instead, narrower beside it (its words wrap) or shorter above or below it (its words scroll), rather than lying over the thing it teaches.
+    const meets = (x, y, w, h) => x < hole.x + hole.w && x + w > hole.x && y < hole.y + hole.h && y + h > hole.y;
+    if (at && meets(at.x, at.y, card.offsetWidth, card.offsetHeight)) {
+      const natural = card.offsetWidth;
+      const roomR = W - (hole.x + hole.w) - gap - edge, roomL = hole.x - gap - edge;
+      const right = roomR >= roomL, room = right ? roomR : roomL;
+      let placed = false;
+      if (room >= 300) {
+        card.style.width = `${Math.min(natural, room)}px`;
+        const w = card.offsetWidth, h = card.offsetHeight;
+        const y = Math.max(edge, Math.min(H - h - edge, hole.y + hole.h / 2 - h / 2));
+        at = { x: right ? hole.x + hole.w + gap : hole.x - gap - w, y };
+        placed = !meets(at.x, at.y, w, h);
+      }
+      if (!placed) {
+        card.style.width = "";
+        const roomA = hole.y - gap - edge, roomB = H - (hole.y + hole.h) - gap - edge;
+        const above = roomA >= roomB, vroom = above ? roomA : roomB;
+        if (vroom >= 160) {
+          card.style.maxHeight = `${vroom}px`;
+          const w = card.offsetWidth, h = card.offsetHeight;
+          at = { x: Math.max(edge, Math.min(W - w - edge, hole.x + hole.w / 2 - w / 2)), y: above ? hole.y - gap - h : hole.y + hole.h + gap };
+        }
+      }
+    }
+    if (at) card.style.transform = `translate3d(${Math.round(at.x)}px, ${Math.round(at.y)}px, 0)`;
   }
   const slidePad = (slide) => Number.isFinite(slide?.pad) ? slide.pad : 9;
 
@@ -16967,6 +17705,8 @@ export function mountViewer(appEl) {
 
   // ───────── events ─────────
   let devTimer = null;
+  // the size field applies as it is typed (a number only; anything else leaves the choice as it was)
+  root.addEventListener("input", (e) => { const f = e.target?.closest?.("[data-dsel-size]"); if (f) typeDisplaySize(f.value); });
   // A ROW PRESS BEGINS ON THE ROW (CORE-54, found in the built capture). On a touch screen a crowded press on the map opens the chooser in the phone column
   // under the finger, and the click that follows the same touch then lands on the row that appeared there: the chooser chose its first row by itself
   // (pointerup 5972 ms, "Choose one" 5991, click on a row 6033, "The Green House" 6120). So a click on a row counts only if its pointer press began on that
@@ -16978,6 +17718,19 @@ export function mountViewer(appEl) {
     // and a click that fell through to the painting underneath would select a
     // mark the reader cannot see
     if (e.target.closest(".wv-tour-open")) { openTour(0); return; }
+    // THE FILTERS (CORE-127): the opener, the panel's chips and size mode, a chip's ✕, clear all, Done
+    if (e.target.closest(".wv-filters-open")) { if (state.displayOpen) closeDisplayPanel(); else openDisplayPanel(); return; }
+    const dsel = e.target.closest("[data-dsel]");
+    if (dsel) { if (!dsel.disabled) toggleDisplayChoice(dsel.dataset.dsel); return; }
+    const dmode = e.target.closest("[data-dsel-mode]");
+    if (dmode) { state.display = { ...state.display, sizeMode: dmode.dataset.dselMode === "above" ? "above" : "under" }; applyDisplay(); return; }
+    const dlayer = e.target.closest("[data-dsel-layer]");
+    if (dlayer) { toggleLayer(dlayer.dataset.dselLayer); return; }
+    const dremove = e.target.closest("[data-dsel-remove]");
+    if (dremove) { removeDisplayChoice(dremove.dataset.dselRemove); return; }
+    const dclear = e.target.closest("[data-dsel-clear]");
+    if (dclear) { if (!dclear.disabled) clearDisplay(); return; }
+    if (e.target.closest("[data-dsel-close]")) { closeDisplayPanel({ refocus: true }); return; }
     const hit = e.target.closest(".wv-search-hit");
     if (hit) {
       actOnSearchHit(hit.dataset.kind, hit.dataset.hit);
@@ -17107,8 +17860,6 @@ export function mountViewer(appEl) {
     const fbtn = e.target.closest(".wv-map-follow");
     if (fbtn) { if (!mapCtx) return; mapCtx.follow = !mapCtx.follow; fbtn.classList.toggle("on", mapCtx.follow); if (mapCtx.follow) mapCtx.lockOn(); return; }
     if (e.target.closest(".wv-outsider-toggle")) { toggleOutsider(); return; }
-    const cvbtn = e.target.closest(".wv-map-convo");
-    if (cvbtn) { if (!mapCtx?.toggleConvo) return; cvbtn.classList.toggle("on", !!mapCtx.toggleConvo()); return; }
     if (e.target.closest("[data-root-mark]")) { selectMark(chipMarkId(), { scrollCell: true }); return; }
     if (e.target.closest(".wv-walk-cancel")) { clearSelectionAndDestination(); return; }
     if (e.target.closest(".wv-telling-toggle")) {
@@ -17366,16 +18117,20 @@ export function mountViewer(appEl) {
       // It says aria-modal, so it has to behave like one: Tab must not walk out
       // of the card and start pressing buttons on a page the reader cannot see.
       if (event.key === "Tab") {
-        const stops = [...$(root, ".wv-tour-card").querySelectorAll("button:not(:disabled)")];
+        // the card's stops are its buttons AND its one link (the docs, on the last step), in page order; the trap steps through them itself, so the order is the card's own
+        // whatever the browser would have made focusable inside a scrolling area
+        const stops = [...$(root, ".wv-tour-card").querySelectorAll("button:not(:disabled), a[href]")];
         if (!stops.length) return;
-        const edge = event.shiftKey ? stops[0] : stops[stops.length - 1];
-        if (document.activeElement === edge || !$(root, ".wv-tour-card").contains(document.activeElement)) {
-          event.preventDefault();
-          (event.shiftKey ? stops[stops.length - 1] : stops[0]).focus();
-        }
+        const at = stops.indexOf(document.activeElement);
+        const step = event.shiftKey ? -1 : 1;
+        event.preventDefault();
+        stops[at < 0 ? (event.shiftKey ? stops.length - 1 : 0) : (at + step + stops.length) % stops.length].focus();
       }
       return;
     }
+    // the Filters panel is put away first (one press, one undo), focus back on its opener; Enter in the size field only applies it
+    if (event.key === "Escape" && state.displayOpen) { event.preventDefault(); closeDisplayPanel({ refocus: true }); return; }
+    if (event.key === "Enter" && event.target?.matches?.("[data-dsel-size]")) { event.preventDefault(); typeDisplaySize(event.target.value); return; }
     // ── "/" OPENS THE SEARCH, BUT NEVER OUT OF SOMEBODY'S SENTENCE ────────
     //
     // (reviewer, 2026-09-13). A resident typing a letter in the say box must not
@@ -17757,6 +18512,7 @@ export function mountViewer(appEl) {
         state.ownIds = new Set();
         state.draftIds = new Set();
         if (state.markFilter === "mine") state.markFilter = "everything";
+        state.display = { ...state.display, mine: false, drafts: false };   // no household known: your marks / drafts are not a choice (CORE-127)
         applyWorldLayer();
       }
     } else {
@@ -17766,9 +18522,11 @@ export function mountViewer(appEl) {
       state.ownIds = new Set();
       state.draftIds = new Set();
       if (state.markFilter === "mine") state.markFilter = "everything";
+      state.display = { ...state.display, mine: false, drafts: false };
       applyWorldLayer();
     }
     identitySettled = true;   // the office has answered; a spectator is now a CHOICE, not a default
+    syncDisplayControls();    // my marks / my drafts are enabled only for a known household (CORE-127)
     pruneViewCache(handles); // a pane for a handle this key no longer has describes nobody
     renderPresets();
     renderIdentity();
@@ -18872,7 +19630,7 @@ export function mountViewer(appEl) {
       // already painted as monograms by then, and this is what puts the pictures
       // on them. Never awaited: the map is not allowed to wait on a nicety.
       loadResidentsMeta().then(() => drawWalkers());
-      // conversations load on first toggle (💬), not at boot — the layer is opt-in
+      // conversations load with the map while the layer is on (on by default, remembered per viewer: see convoVisible), and on the switch's first turn-on otherwise
       if (!pmKey()) resolveIdentity(); // keyless: still settles the ring and the presets
     } catch (err) {
       $(root, ".wv-telling").innerHTML = `<div class="wv-err">could not load the world record: ${esc(err?.message ?? err)}</div>`;
