@@ -7039,9 +7039,10 @@ ${WV_ENTER_CSS}
   .wv-tour-body { font-size:1.15rem; }
   .wv-tour-visual { padding:8px; }
 }
-/* a SHORT screen (a phone on its side, a wide window with little height): the card goes wide and the picture sits beside the words rather than above them, still large;
-   whatever still does not fit scrolls inside the card (.wv-tour-scroll), never off the screen */
-@media (max-height:600px){
+/* a SHORT, WIDE screen (a phone on its side, a wide window with little height): the card goes wide and the picture sits beside the words rather than above them, still large;
+   a NARROW short screen (a 360 x 560 phone) stays one readable column, as the phone block above sets it. Whatever still does not fit scrolls inside the card
+   (.wv-tour-scroll), never off the screen */
+@media (max-height:600px) and (min-width:640px){
   .wv-tour-card { width:min(52rem,calc(100vw - 20px)); padding:14px 22px 10px; }
   .wv-tour-kicker { margin-bottom:.3em; }
   .wv-tour-title { font-size:1.55rem; margin-bottom:.3em; }
@@ -16767,6 +16768,9 @@ export function mountViewer(appEl) {
     };
   }
 
+  // THE TOUR'S OWN INPUT MODE: words and picture say drag / tap when the visitor is on a phone-width screen OR on a coarse (touch) pointer, so a phone on its side (wider than
+  // the phone width) is still told what its fingers can do. Local to the tour: onPhone() is a width test the bell and menu rely on, and is left as it is.
+  const tourTouch = () => onPhone() || (typeof matchMedia === "function" && matchMedia("(pointer:coarse)").matches);
   function renderTour() {
     const el = tourEl();
     const slide = TOUR_SLIDES[tourAt];
@@ -16784,7 +16788,7 @@ export function mountViewer(appEl) {
       const art = slide.visual === "marks"
         ? [...byId.values()].map((m) => ({ id: m?.id, href: markImagePath(m) })).filter((m) => m.href).sort((a, b) => String(a.id).localeCompare(String(b.id)))[0] ?? null
         : null;
-      vis.innerHTML = slide.visual ? tourVisual(slide.visual, { picture: art, phone: onPhone() }) : "";
+      vis.innerHTML = slide.visual ? tourVisual(slide.visual, { picture: art, phone: tourTouch() }) : "";
       vis.hidden = !slide.visual;
       // a picture that fails to load is not left as an empty frame: the step falls back to the shape alone (an <image> error does not bubble, so it is heard on the image itself)
       vis.querySelector("image")?.addEventListener("error", () => {
@@ -16794,7 +16798,7 @@ export function mountViewer(appEl) {
       if (scroller) scroller.scrollTop = 0;
     }
     // a slide may carry its phone's own words (WLD-220): a phone has no scroll wheel to describe, so it is told drag and tap
-    $(el, ".wv-tour-body").innerHTML = onPhone() && slide.phoneBody ? slide.phoneBody : slide.body;
+    $(el, ".wv-tour-body").innerHTML = tourTouch() && slide.phoneBody ? slide.phoneBody : slide.body;
     $(el, ".wv-tour-kicker").textContent = `The World · ${tourProgress(tourAt, TOUR_SLIDES.length)}`;
     $(el, ".wv-tour-dots").innerHTML = TOUR_SLIDES.map((entry, i) =>
       `<button type="button" class="wv-tour-dot${i === tourAt ? " on" : ""}" data-tour-to="${i}"`

@@ -1332,6 +1332,14 @@ test("WLD-220: a phone is told only what a phone has (drag, tap, what is drawn);
   const source = await readFile(new URL("../spectator/viewer.mjs", import.meta.url), "utf8");
   for (const glyph of ["⛶", "💬"]) assert.ok(source.includes(`>${glyph}</button>`), `the map draws a ${glyph} button`);
   assert.ok(source.includes('class="ctl wv-tour-open"'), "and the ? the last step points at");
+  // the tour's own input mode (words AND picture): phone width OR a coarse pointer; the shared width test stays the width test the bell and menu use
+  assert.match(source, /const tourTouch = \(\) => onPhone\(\) \|\| \(typeof matchMedia === "function" && matchMedia\("\(pointer:coarse\)"\)\.matches\);/);
+  assert.match(source, /tourVisual\(slide\.visual, \{ picture: art, phone: tourTouch\(\) \}\)/);
+  assert.match(source, /\$\(el, "\.wv-tour-body"\)\.innerHTML = tourTouch\(\) && slide\.phoneBody/);
+  assert.match(source, /const onPhone = \(\) => typeof matchMedia === "function" && matchMedia\(PHONE\)\.matches;/, "onPhone itself is unchanged");
+  // the side-by-side reflow needs width as well as shortness: a narrow short phone keeps its single column
+  assert.match(source, /@media \(max-height:600px\) and \(min-width:640px\)\{/);
+  assert.doesNotMatch(source, /@media \(max-height:600px\)\{/);
   // no law and no resident-only act before a visitor can look: those are said where they are used, not in the greeting
   const all = TOUR_SLIDES.flatMap((s) => [s.title, s.body, s.phoneBody ?? ""]).map(TOUR_TEXT).join("\n");
   assert.doesNotMatch(all, /constitution|commons|stamp|Act As|Telling|context budget|sixty|crossing|MCP/i, "the cut lessons stay cut");
@@ -1351,7 +1359,7 @@ test("WLD-220: a phone is told only what a phone has (drag, tap, what is drawn);
   assert.match(TOUR_TEXT(next.body), /Read the docs$/, "and ends on the link, said plainly");
   for (const slide of [welcome, parcels, marks, explore]) for (const key of ["body", "phoneBody"]) assert.deepEqual(links(slide[key] ?? ""), [], `${slide.id}.${key} links nothing`);
   // the renderer chooses the phone's words on a phone and nowhere else
-  assert.match(source, /\$\(el, "\.wv-tour-body"\)\.innerHTML = onPhone\(\) && slide\.phoneBody \? slide\.phoneBody : slide\.body;/);
+  assert.match(source, /\$\(el, "\.wv-tour-body"\)\.innerHTML = tourTouch\(\) && slide\.phoneBody \? slide\.phoneBody : slide\.body;/);   // the tour's input mode (phone width or a coarse pointer), not the shared width test
   // the greeting is unchanged: spectators each load, a resident once, never reset by this deck
   assert.match(source, /if \(readTourSeen\(localStore, tourWho\(\)\)\) return;\s*greetedThisLoad = true;\s*openTour\(0\);/);
 });

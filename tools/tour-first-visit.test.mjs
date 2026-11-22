@@ -89,7 +89,8 @@ const readTour = (page) => page.evaluate(() => {
       const r = v.getBoundingClientRect(), c = q(".wv-tour-card").getBoundingClientRect(), svg = v.querySelector("svg"), sr = svg?.getBoundingClientRect() ?? null;
       const within = (b, o) => !!o && b.x >= o.x - 0.5 && b.right <= o.right + 0.5 && b.y >= o.y - 0.5 && b.bottom <= o.bottom + 0.5;
       const walker = v.querySelector(".wv-walker-far:not(.moving) > .wv-walker-frame");
-      return { w: r.width, h: r.height, insideCard: within(r, c), svgW: sr?.width ?? 0, svgH: sr?.height ?? 0,
+      const scale = sr && sr.width ? sr.width / 400 : 0, sizes = [...v.querySelectorAll("svg text")].map((t) => parseFloat(getComputedStyle(t).fontSize) * scale);
+      return { labelPx: sizes.length ? +Math.min(...sizes).toFixed(1) : null, w: r.width, h: r.height, insideCard: within(r, c), svgW: sr?.width ?? 0, svgH: sr?.height ?? 0,
         labels: [...v.querySelectorAll("svg text")].map((t) => t.textContent), labelsInside: [...v.querySelectorAll("svg text")].every((t) => within(t.getBoundingClientRect(), sr)),
         walkers: v.querySelectorAll(".wv-walker-frame").length, movers: v.querySelectorAll(".wv-walker-far.moving").length, leg: !!v.querySelector(".wv-walk-leg"), legDash: getComputedStyle(v.querySelector(".wv-walk-leg") ?? v).strokeDasharray,
         pips: v.querySelectorAll(".ov-pip").length, parcels: v.querySelectorAll("polygon.wv-fp").length, images: v.querySelectorAll("svg image").length, frames: v.querySelectorAll(".tv-frame").length, cursor: !!v.querySelector(".tv-cursor"), homePips: v.querySelectorAll(".ov-pip.t-home").length, toolbar: v.querySelectorAll(".tv-ctl, .tv-search").length,
@@ -164,6 +165,22 @@ async function onThePage(t, { viewport, phone, art = "present", only = null }) {
       assert.ok(s.visual && s.visual.insideCard, `step ${i + 1}: the picture is whole inside the card`);
       assert.ok(s.visual.svgH >= 90 || s.visual.ctls.length, `step ${i + 1}: the picture is not a miniature (${Math.round(s.visual.svgW)} x ${Math.round(s.visual.svgH)})`);
       assert.ok(s.type.title >= 22 && s.type.body >= 17, `step ${i + 1}: the words stay large (${s.type.title}px / ${s.type.body}px)`);
+      // the NARROW short screen (360 x 560) keeps one readable column: not the two-column reflow of a wide short one, a picture that is not a miniature, labels a thumb can read
+      if (viewport.width < 640) {
+        assert.ok(s.card.w <= viewport.width - 10 + 0.5, `step ${i + 1}: the card is the phone column (${Math.round(s.card.w)}px of ${viewport.width})`);
+        assert.ok(s.visual.ctls.length || (s.visual.svgW >= 270 && s.visual.labelPx >= 14), `step ${i + 1}: art and labels are legible (picture ${Math.round(s.visual.svgW)}px wide, smallest label ${s.visual.labelPx}px)`);
+      } else assert.ok(s.card.w >= 700 || viewport.width < 800, `step ${i + 1}: a wide short screen gets the wide card`);
+      // THE TOUR'S INPUT MODE, in words and in the picture, whatever the width: a touch screen is told drag and tap (844 x 390 and 360 x 560), a mouse its wheel (1440 x 480)
+      if (i === 3) {
+        if (phone) {
+          assert.match(s.text, /^Drag to move\.Tap a dot to read it\.$/, "a touch screen is told drag and tap");
+          assert.doesNotMatch(s.text, /scroll|zoom|click|hover/i);
+          assert.deepEqual(s.visual.labels, ["drag", "tap"], "and its picture teaches drag and tap only");
+        } else {
+          assert.match(s.text, /^Drag to move\.Scroll to zoom\.Click a dot to read it\.$/, "a cursor keeps its wheel and click");
+          assert.deepEqual(s.visual.labels, ["drag", "scroll", "click"]);
+        }
+      }
       out[`s${i + 1}`] = s;
       if (i < 4) await press(".wv-tour-next");
     }
@@ -365,6 +382,10 @@ test("the page, on a desktop (1440 x 900): the same five steps in the cursor's w
 
 test("the page, on a phone on its side (844 x 390, touch): every step, its picture and every button contained and reachable", async (t) => {
   await onThePage(t, { viewport: { width: 844, height: 390 }, phone: true, only: "short" });
+});
+
+test("the page, on a NARROW short phone (360 x 560, touch): one readable column, every step reachable, art and labels legible, told drag and tap", async (t) => {
+  await onThePage(t, { viewport: { width: 360, height: 560 }, phone: true, only: "short" });
 });
 
 test("the page, on a short desktop window (1440 x 480): every step, its picture and every button contained and reachable", async (t) => {

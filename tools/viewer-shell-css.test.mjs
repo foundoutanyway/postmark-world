@@ -106,10 +106,12 @@ import { MARK_ICON_CSS } from "../spectator/mark-icons.mjs";
 // above: the tour's own rules only, every one under `.wv-tour` / `.tv-*` (the join-flow headline, soft text, paper picture panel and progress dots, the picture classes, the control row), +2779 bytes
 // (111364 -> 114143), nothing outside the tour touched. Measured by this test's own masked-emission route on the WLD-220 branch (the same route the pins above name).
 // RE-PINNED FOR THE WLD-220 FIX (containment of tall cards, the Look around picture): +1410 bytes (114143 -> 115553), again only .wv-tour / .tv-* rules (the card as a bounded
-// flex column, its scrolling area, the short-screen reflow, the pointer mark). Whole account over main's 111364: +4189 (2779 + 1410). The earlier "+2634" figure here and
+// flex column, its scrolling area, the short-screen reflow, the pointer mark). Whole account over the prior tour's 111364 (main's 111168 plus the earlier 196-byte docs rule): +4189 (2779 + 1410).
+// RE-PINNED FOR THE WLD-220 NARROW-SHORT FIX: +134 bytes (115553 -> 115687): the side-by-side reflow's media query gains `and (min-width:640px)` and its comment now names the narrow
+// short phone (a 360 x 560 phone keeps one column); nothing else in STYLE moves. Whole account over the prior tour's 111364: +4323. The earlier "+2634" figure here and
 // "113998" in tools/viewer-creature-nameplate.test.mjs were stale intermediate measurements (111364 -> 113998 is +2634; the pin that landed was 114143, +2779).
-const PINNED_MASKED_STYLE_SHA256 = "f974e4ee0f8c3a6a62b3543c21c814eb5cfce8c9cc185b137c7a785273330193";
-const PINNED_MASKED_STYLE_BYTES = 115553;
+const PINNED_MASKED_STYLE_SHA256 = "8a478a7033d29a9e63b91cd93cf4b65b46352960c9089f5c92b6eacf24d3f21b";
+const PINNED_MASKED_STYLE_BYTES = 115687;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";
