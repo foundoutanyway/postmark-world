@@ -44,6 +44,7 @@ function element(tag) {
     addEventListener(type, fn) { node.listeners.push({ type, fn }); },
     get firstChild() { return node.children[0] ?? null; },
     get parentElement() { return node.parent; },
+    get parentNode() { return node.parent; },
     contains(other) { for (let n = other; n; n = n.parent) if (n === node) return true; return false; },
     focus() { doc.activeElement = node; },
     // just enough of a selector for the column's live update: ".cls" and ".cls tag"
@@ -704,15 +705,160 @@ test("mountCircleReader adds its stylesheet once per document and reads the room
 
 // ── an office that does not serve circles yet, and the column that hosts the reader ──────────────────
 
-test("an office that answers a room read with the OLD list shape (no circles) is 'could not read', never 'nobody spoke'", async () => {
-  const h = harness({ room: { live: [], closed: [], earshot_m: 60 } });
-  await h.reader.showRoom(); await tick();
-  assert.equal(h.root.getAttribute("data-state"), "unavailable");
-  assert.deepEqual(byAttr(h.root, "data-notice").map((n) => n.attrs["data-notice"]), ["unavailable"]);
-  assert.match(text(h.root), /did not answer with the circles of this room/);
+test("an office that answers a room read with an answer that is NOT circles and NOT its plain list is 'could not read', never 'nobody spoke'; a circle read in the old list shape is still unavailable", async () => {
+  for (const [name, answer] of Object.entries({ "no circles and no list": { hello: 1, earshot_m: 60 }, "an array": [], "an error": { error: "bounce", defect: "no such room" }, "nothing": null })) {
+    const h = harness({ room: answer });
+    await h.reader.showRoom(); await tick();
+    assert.equal(h.root.getAttribute("data-state"), "unavailable", name);
+    assert.deepEqual(byAttr(h.root, "data-notice").map((n) => n.attrs["data-notice"]), ["unavailable"], `${name}: said, with the reader's own notice`);
+  }
+  const odd = harness({ room: { hello: 1 } });
+  await odd.reader.showRoom(); await tick();
+  assert.match(text(odd.root), /did not answer with the circles of this room/, "a shape that is neither circles nor the plain list keeps its honest sentence");
   const c = harness({ circles: { "1|": { live: [] } } });
   await c.reader.showCircle(1); await tick();
   assert.equal(c.root.getAttribute("data-state"), "unavailable", "and the same for a circle read");
+});
+
+// ── WLD-216 · the plain list a pre-POS-1035 office answers `?room=` with is no failure ──────────────────────────────────────────────────────
+// Prod 2026-11-19 (Darko): "a lot of conversations where it just says we couldn't read this … the office did not answer with the circles of this room". The w47 Office
+// ignores `?room=` and SUCCEEDS with its plain conversations list. The recorded KEY SHAPE of that answer (anonymous prod, keys only, no values kept) is below with INVENTED
+// values; the selected conversation's transcript is the host's, so the reader says "plain" and draws nothing, and the column keeps its plain timeline.
+const W47_ROOT_KEYS = ["pinned", "now", "earshot_m", "fade_minutes", "hearable_since", "close_minutes", "close_minutes_deprecated", "settlement_since", "place_note", "voices_note", "live", "closed", "earlier", "record"];
+const W47_THREAD_KEYS = ["id", "live", "place", "at", "aboard", "extent", "started", "latest", "participants", "voice_count", "voices"];
+const W47_VOICE_KEYS = ["handle", "standing", "said", "at", "at_ms", "x", "y"];
+const w47Voice = (handle, said, ms) => ({ handle, standing: "resident", said, at: "2026-11-19T21:0" + (ms % 10) + ":00.000Z", at_ms: 1795122000000 + ms * 60000, x: 10, y: 20 });
+const w47Thread = (id, place, voices) => ({ id, live: true, place, at: { x: 10, y: 20 }, aboard: null, extent: null, started: "2026-11-19T21:00:00.000Z", latest: "2026-11-19T21:09:00.000Z", participants: [...new Set(voices.map((v) => v.handle))], voice_count: voices.length, voices });
+const SELECTED_SAID = ["Welcome, the kettle is on (INVENTED)", "Is the tea the green one? (INVENTED)"];
+const OTHER_SAID = "A different room entirely (INVENTED)";
+const w47Feed = () => ({
+  pinned: [], now: 1, earshot_m: 60, fade_minutes: 30, hearable_since: "2026-11-19T00:00:00.000Z", close_minutes: 30, close_minutes_deprecated: 30, settlement_since: "2026-11-19T06:00:00.000Z",
+  place_note: "invented", voices_note: "invented",
+  live: [w47Thread("t-selected", "the Rig Cafe (INVENTED)", [w47Voice("rig-ash", SELECTED_SAID[0], 1), w47Voice("rig-bay", SELECTED_SAID[1], 2)]), w47Thread("t-other", "Elsewhere (INVENTED)", [w47Voice("rig-cob", OTHER_SAID, 3)])],
+  closed: [], earlier: [], record: {},
+});
+
+test("WLD-216 · the fixture really has the recorded w47 key shape (root, thread, voice), with invented values only", () => {
+  const f = w47Feed();
+  assert.deepEqual(Object.keys(f), W47_ROOT_KEYS);
+  assert.deepEqual(Object.keys(f.live[0]), W47_THREAD_KEYS);
+  assert.deepEqual(Object.keys(f.live[0].voices[0]), W47_VOICE_KEYS);
+  assert.ok(JSON.stringify(f).includes("INVENTED"));
+});
+
+test("WLD-216 · the old office's plain list on a room read: the reader says 'plain', draws no error and no notice, and keeps no stale model; a circle read in that shape is still unavailable", async () => {
+  const states = [];
+  const host = element("div"); const sc = element("div"); sc.appendChild(host);
+  const reader = createCircleReader({ doc, host, source: { async room() { return w47Feed(); }, async circle() { return w47Feed(); } }, roomId: "t-selected", scroller: sc, hostHoldsPlain: true, onState: (s, d) => states.push([s, d?.reason ?? null]) });
+  await reader.showRoom(); await tick();
+  assert.deepEqual(states.at(-1), ["unavailable", "plain"], "told to the host as plain, not as a failed read");
+  assert.equal(reader.root.getAttribute("data-state"), "unavailable");
+  assert.equal(byAttr(reader.root, "data-notice").length, 0, "no 'could not read' notice");
+  assert.equal(byAttr(reader.root, "data-retry").length, 0, "no Try-again for something that did not fail");
+  assert.doesNotMatch(text(reader.root), /could not|couldn't|did not answer/i);
+  assert.equal(reader.root.children.length, 0, "the reader draws nothing of its own");
+  // a circle read answered in the old shape is not the same thing: there is no plain timeline of a circle
+  const c = harness({ circles: { "1|": w47Feed() } });
+  await c.reader.showCircle(1); await tick();
+  assert.equal(c.root.getAttribute("data-state"), "unavailable");
+  assert.equal(byAttr(c.root, "data-notice").length, 1, "a circle read in the old shape is still said as unavailable");
+});
+
+test("WLD-216 · a BARE caller (no host option), and one with only onState, still gets the honest 'could not read' notice with Try again on the old office's plain list: never a blank", async () => {
+  for (const [name, extra] of Object.entries({ "bare": {}, "onState only": { onState: () => {} }, "hostHoldsPlain false": { hostHoldsPlain: false } })) {
+    const host = element("div"); const sc = element("div"); sc.appendChild(host);
+    const reader = createCircleReader({ doc, host, source: { async room() { return w47Feed(); }, async circle() { return w47Feed(); } }, roomId: "t-selected", scroller: sc, ...extra });
+    await reader.showRoom(); await tick();
+    assert.equal(reader.root.getAttribute("data-state"), "unavailable", name);
+    assert.deepEqual(byAttr(reader.root, "data-notice").map((n) => n.attrs["data-notice"]), ["unavailable"], `${name}: the reader says so itself`);
+    assert.equal(byAttr(reader.root, "data-retry").length, 1, `${name}: and offers Try again`);
+    assert.match(text(reader.root), /did not answer with the circles of this room/, name);
+  }
+});
+
+test("WLD-216 · a column that holds NO transcript does not stand the reader down: the honest error and Try again stay", async () => {
+  const { homeColumnModel, renderHomeColumn } = await import("../spectator/home-column.mjs");
+  const host = element("div");
+  renderHomeColumn(doc, host, homeColumnModel({ handle: "the-town", kicker: "k", title: "t", door: { blocks: [] }, reader: { roomId: "t-selected", source: { async room() { return w47Feed(); }, async circle() { return w47Feed(); } } } }));
+  await tick(); await tick();
+  assert.equal(byAttr(host, "data-notice", "unavailable").length, 1, "with nothing to show instead, the reader's own error stands");
+  assert.equal(byAttr(host, "data-retry").length, 1);
+});
+
+test("WLD-216 · the open conversation takes NEWLY held words under the same key (liveUpdate): the old words are replaced, nothing doubles, another room's words never arrive, the reader node and the key stay", async () => {
+  const { createHomeColumn } = await import("../spectator/home-column.mjs");
+  const para = (handle, said) => ({ type: "paragraph", spans: [{ type: "strong", spans: [{ type: "text", text: handle }] }, { type: "text", text: `: ${said}` }] });
+  const view = (voices) => ({ handle: "the-town", residentLink: false, key: "convo:t-selected|circles", kicker: "a conversation · live", title: "the Rig Cafe (INVENTED)", region: `${voices.length} statements · 2 speakers`,
+    byline: "in this settlement", facts: [], door: { blocks: voices.map(([h, s]) => para(h, s)) }, footerLink: { href: "/conversations/#t-selected", text: "all conversations →" },
+    reader: { roomId: "t-selected", source: { async room() { return w47Feed(); }, async circle() { return w47Feed(); } } } });
+  const host = element("aside");
+  const column = createHomeColumn({ doc, host });
+  const first = [["rig-ash", SELECTED_SAID[0]], ["rig-bay", SELECTED_SAID[1]]];
+  column.open(view(first)); await tick(); await tick();
+  const body = () => find(host, (n) => n.className === "wv-homecol-body")[0];
+  const readerNode = host.__circleReader;
+  assert.equal(body().hidden, false); for (const [, s] of first) assert.ok(text(body()).includes(s));
+  // the poll brings a new statement in this same conversation: the column is handed its fresh view under the SAME key
+  const later = [...first, ["rig-ash", "A brand new statement arrives. (INVENTED)"]];
+  column.open(view(later)); await tick();
+  assert.ok(text(body()).includes("A brand new statement arrives. (INVENTED)"), "the newly held words reach the open transcript");
+  assert.equal((text(body()).match(/kettle is on/g) ?? []).length, 1, "and the earlier words are not doubled");
+  assert.equal(host.__circleReader, readerNode, "the reader is the same one: nothing was rebuilt");
+  assert.equal(column.shownKey(), "convo:t-selected|circles");
+  assert.equal(body().hidden, false); assert.equal(find(host, (n) => n.className === "wv-homecol-flatnote")[0].hidden, true, "still no 'could not be read' sentence");
+  assert.equal(text(host).includes(OTHER_SAID), false, "another room's words never arrive");
+  // an unchanged view touches nothing
+  const before = body().children.slice();
+  column.open(view(later)); await tick();
+  assert.deepEqual(body().children, before, "an unchanged redraw rewrites nothing");
+  // and the words can change again, including a statement that left
+  column.open(view(later.slice(1))); await tick();
+  assert.equal(text(body()).includes("kettle is on"), false, "a statement no longer held is gone");
+  assert.ok(text(body()).includes("A brand new statement arrives."));
+});
+
+test("WLD-216 · the viewer hands the open conversation's column its fresh view after each conversations read (the poll and after a say), by the selected thread's id", async () => {
+  const SRC = (await import("node:fs")).readFileSync(new URL("../spectator/viewer.mjs", import.meta.url), "utf8");
+  assert.match(SRC, /function refreshConvoColumn\(\) \{\s*const column = convoColumnView\(markInteraction\.getState\(\)\.selectedId\);\s*if \(column\) homeColumn\.open\(column\);\s*\}/);
+  assert.match(SRC, /loadConversations\(\)\.then\(drawConversations\)\.then\(\(\) => \{ refreshConvoColumn\(\); homeColumn\.refreshReader\?\.\(\); \}\)/, "the 60 s poll");
+  assert.match(SRC, /loadConversations\(\)\.then\(drawConversations\)\.then\(\(\) => refreshConvoColumn\(\)\)/, "and the re-read after a say");
+});
+
+test("WLD-216 · the column keeps the selected conversation's plain transcript on the old office's answer, with no 'could not be read' sentence; refresh keeps it; another room's words never appear", async () => {
+  const { homeColumnModel, renderHomeColumn } = await import("../spectator/home-column.mjs");
+  const selected = w47Feed().live[0];
+  const blocks = selected.voices.map((v) => ({ type: "paragraph", spans: [{ type: "text", text: `${v.handle}: ${v.said}` }] }));
+  let asked = 0;
+  const source = { async room() { asked += 1; return w47Feed(); }, async circle() { return w47Feed(); } };
+  const host = element("div");
+  renderHomeColumn(doc, host, homeColumnModel({ handle: "the-town", kicker: "a conversation · live", title: "the Rig Cafe (INVENTED)", door: { blocks }, footerLink: { href: "/conversations/#t-selected", text: "all conversations →" }, reader: { roomId: "t-selected", source } }));
+  await tick(); await tick();
+  const body = find(host, (n) => n.className === "wv-homecol-body")[0];
+  const note = find(host, (n) => n.className === "wv-homecol-flatnote")[0];
+  assert.equal(body.hidden, false, "the plain transcript the map holds is shown");
+  assert.equal(note.hidden, true, "and no 'circles could not be read' sentence is over it");
+  for (const said of SELECTED_SAID) assert.ok(text(body).includes(said), `the selected conversation's words: ${said}`);
+  assert.equal(text(host).includes(OTHER_SAID), false, "another room's words never appear");
+  assert.equal(byAttr(host, "data-notice").length, 0, "the reader's own error presentation is gone");
+  assert.equal(find(host, (n) => n.className === "wv-homecol-all").length, 1, "the all-conversations footer is kept");
+  assert.equal(asked, 1);
+  // a refresh keeps it working (and reads again, the way it always did)
+  await host.__circleReader.refresh({ quiet: true }); await tick();
+  assert.equal(body.hidden, false); assert.equal(note.hidden, true);
+  assert.ok(asked >= 2, "the refresh asked the office again");
+  assert.equal(byAttr(host, "data-notice").length, 0);
+  // a REAL failure still gets the honest sentence (and the transcript stands in under it)
+  const down = element("div");
+  renderHomeColumn(doc, down, homeColumnModel({ handle: "the-town", kicker: "k", title: "t", door: { blocks }, reader: { roomId: "t-selected", source: { async room() { throw new Error("503"); }, async circle() { throw new Error("503"); } } } }));
+  await tick(); await tick();
+  assert.equal(find(down, (n) => n.className === "wv-homecol-flatnote")[0].hidden, false, "a failed read keeps its sentence");
+  assert.equal(byAttr(down, "data-notice", "unavailable").length, 1);
+  // and a real circles envelope is still the circles view, unchanged
+  const good = element("div");
+  renderHomeColumn(doc, good, homeColumnModel({ handle: "the-town", kicker: "k", title: "t", door: { blocks }, reader: { roomId: "t1", source: { async room() { return roomFind(); }, async circle() { return circle50101(); } } } }));
+  await tick(); await tick();
+  assert.equal(byAttr(good, "data-circle-stub").length, 3);
+  assert.equal(find(good, (n) => n.className === "wv-homecol-body")[0].hidden, true);
 });
 
 test("the column's reader slot: the reader mounts where the flat words stood; the flat words show only when the reader could not read, and say so", async () => {
@@ -939,4 +1085,193 @@ test("the SAY sheet: a sheet that is opened plainly starts with no reply target;
   assert.match(open, /sayReplyTo = null;[^\n]*\n\s*const sheet = document\.createElement\("div"\)/, "a fresh sheet clears the previous target before it is built");
   const set = SRC.slice(SRC.indexOf("function setReplyTarget"), SRC.indexOf("function openSayBox()"));
   assert.ok(set.indexOf("openSayBox()") < set.indexOf("sayReplyTo = {"), "an explicit Reply opens the sheet FIRST and sets its target after, so the chosen target survives the open");
+});
+
+// ── WLD-213 · the optional host-provided speaker face ───────────────────────
+//
+// The host owns what a face IS; the reader only places the fresh decorative node the host's `faceForSpeaker(handle)` returns, inline before the name, on every
+// line it draws (a room's openers, a conversation's full lines at every depth, its context lines, old talk), and knows no avatar source, household, photo, URL or
+// office field. Absent, null or unusable, the DOM is exactly what it was. FALSIFIER: one path lacks a face, a repeated handle steals an earlier node, a name or time
+// disappears, a bare caller changes, or drawing fetches a picture or an identity.
+const faceHook = (calls = []) => (handle) => { calls.push(handle); const n = element("span"); n.className = "rig-face"; n.setAttribute("data-face", handle); return n; };
+/** the shape of a tree as a string (tags, classes, attributes, text): two draws are the same draw when their shapes are */
+const shapeOf = (n) => (n.nodeType === TEXT ? JSON.stringify(n.text) : `<${n.tagName}.${n.className}${Object.entries(n.attrs).sort().map(([k, v]) => ` ${k}=${v.replace(/\bcr\d+-/g, "crN-")}`).join("")}>${n.children.map(shapeOf).join("")}</>`);   // a reader's own instance counter in its ids is not a difference
+const faceHost = (opts, { room = roomFind } = {}) => {
+  const host = element("div"); const scroller = element("div"); scroller.appendChild(host);
+  const calls = [];
+  const source = { async room(id) { calls.push(["room", id]); return room(); }, async circle(id, after) { calls.push(["circle", id, after]); return id === 50101 ? circle50101() : id === 50105 ? circle50105Page1() : { error: "bounce" }; } };
+  const reader = createCircleReader({ doc, host, source, roomId: "t20260514-pica", scroller, ...opts });
+  return { host, reader, root: reader.root, calls };
+};
+const facesOf = (root) => byAttr(root, "data-face");
+const headOf = (li) => li.children.find((c) => c.className === "cr-head-line");
+
+test("WLD-213 · room openers: each opener carries its speaker's face inline BEFORE the name, with the name, time, text and controls intact", async () => {
+  const calls = [];
+  const h = faceHost({ faceForSpeaker: faceHook(calls) });
+  await h.reader.showRoom();
+  const stubs = byAttr(h.root, "data-circle-stub");
+  assert.equal(stubs.length, 3);
+  for (const st of stubs) {
+    const head = headOf(st);
+    assert.deepEqual(head.children.map((c) => c.className), ["rig-face", "cr-who", "cr-time"], "face, name, time: inline in the one head line");
+    assert.equal(head.children[0].attrs["data-face"], text(head.children[1]), "the face is the speaker's own");
+    assert.equal(head.children[0].attrs["aria-hidden"], "true", "decorative: the name beside it is the label");
+  }
+  assert.deepEqual([...calls].sort(), stubs.map((s) => text(headOf(s).children[1])).sort(), "asked once per opener, by handle, and for nothing else");
+  assert.match(text(stubs[0]), /pica .*Welcome, everyone!/);
+  assert.ok(byAttr(stubs[0], "data-circle-open").length === 1 && byAttr(stubs[0], "data-thread").length === 1, "the Open control and the reply thread are untouched");
+});
+
+test("WLD-213 · a conversation's full lines at every depth, its context lines and a repeated speaker: every line has a face of its own, none is shared or moved", async () => {
+  const h = faceHost({ faceForSpeaker: faceHook(), canReply: true });
+  await h.reader.showCircle(50101);
+  openAll(h.root);
+  const lines = byAttr(h.root, "data-say");
+  assert.equal(lines.length, 10, "all ten statements, once opened");
+  const faces = lines.map((li) => headOf(li).children.filter((c) => c.className === "rig-face"));
+  assert.ok(faces.every((f) => f.length === 1), "exactly one face on every line, openers and the deepest replies alike");
+  const nodes = faces.map((f) => f[0]);
+  assert.equal(new Set(nodes).size, nodes.length, "a repeated handle never steals an earlier line's node");
+  const who = lines.map((li) => text(headOf(li).children[1]));
+  assert.ok(new Set(who).size < who.length, "the fixture does repeat speakers (pica speaks more than once)");
+  assert.deepEqual(nodes.map((n) => n.attrs["data-face"]), who, "each face is its own line's speaker's");
+  assert.equal(byAttr(h.root, "data-reply").length, 10, "Reply controls are still on every line");
+  // the context block (an ancestor shown for orientation) carries faces too
+  const c = faceHost({ faceForSpeaker: faceHook() });
+  await c.reader.showCircle(50105);
+  const ctx = byAttr(byAttr(c.root, "data-context")[0], "data-context-say");
+  assert.ok(ctx.length >= 1 && ctx.every((li) => headOf(li).children[0].className === "rig-face" && headOf(li).children[0].attrs["data-face"] === text(headOf(li).children[1])), "context lines have faces");
+});
+
+test("WLD-213 · old talk (no ids) is a plain timeline and its lines carry faces too", async () => {
+  const h = faceHost({ faceForSpeaker: faceHook() }, { room: legacyRoom });
+  await h.reader.showRoom();
+  const plain = byAttr(h.root, "data-say-plain");
+  assert.equal(plain.length, 2);
+  for (const li of plain) assert.deepEqual(headOf(li).children.map((c) => c.className).slice(0, 2), ["rig-face", "cr-who"]);
+  assert.match(text(h.root), /Claran, hello.*hi rei/, "the words are intact");
+});
+
+test("WLD-213 · absent, null, or unusable output is exactly today's DOM: no empty box, no gutter, no change for a bare caller", async () => {
+  const bare = faceHost({});
+  await bare.reader.showCircle(50101); openAll(bare.root);
+  const bareShape = shapeOf(bare.root);
+  const variants = { "a hook that returns null": () => null, "undefined": () => undefined, "a string": () => "<img src=x onerror=alert(1)>", "an object that is not a node": () => ({ nodeType: 3 }), "a hook that throws": () => { throw new Error("no face for you"); } };
+  for (const [name, hook] of Object.entries(variants)) {
+    const h = faceHost({ faceForSpeaker: hook });
+    await h.reader.showCircle(50101); openAll(h.root);
+    assert.equal(shapeOf(h.root), bareShape, `${name}: the same DOM as a bare call`);
+  }
+  // an option that is not a function is ignored, never called
+  const odd = faceHost({ faceForSpeaker: "pica" });
+  await odd.reader.showCircle(50101); openAll(odd.root);
+  assert.equal(shapeOf(odd.root), bareShape, "a non-function option is no option");
+  // the room view too
+  const b2 = faceHost({}); await b2.reader.showRoom();
+  const n2 = faceHost({ faceForSpeaker: () => null }); await n2.reader.showRoom();
+  assert.equal(shapeOf(n2.root), shapeOf(b2.root));
+});
+
+test("WLD-213 · a node that is already placed is NOT moved off its line: the same node returned twice is placed once, the second line has none", async () => {
+  const shared = element("span"); shared.setAttribute("data-face", "shared");
+  const h = faceHost({ faceForSpeaker: () => shared });
+  await h.reader.showRoom();
+  const placed = facesOf(h.root);
+  assert.equal(placed.length, 1, "one placement; the other openers were not given the same node");
+  assert.equal(shared.parent, headOf(byAttr(h.root, "data-circle-stub")[0]), "and it stayed on the first line");
+});
+
+test("WLD-213 · drawing with a hook reads nothing more and asks nobody who a speaker is: the office calls are exactly a bare caller's", async () => {
+  const bare = faceHost({}); await bare.reader.showRoom(); byAttr(bare.root, "data-circle-open", 50101)[0].click(); await tick(); openAll(bare.root);
+  const withHook = faceHost({ faceForSpeaker: faceHook([]) }); await withHook.reader.showRoom(); byAttr(withHook.root, "data-circle-open", 50101)[0].click(); await tick(); openAll(withHook.root);
+  assert.deepEqual(withHook.calls, bare.calls, "the same reads, in the same order: no picture, identity or avatar read of the reader's own");
+});
+
+test("WLD-213 · folds and the redraw keep the faces: opening a thread redraws in place and every line, new ones included, still has its own face", async () => {
+  const h = faceHost({ faceForSpeaker: faceHook() });
+  await h.reader.showCircle(50101);
+  assert.equal(facesOf(h.root).length, 1, "folded: only the opener is on screen, with its face");
+  byAttr(h.root, "data-thread-view")[0].click();
+  const open = byAttr(h.root, "data-thread", "t-50101")[0];
+  assert.equal(open.attrs["data-open"], "true", "the thread opened (the fold state kept by the reader)");
+  const lines = byAttr(h.root, "data-say");
+  assert.ok(lines.length > 1 && lines.every((li) => headOf(li).children[0].className === "rig-face"), "the newly shown replies have their faces");
+  assert.match(text(h.root), /Welcome, everyone!/, "text intact");
+});
+
+test("WLD-213 · the column hands its reader the host's hook only when it has one: with it the column's reader draws faces, without it the column is today's", async () => {
+  const { homeColumnModel, renderHomeColumn } = await import("../spectator/home-column.mjs");
+  const flat = [{ type: "paragraph", spans: [{ type: "text", text: "rig-ash: the old flat words" }] }];
+  const view = (extra) => homeColumnModel({ handle: "the-town", kicker: "k", title: "Cave Interior", door: { blocks: flat }, reader: { roomId: "t1", source: { async room() { return roomFind(); }, async circle() { return circle50101(); } }, ...extra } });
+  const withFace = element("div"); renderHomeColumn(doc, withFace, view({ faceForSpeaker: faceHook([]) })); await tick(); await tick();
+  assert.equal(facesOf(withFace).length, 3, "the column's reader placed a face on each opener");
+  const without = element("div"); renderHomeColumn(doc, without, view({})); await tick(); await tick();
+  assert.equal(facesOf(without).length, 0, "no hook, no faces");
+  const none = element("div"); renderHomeColumn(doc, none, view({ faceForSpeaker: null })); await tick(); await tick();
+  assert.equal(shapeOf(none), shapeOf(without), "an explicit null is the same as nothing");
+  // WLD-215 flips the old pin: the World page's conversation view now hands the page's own face source (faceOf), and nothing else supplies one
+  const SRC = (await import("node:fs")).readFileSync(new URL("../spectator/viewer.mjs", import.meta.url), "utf8");
+  const cv = SRC.slice(SRC.indexOf("function convoColumnView"), SRC.indexOf("// What a plain click or hover on the map means for a thread"));
+  assert.match(cv, /faceForSpeaker: \(h\) => \{ const f = faceOf\(h\); return speakerFaceEl\(document,/, "the conversation view hands the page's occupant face source, no new fetch");
+  assert.match(cv, /hostOwnsHeader: true/, "and says the column owns the one header");
+  assert.doesNotMatch(cv, /facts:|label: "now"|in this settlement/, "no bottom fields table, no now row, no repeated byline");
+  assert.match(cv, /byline: false,/, "and the column's default byline (in <handle>'s own words) is switched off, not left to show");
+});
+
+test("WLD-215 · hostOwnsHeader: the room view omits only its own .cr-head; without the option every caller keeps it, and the circle view is untouched", async () => {
+  const withOpt = faceHost({ hostOwnsHeader: true }); await withOpt.reader.showRoom();
+  assert.equal(find(withOpt.root, (n) => n.className === "cr-head").length, 0, "the duplicate header is gone");
+  assert.equal(byAttr(withOpt.root, "data-circle-stub").length, 3, "the lines are all there");
+  for (const opts of [{}, { hostOwnsHeader: false }, { hostOwnsHeader: "yes" }]) {
+    const bare = faceHost(opts); await bare.reader.showRoom();
+    assert.equal(find(bare.root, (n) => n.className === "cr-head").length, 1, "a bare caller keeps today's header");
+  }
+  await withOpt.reader.showCircle(50101);
+  assert.equal(find(withOpt.root, (n) => n.className === "cr-head").length, 1, "the circle view keeps its own title and counts");
+  assert.equal(byAttr(withOpt.root, "data-key", "circle-title").length, 1);
+});
+
+test("WLD-215 · the column's one header: speakers as face + name, the live mark's tooltip, no facts table; legacy lines wear faces; a bad hook or a repeated speaker loses nothing", async () => {
+  const { homeColumnModel, renderHomeColumn } = await import("../spectator/home-column.mjs");
+  const blocks = ["rig-ash", "rig-ash", "rig-bo"].map((h, i) => ({ type: "paragraph", speaker: h, spans: [{ type: "strong", spans: [{ type: "text", text: h }] }, { type: "text", text: `: line ${i}` }] }));
+  const mk = (faceForSpeaker) => homeColumnModel({ handle: "the-town", byline: false, kicker: "a conversation · live", kickerTitle: "live: lasts the settlement", title: "Cave Interior", region: "3 statements · 2 speakers · began 2026-11-14 20:00Z · latest 2026-11-14 20:14Z",
+    speakers: [{ handle: "rig-ash", name: "rig-ash" }, { handle: "rig-bo", name: "rig-bo" }], door: { blocks }, reader: { roomId: "t1", hostOwnsHeader: true, faceForSpeaker, source: { async room() { return { error: "down" }; }, async circle() { return { error: "down" }; } } } });
+  const host = element("div"); renderHomeColumn(doc, host, mk(faceHook([]))); await tick(); await tick();
+  const row = find(host, (n) => n.className === "wv-homecol-speakers")[0];
+  assert.deepEqual(row.children.map((s) => [s.attrs["data-speaker"], s.children[0].attrs["data-face"], text(s.children[1])]), [["rig-ash", "rig-ash", "rig-ash"], ["rig-bo", "rig-bo", "rig-bo"]], "face then name, per speaker");
+  assert.equal(find(host, (n) => n.className === "wv-homecol-kicker")[0].attrs.title, "live: lasts the settlement");
+  assert.equal(find(host, (n) => n.className === "wv-homecol-meta").length, 1, "the metadata is said once");
+  assert.equal(find(host, (n) => n.tagName === "DL" || n.className === "wv-homecol-facts").length, 0, "no bottom fields table");
+  assert.equal(find(host, (n) => n.className === "wv-homecol-byline").length, 0, "no repeated byline");
+  const ps = find(host, (n) => n.tagName === "P" && n.children[0]?.attrs?.["data-face"]);
+  assert.equal(ps.length, 3, "every legacy line wears a face");
+  assert.notEqual(ps[0].children[0], ps[1].children[0], "a repeated speaker gets its own node");
+  assert.match(text(ps[1]), /rig-ash: line 1/, "the words are intact");
+  for (const bad of [() => { throw new Error("x"); }, () => "str", () => null]) {
+    const h2 = element("div"); renderHomeColumn(doc, h2, mk(bad)); await tick(); await tick();
+    assert.match(text(h2), /line 0.*line 1.*line 2/, "a hook that fails loses no words");
+  }
+  const bare = element("div"); renderHomeColumn(doc, bare, homeColumnModel({ handle: "the-town", kicker: "k", title: "T", door: { blocks } })); await tick();
+  assert.equal(facesOf(bare).length, 0, "a column with no hook is today's");
+  assert.equal(find(bare, (n) => n.className === "wv-homecol-speakers").length, 0);
+});
+
+test("WLD-215 · same-key fresh speech and late metadata: the speakers and the legacy lines follow in place, in this conversation only, without rebuilding the reader", async () => {
+  const { createHomeColumn } = await import("../spectator/home-column.mjs");
+  const host = element("div"); const col = createHomeColumn({ doc, host });
+  const source = { async room() { return { error: "down" }; }, async circle() { return { error: "down" }; } };
+  const line = (h, t) => ({ type: "paragraph", speaker: h, spans: [{ type: "text", text: `${h}: ${t}` }] });
+  const view = (speakers, blocks, region) => ({ handle: "the-town", key: "convo:t1|circles", kicker: "k", title: "T", region, speakers, door: { blocks }, reader: { roomId: "t1", source, faceForSpeaker: faceHook([]), hostOwnsHeader: true } });
+  col.open(view([], [line("rig-ash", "one")], "1 statement · 0 speakers")); await tick(); await tick();
+  const reader = host.__circleReader;
+  assert.equal(find(host, (n) => n.className === "wv-homecol-speakers").length, 1, "the row exists even before anyone is listed");
+  col.open(view([{ handle: "rig-ash", name: "rig-ash" }, { handle: "rig-bo", name: "rig-bo" }], [line("rig-ash", "one"), line("rig-bo", "two")], "2 statements · 2 speakers"));
+  assert.equal(host.__circleReader, reader, "same reader");
+  assert.equal(facesOf(host).length, 4, "two header faces + two line faces after the new speech");
+  assert.match(text(host), /rig-bo: two/);
+  assert.equal(text(find(host, (n) => n.className === "wv-homecol-meta")[0]), "2 statements · 2 speakers");
+  const before = find(host, (n) => n.className === "wv-homecol-speakers")[0].children[0];
+  col.open(view([{ handle: "rig-ash", name: "rig-ash" }, { handle: "rig-bo", name: "rig-bo" }], [line("rig-ash", "one"), line("rig-bo", "two")], "2 statements · 2 speakers"));
+  assert.equal(find(host, (n) => n.className === "wv-homecol-speakers")[0].children[0], before, "an unchanged redraw touches nothing");
 });

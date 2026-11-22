@@ -389,8 +389,20 @@ let READER_UID = 0;
  * @param {(circleId) => string|null} [o.hrefForCircle]   a permalink for a circle (the page's anchor); drawn as a plain link when given
  * @param {Element} [o.scroller]         the element that scrolls the reader (its position is kept across a refresh); default: the nearest scrolling ancestor
  * @param {object} [o.labels]            word overrides (READER_WORDS keys)
+ * @param {boolean} [o.hostHoldsPlain]   WLD-216, explicit and off by default: the host itself holds this conversation's plain transcript and shows it when told
+ *   `onState("unavailable", { reason: "plain" })`. Only then does an old office's SUCCESSFUL plain list (no circles) stand down to the host; for every other caller
+ *   (no option) that answer is "could not read" with the reader's own notice and Try again, exactly as it was, so a bare caller never ends up with nothing.
+ * @param {boolean} [o.hostOwnsHeader]   WLD-215, explicit and off by default: the host already shows this room's header (title, live/quiet, counts, began, latest) in its own
+ *   chrome, so the reader's ROOM view omits its own `.cr-head` (the duplicate). Nothing else changes: the unavailable / unknown / empty notices, Try again, the "new" button,
+ *   folded notes, lines, stubs and the circle view (breadcrumbs, back, context, its own title and permalink) draw as ever. Without the option every caller (bare, mount,
+ *   Site) keeps today's header exactly.
+ * @param {(handle: string) => (Node|null)} [o.faceForSpeaker]   WLD-213: an OPTIONAL host hook. Called with a speaker's handle each time a line (a room's opening
+ *   statement, a conversation's full, context or old-talk line) is drawn; the FRESH decorative DOM node it returns is placed inline before the name, and null (or
+ *   nothing) places nothing. The host owns what a face is (a picture, a monogram…) and how it is made safely: the reader knows no avatar source, household, photo,
+ *   URL or office field, fetches nothing and looks nothing up. A string, a node that already has a parent (a reused one would be MOVED off an earlier line) or a
+ *   throw is treated as null. Absent, the DOM and layout are exactly what they were. Further options may be added beside it; none is resolved here.
  */
-export function createCircleReader({ doc, host, source, roomId = null, canReply = false, onReply = null, onState = null, onNavigate = null, hrefForCircle = null, labels = null, scroller = null } = {}) {
+export function createCircleReader({ doc, host, source, roomId = null, canReply = false, onReply = null, onState = null, onNavigate = null, hrefForCircle = null, labels = null, scroller = null, faceForSpeaker = null, hostHoldsPlain = false, hostOwnsHeader = false } = {}) {
   if (!doc || !host || !source) throw new Error("createCircleReader needs a document, a host and a source");
   const W = { ...READER_WORDS, ...(labels ?? {}) };
   const uid = ++READER_UID;
@@ -475,6 +487,16 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
 
   // ── the thread ──
 
+  /** the host's optional face for a speaker (WLD-213): a fresh, unplaced element made decorative, or null. Never cached, so a repeated handle gets its own node. */
+  const faceOf = (handle) => {
+    if (typeof faceForSpeaker !== "function" || typeof handle !== "string" || handle === "") return null;
+    let node = null;
+    try { node = faceForSpeaker(handle); } catch { return null; }
+    if (!node || typeof node !== "object" || node.nodeType !== 1 || node.parentNode) return null;
+    if (node.getAttribute?.("aria-hidden") === null || node.getAttribute?.("aria-hidden") === undefined) attr(node, "aria-hidden", "true");   // decorative: the name beside it is the label
+    return node;
+  };
+
   /** one statement: who, when, what, a Reply; its replies (the `thread` element) are appended by the caller */
   const sayLine = (l, { context = false } = {}) => {
     const li = build(doc, "li", "cr-say");
@@ -485,6 +507,8 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     const head = build(doc, "span", "cr-head-line");
     const who = build(doc, "span", "cr-who", l.handle);
     const when = build(doc, "span", "cr-time", ` ${dateTimeOf(l.at) || whenOf(l.at) || s(l.ago)}`);
+    const face = faceOf(l.handle);
+    if (face) head.appendChild(face);
     head.appendChild(who); head.appendChild(when);
     li.appendChild(head);
     li.appendChild(build(doc, "span", "cr-said", l.said));       // content: textContent, never markup
@@ -586,6 +610,8 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     attr(li, "data-circle-stub", "");
     attr(li, "data-circle", st.circle);
     const head = build(doc, "span", "cr-head-line");
+    const face = faceOf(st.handle);
+    if (face) head.appendChild(face);
     head.appendChild(build(doc, "span", "cr-who", st.handle));
     head.appendChild(build(doc, "span", "cr-time", ` ${dateTimeOf(st.started) || whenOf(st.started)}`));
     li.appendChild(head);
@@ -646,7 +672,7 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
       m.summary ? `${plural(m.summary.says, "statement", "statements")} · ${plural(m.summary.people, "speaker", "speakers")}` : "",
       m.room.started ? `began ${dateTimeOf(m.room.started)}` : "", m.room.latest ? `latest ${dateTimeOf(m.room.latest)}` : "",
     ])));
-    root.appendChild(head);
+    if (hostOwnsHeader !== true) root.appendChild(head);   // WLD-215: the host's own header stands in for it
     if (state.pending) root.appendChild(newButton());
     if (m.unavailable) {
       const n = notice("unavailable", m.note ? `${W.unavailable} ${m.note}` : W.unavailable);
@@ -841,6 +867,16 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     return false;
   };
   const whyOf = (answer) => String(answer?.defect ?? answer?.error ?? (answer && typeof answer === "object" ? NOT_SERVED : ""));
+  // WLD-216 (prod, 2026-11-19: "we couldn't read this … the office did not answer with the circles of this room"). An office from before POS-1035 ignores `?room=` and
+  // SUCCEEDS with its plain conversations list (`live` / `closed`), with no `error` and no `circles`. For a host that says it holds the selected conversation's
+  // plain transcript (`hostHoldsPlain`), that is not a failed read: the reader draws NOTHING of its own and says why (`reason: "plain"`); the host shows its plain
+  // timeline, with no error. Every other caller, and everything else (an `error`, no answer, a non-object, an object that is neither circles nor the plain list),
+  // is "could not read" as it always was.
+  const plainFeed = (answer) => {
+    if (!answer || typeof answer !== "object" || Array.isArray(answer) || answer.error) return false;
+    const f = unwrap(answer);
+    return !(f.circles && typeof f.circles === "object") && (Array.isArray(f.live) || Array.isArray(f.closed));
+  };
   async function showRoom(id) {
     if (id !== undefined && id !== null) state.roomId = id;
     state.view = "room"; state.pending = null; state.pages = []; state.circleId = null;
@@ -850,6 +886,7 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     let answer;
     try { answer = await source.room(state.roomId); } catch (e) { answer = { error: String(e?.message ?? e) }; }
     if (mine !== state.token) return;
+    if (hostHoldsPlain && plainFeed(answer)) { state.roomModel = null; clear(root); setState("unavailable", { reason: "plain" }); return; }
     if (refused(answer, "room")) { return failed(whyOf(answer)); }
     state.roomModel = modelOfRoom(answer);
     drawRoom(state.roomModel);

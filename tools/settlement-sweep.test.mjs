@@ -1984,3 +1984,64 @@ test("POS-688 D-O2 (Darko 2026-10-19 17:14): a thing owned by sb-ash is judged o
     if (!leaves) assert.equal(c.state().marks.find((m) => m.id === "berthillon/a-cone")?.owned_by, "sb-ash");
   }
 });
+
+// ── WLD-224: a parcel that newly takes in an older foreign mark is said to the keeper, and nothing else changes ─────────────────
+// Darko, 2026-11-20 15:48 EST: "isn't it just admit normally? and it gets flagged to the worldkeeper for coordination." Invented
+// residents: pip's older cafe stands; ola's parcel over it is published by the crossing.
+function parcelOverCrossing(t, { cafeBy }) {
+  const c = crossing(t, "parcel-capture");
+  c.put(`WORLD/marks/${cafeBy}/the-cafe/mark.md`, record({ by: cafeBy, at: { x: 1000, y: 1000 }, extent: { w: 10, h: 10 }, body: "a small cafe", date: "2026-07-28" }));
+  c.commit("published main");
+  c.git("switch", "-q", "-c", "draft/house-ola");
+  c.put("WORLD/marks/ola/the-low-house-parcel/mark.md", record({ kind: "parcel", by: "ola", at: { x: 1000, y: 1000 }, extent: { w: 25, h: 25 }, body: "ola's ground", date: "2026-11-18" }));
+  c.git("add", "-A");
+  c.git("-c", "user.name=fixture", "-c", "user.email=fixture@test.invalid", "commit", "-q", "-m", "ola lays a parcel");
+  c.git("switch", "-q", "main");
+  return c;
+}
+
+test("WLD-224: the crossing publishes the parcel as ever, the older mark files under it as ever, and the report flags the capture", (t) => {
+  const c = parcelOverCrossing(t, { cafeBy: "pip" });
+  const report = c.sweep();
+  assert.deepEqual(report.published.map((row) => row.id), ["ola/the-low-house-parcel"], "admission is unchanged: the parcel publishes");
+  const state = c.state();
+  assert.equal(state.marks.find((m) => m.id === "pip/the-cafe").placementParent, "ola/the-low-house-parcel", "containment is unchanged: the older mark files under the parcel by geometry");
+  assert.deepEqual(state.errors, [], "and the fold has no error, as before: this class cannot fail a gate, which is why it is flagged");
+  assert.equal(report.parcel_captures.checked, true);
+  assert.equal(report.parcel_captures.parcels_checked, 1);
+  assert.equal(report.parcel_captures.events.length, 1);
+  const [e] = report.parcel_captures.events;
+  assert.deepEqual([e.parcel, e.mark, e.overlap_m2, e.mark_area_m2], ["ola/the-low-house-parcel", "pip/the-cafe", 100, 100]);
+  assert.equal(e.parcel_household === e.mark_household, false, "two different households, named");
+  assert.deepEqual([e.parcel_by, e.mark_by], ["ola", "pip"]);
+  assert.equal(Array.isArray(report.parcel_captures), false, "an object, never an outcome channel an older receipt composer would name as unknown");
+});
+
+test("WLD-224 control: the same parcel over the same household's older mark is admitted and is not a capture", (t) => {
+  const c = parcelOverCrossing(t, { cafeBy: "ola" });
+  const report = c.sweep();
+  assert.deepEqual(report.published.map((row) => row.id), ["ola/the-low-house-parcel"]);
+  assert.equal(c.state().marks.find((m) => m.id === "ola/the-cafe").placementParent, "ola/the-low-house-parcel");
+  assert.deepEqual(report.parcel_captures, { checked: true, parcels_checked: 1, events: [] }, "looked at one parcel and found nothing taken in: checked-empty, not absent");
+});
+
+test("WLD-224 F1: a body-only republication of an existing parcel is published, and its unchanged older-foreign pair is not a new capture", (t) => {
+  const c = crossing(t, "parcel-republished");
+  c.put("WORLD/marks/pip/the-cafe/mark.md", record({ by: "pip", at: { x: 1000, y: 1000 }, extent: { w: 10, h: 10 }, body: "a small cafe", date: "2026-07-28" }));
+  const parcelPath = "WORLD/marks/ola/the-low-house-parcel/mark.md";
+  const parcel = (body) => record({ kind: "parcel", by: "ola", at: { x: 1000, y: 1000 }, extent: { w: 25, h: 25 }, body, date: "2026-11-18" });
+  c.put(parcelPath, parcel("ola's ground"));
+  c.commit("published main");
+  const before = c.state().marks.find((m) => m.id === "pip/the-cafe").placementParent;
+  assert.equal(before, "ola/the-low-house-parcel", "the pair already stands on main: the cafe files under the parcel");
+  c.git("switch", "-q", "-c", "draft/house-ola");
+  c.put(parcelPath, parcel("ola's ground, with a new name for the house"));   // only the words change: geometry, claim instant and parents do not
+  c.git("add", "-A");
+  c.git("-c", "user.name=fixture", "-c", "user.email=fixture@test.invalid", "commit", "-q", "-m", "ola amends her parcel's words");
+  c.git("switch", "-q", "main");
+  const report = c.sweep();
+  assert.deepEqual(report.published.map((row) => row.id), ["ola/the-low-house-parcel"], "the republication is real: the amended parcel is published again");
+  assert.equal(c.state().marks.find((m) => m.id === "pip/the-cafe").placementParent, before, "and no parent moved");
+  assert.deepEqual(report.parcel_captures, { checked: true, parcels_checked: 1, events: [] },
+    "the pair stood before this crossing, so nothing is new: it looked at the republished parcel and found no new capture");
+});
