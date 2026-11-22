@@ -60,7 +60,8 @@ const readTour = (page) => page.evaluate(() => {
   const cardEl = q(".wv-tour-card");
   const kind = cardEl?.dataset.sceneKind ?? "", ids = (cardEl?.dataset.scene ?? "").split(" ").filter(Boolean);
   const spotEl = q(".wv-tour-spot"), spot = spotEl && !spotEl.hidden ? box(spotEl) : null;
-  const overlay = q(".wv-overlay"), walks = q(".wv-walk-layer"), placed = q(".wv-placed-art-layer"), hl = q(".wv-hl-layer");
+  // the mounted map's own svg: every lookup is made inside it, by the classes and ids the map itself writes
+  const mapSvg = q(".wv-minimap > svg"), overlay = mapSvg, walks = mapSvg, placed = mapSvg?.querySelector(".wv-placed-art-layer"), hl = mapSvg?.querySelector(".wv-hl-layer");
   const esc = (s) => CSS.escape(s);
   const within = (b, o) => !!b && !!o && b.x >= o.x - 1 && b.right <= o.right + 1 && b.y >= o.y - 1 && b.bottom <= o.bottom + 1;
   const meets = (b, o) => !!b && !!o && b.x < o.right && b.right > o.x && b.y < o.bottom && b.bottom > o.y;
