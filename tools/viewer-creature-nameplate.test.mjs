@@ -212,18 +212,26 @@ test("wiring: the closure is gone, and the one call site passes the looked-up ro
 // hashed), not this test's code. That route reproduced the three digests it is checked against: 94d56a41… (107135 bytes) on the POS-945
 // merge-base, ed771ead… (107711 bytes, the pin above) on this main, and 37ddf8f8… (107954 bytes, the pin the reviewed head 6f4c906a
 // carried) on that head. A line diff of the masked texts, main to the merge, is exactly the 8 `.wv-bymail*` lines and none removed.
-// RE-PINNED FOR CORE-54 (main), knowingly: phone/touch hit-area rules, 108530 -> 110597, then the tour foot fit, 110597 -> 111168 (main's own
-// digest d8d98631…, 111168 bytes); CREATURE_CSS and both of its neighbours untouched.
-// RE-PINNED IN CORE-127 (World viewer filters, PR #417), an INTENDED change to STYLE: the display-filter opener, its desktop popover and
-// its 390 px sheet (`.wv-filters-open`, `.wv-dpanel`, `.wv-dstrip`, `.wv-dfilter-host`) add 4075 bytes of CSS and nothing else moved (a line
-// diff of the masked texts, main 6928feab to the head, is added lines only).
-// RE-PINNED AGAIN IN CORE-147 (the icon dropdown, Darko 2026-11-21), an INTENDED change to STYLE: the icon switches' CSS (`.wv-dlayers`, `.wv-dlayer*`, the phone
-// sheet's three columns) adds 1276 bytes on top of CORE-127's, added lines only (the 💬 button was markup, not STYLE).
-// MERGED WITH main 01e29a17 (CORE-147 branch): the byte count is the sum of the three additive changes (111168 + 4075 + 1276 = 116519; the merge was line-clean in
-// STYLE). The digest below was MEASURED by this test's own masked-emission route in Actions (suite run 44918656235 on 67166758, which printed it as the actual
-// value, 116519 bytes passing); it is the same digest tools/viewer-shell-css.test.mjs measures. It replaces the pre-merge CORE-147 digest f5f3a704….
-const PINNED_MASKED_STYLE_SHA256 = "64a4512359d241be17115a28ab6f5bed55ee866a1bc5860d4195dd1dd15d1322";
-const PINNED_MASKED_STYLE_BYTES = 116519;
+// RE-PINNED FOR CORE-54, knowingly (the same intended STYLE change tools/viewer-shell-css.test.mjs re-pins, which carries the account): STYLE gains the
+// phone/touch hit-area rules, 108530 -> 110597 bytes, nothing removed; CREATURE_CSS and both of its neighbours are untouched (the chooser row's media rule
+// sits AFTER `.wv-choose-row.is-creature`, so the neighbour pin below still holds). The digest is the one viewer-shell-css measures by this same masked route.
+// RE-PINNED AGAIN FOR CORE-54 (the tour foot fit at 390 px, 110597 -> 111168, one media block of 6 added lines, nothing removed; tools/viewer-shell-css.test.mjs carries the account);
+// CREATURE_CSS and both of its neighbours are untouched.
+// RE-PINNED FOR WLD-220 (the tour's last step links /docs/), after merging main 01e29a17: the branch's ONE rule, `.wv-tour-body a`, 196 bytes on top of main's 111168 (-> 111364), nothing removed or
+// moved; tools/viewer-shell-css.test.mjs carries the account. CREATURE_CSS and both of its neighbours are untouched.
+// RE-PINNED FOR THE WLD-220 VISUAL REBUILD (the tour's join-flow theme and picture rules, all under .wv-tour / .tv-*): +2779 bytes (111364 -> 114143), nothing outside the tour touched;
+// RE-PINNED FOR THE WLD-220 FIX (tall-card containment, the Look around picture): +1410 bytes (114143 -> 115553), again only .wv-tour / .tv-* rules.
+// tools/viewer-shell-css.test.mjs carries the account (and the correction of the earlier +2634 / 113998 figures). CREATURE_CSS and both of its neighbours are untouched.
+// RE-PINNED FOR THE WLD-220 NARROW-SHORT FIX: +134 bytes (115553 -> 115687), the tour's short-screen media query and its comment only; tools/viewer-shell-css.test.mjs carries the account.
+// RE-PINNED FOR THE WLD-220 REAL-PAGE CORRECTION: the tour's drawn-picture rules are removed (115687 -> 113276, -2411), only .wv-tour / .tv-* rules; tools/viewer-shell-css.test.mjs carries the account.
+// RE-PINNED FOR THE TOUR ICONS (CORE-153): the card's icon rows only, +442 bytes (113276 -> 113718), under .wv-tour-body; tools/viewer-shell-css.test.mjs carries the account.
+// MAIN'S OWN ACCOUNT, kept (CORE-127, refreshed at main 1054c91d): the display-filter opener, its desktop popover and its 390 px sheet add 4075 bytes to main's 111168 (115243, digest 9966505163…);
+// CREATURE_CSS and both of its neighbours untouched.
+// RE-PINNED FOR THE MERGE OF main f4e12a54 over this branch: main's 115243 plus the tour's net +2550 (113718 - 111168) = 117793 expected (line-clean in STYLE); tools/viewer-shell-css.test.mjs carries the account.
+// RE-PINNED IN CORE-147 (the icon dropdown): +1276 bytes of the icon switches' CSS over main's 117793 (932bbdbe…) = 119069, added lines only; tools/viewer-shell-css.test.mjs carries the account and measures the
+// digest below by the same masked route (CREATURE_CSS and both of its neighbours untouched).
+const PINNED_MASKED_STYLE_SHA256 = "fad76d8d99c9c33ceb8af4197ef4b308064346d6b565473d2d26bc62e3d584ad";
+const PINNED_MASKED_STYLE_BYTES = 119069;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";

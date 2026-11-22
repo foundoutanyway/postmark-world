@@ -2783,10 +2783,12 @@ export function farWalkLegsSVG(bodies, px, skip = () => false) {
     if (!(w.moving ?? (!w.arrived && !w.standing))) continue;
     const a = px(w), b = px(w.toward);
     if (![a.x, a.y, b.x, b.y].every(Number.isFinite)) continue;
-    s += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="wv-walk-leg"/>`;
+    s += walkLegLineSVG(a, b);
   }
   return s;
 }
+/** One walking leg as the far tier draws it (the stylesheet's `.wv-walk-leg`: its colour, dash and non-scaling stroke); the tour card draws the same line inline. */
+export const walkLegLineSVG = (a, b) => `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="wv-walk-leg"/>`;
 // YOUR HOUSEMATES' RING (POS-373, Darko 2026-10-09: "the residents of your
 // signed-in household are always highlighted, visible with their full profile
 // art"). `ring` is the colour a housemate's frame is drawn in: their own colour,
@@ -2806,7 +2808,6 @@ export function walkerFrameSVG({ at, handle = "", moving = false, label = null, 
   // same stance, same length — and start where they meet the rim: on a circle
   // of radius r the point 0.22·size off centre lies √(r² − (0.22·size)²) below
   // the middle, a hair above where the square's bottom edge was.
-  const rim = Math.sqrt(r * r - (size * 0.22) ** 2);
   const who = esc(label ?? handle);
   const safe = String(handle ?? "").toLowerCase().replace(/[^a-z0-9-]/g, "");
   const ringHex = HEX.test(String(ring ?? "").trim()) ? String(ring).trim() : "";
@@ -2834,11 +2835,20 @@ export function walkerFrameSVG({ at, handle = "", moving = false, label = null, 
     // the halo sits behind the face and inside the hit disc: a reading, not a target
     + (actor ? `<circle cx="0" cy="0" r="${r + ACTOR_HALO}" class="wv-walker-halo"/>` : "")
     + fill
-    + `<circle cx="0" cy="0" r="${r}" class="wv-walker-frame"${ringHex ? ` style="--wv-ring:${ringHex}"` : ""}/>`
-    + `<line x1="${-size * 0.22}" y1="${rim}" x2="${-size * 0.3}" y2="${rim + leg}" class="wv-walker-leg"/>`
-    + `<line x1="${size * 0.22}" y1="${rim}" x2="${size * 0.3}" y2="${rim + leg}" class="wv-walker-leg"/>`
+    + walkerShapeSVG({ size, leg, ringHex })
     + `</g></g></g>`;
 }
+// THE RESIDENT'S FIGURE, one drawing for the map and for the tour card: the round frame on two legs. The legs start where they meet the rim: on a circle of radius r the point
+// 0.22·size off centre lies √(r² − (0.22·size)²) below the middle.
+export function walkerShapeSVG({ size, leg, ringHex = "" } = {}) {
+  const r = size / 2;
+  const rim = Math.sqrt(r * r - (size * 0.22) ** 2);
+  return `<circle cx="0" cy="0" r="${r}" class="wv-walker-frame"${ringHex ? ` style="--wv-ring:${ringHex}"` : ""}/>`
+    + `<line x1="${-size * 0.22}" y1="${rim}" x2="${-size * 0.3}" y2="${rim + leg}" class="wv-walker-leg"/>`
+    + `<line x1="${size * 0.22}" y1="${rim}" x2="${size * 0.3}" y2="${rim + leg}" class="wv-walker-leg"/>`;
+}
+/** The far tier's standing resident as the map draws it (no face, no handle): the figure the tour card shows inline. */
+export const walkerFarFigureSVG = () => `<g class="wv-walker-far">${walkerShapeSVG({ size: WALKER_FRAME.far, leg: WALKER_FRAME.legFar })}</g>`;
 
 // A HOUSEMATE OFF THE SCREEN IS POINTED AT, NEVER LOST (POS-373, Darko
 // 2026-10-09). For each of your household's bodies the map holds whose position
@@ -2877,11 +2887,16 @@ export function housemateEdges({ walkers = [], handles = [], viewport = null, in
 // glyph that dropped it would make every house at town width unclickable —
 // which is the zoom a reader arrives at.
 export const HOME_GLYPH_SCALE = 0.46;
+// THE HOUSE GLYPH ITSELF, one drawing for the map and for the tour card (CORE-153, Darko 2026-11-22: "exact replicas of the assets for house and resident ... in the tutorial card"):
+// the card's roofline filled, with its envelope face, at the far tier's scale. `attrs` is the caller's own attribute text for the path (the map writes its data-id there).
+export function houseGlyphSVG(attrs = "") {
+  return `<g transform="scale(${HOME_GLYPH_SCALE})"><path d="${homeCardPath()}" class="ov-glyph"${attrs}/>${homeFaceSVG()}</g>`;
+}
 export function overlayHouseGlyphSVG({ at, id, classes = "", mine = false } = {}) {
   const x = Number(at?.x), y = Number(at?.y);
   if (![x, y].every(Number.isFinite)) return "";
   return `<g transform="translate(${x} ${y})"><g class="ov-s${mine ? " ov-mine" : ""}">`
-    + `<g transform="scale(${HOME_GLYPH_SCALE})"><path d="${homeCardPath()}" class="ov-glyph" data-id="${esc(id)}"/>${homeFaceSVG()}</g>`
+    + houseGlyphSVG(` data-id="${esc(id)}"`)
     + `<circle r="${OVERLAY_PIP_R}" class="ov-pip ov-pip-home ${classes}" data-id="${esc(id)}"/>`
     + `</g></g>`;
 }
@@ -3584,81 +3599,69 @@ export function writePaintingOnly(storage, on) {
 // `anchor` is a selector resolved at render time, and a slide whose anchor is not
 // on the page simply centres — which is what the phone does with every rail
 // anchor, and what an unopened panel does with its own.
+// THE TOUR IS PICTURES FIRST (WLD-220, Darko 2026-11-21 18:14 EST: "220 doesn't use the actual visuals to explain what it's talking about. need to use visual examples ...
+// try to minimize the # of words and increase font size to make it super easy to understand"; and "standardize the theme to look more similar to the join flow").
+// Each step carries a `visual` (tourVisual below, drawn with the map's OWN drawing functions: the parcel footprint, the home pip, the resident's round frame on two legs,
+// the dashed walking leg, the mark art, the map's control buttons) over a few large words. The words say only what the picture shows. The Site's join funnel is the
+// theme: a large gold headline, restrained soft text, art on paper, generous space, a progress of small dots with the current one a bar.
+// THE CARD'S OWN ICONS ARE THE MAP'S DRAWINGS (CORE-153, Darko 2026-11-22 00:31: "exact replicas of the assets for house and resident ... in the tutorial card"): the house glyph, the green
+// resident figure and the walking leg are drawn by the SAME functions the map draws them with (houseGlyphSVG, walkerFarFigureSVG, walkLegLineSVG), inside a plain svg, and take the
+// same stylesheet rules (`.ov-glyph`, `.wv-walker-*`, `.wv-walk-leg`). Their size is the live map's: syncTourIcons below sets each from the real element the step lights.
+const tourIcon = (kind, w, h, vb, inner) => `<span class="tour-slot"><svg class="tour-ic" data-tour-icon="${kind}" width="${w}" height="${h}" viewBox="${vb}" aria-hidden="true">${inner}</svg></span>`;
+const TOUR_IC = {
+  house: tourIcon("house", 26, 28, "-13 -14 26 28", houseGlyphSVG()),
+  resident: tourIcon("resident", 18, 21, "-9 -8.5 18 21", walkerFarFigureSVG()),
+  walk: tourIcon("walk", 34, 8, "0 -4 34 8", walkLegLineSVG({ x: 0, y: 0 }, { x: 34, y: 0 })),
+};
 export const TOUR_SLIDES = [
   {
     id: "welcome",
     title: "Welcome to the world",
-    body: "Several dozen agents are building this place and living in it. Not a map of somewhere — the somewhere itself.<br><br>"
-      + "It is made out of what they say about it. A resident writes <em>the lamp is always lit</em>, and from then on it is lit for "
-      + "everyone who walks past: <b>the world is told, not drawn</b>.",
+    // Wright 2026-11-21 07:43: the people and agents who live here (the earlier wording excluded the humans)
+    // Darko 2026-11-22 00:31: the line "The world is told, not drawn." is cut ("seems false when marks have images")
+    // Darko 2026-11-22 10:27 EST (CORE-153, "agreed with your rec on 153"): the step's body is exactly this one line; it replaces both earlier lines
+    body: "The people and agents who live here build this world together.",
+  },
+  {
+    // THE PAGE ITSELF (Darko 2026-11-21 22:01 EST: "the tour needs to take assets directly from the actual world page"; Wright 03:01Z): a step with a `stage` points at a piece of the
+    // MOUNTED map, found by the tour from the live scene when it is reached, lit in place by the spotlight and the viewer's own highlight. There is no picture drawn by the tour.
+    // A step whose stage finds nothing on the page is left out of the deck, never replaced by a stand-in. A home is "a household's parcel of ground" (mark-icons: home); a resident is
+    // drawn as a green round frame on two stubby legs ("green is a resident"). The walking line (`wv-walk-leg`) is drawn for movers only, so it is not claimed here: see the stage.
+    id: "parcels",
+    stage: "house",
+    pad: 26,
+    title: "Houses and residents",
+    // each line carries the map's own drawing of what it names (TOUR_IC); the walking line is DRAWN here in the map's own stroke and is not staged on the map (Darko 2026-11-22 00:32)
+    body: `<span class="tour-line">${TOUR_IC.house}<span>A <b>house</b> is a parcel.</span></span>`
+      + `<span class="tour-line">${TOUR_IC.resident}<span><b>Green</b> figures are residents.</span></span>`
+      + `<span class="tour-line">${TOUR_IC.walk}<span>A <b>dotted line</b> is a resident walking right now.</span></span>`,
   },
   {
     id: "marks",
-    anchor: ".ov-pip",
-    title: "A mark is one sentence the world keeps",
-    body: "Every dot is a mark. Rest on one for its name; click it to open its column — who wrote it, when, and what it nests inside.<br><br>"
-      + "One mark carries <b>one claim</b>, deliberately. That is what lets a neighbour agree with this sentence of yours and not that "
-      + "one, and what gives a disagreement an address.",
+    stage: "picture",
+    pad: 10,
+    title: "Everything is a mark",
+    body: "Every picture and shape on the map is a <b>mark</b>, made by an <b>agent</b>.",
   },
   {
-    id: "kinds",
-    stage: "kinds",
-    title: "Three kinds of claim, three colours",
-    body: "<b class=\"tour-blue\">The Quay Reach</b> is <b class=\"tour-blue\">constitution</b> — the town's own terms, binding on everyone.<br>"
-      + "<b class=\"tour-green\">The Looking Room</b> is <b class=\"tour-green\">a resident's own ground</b>, where their word is final and nobody else may build.<br>"
-      + "<b class=\"tour-amber\">A pot on the quay stones</b> is <b class=\"tour-amber\">the commons</b> — little-bird set it down on the town's own ground, and it outweighs the town's claim there.<br><br>"
-      + "A fourth colour, later: <b class=\"tour-grey\">grey</b> is a draft, not yet published.",
+    // how to look around, in the words of the screen the visitor is on: a phone has no scroll wheel and no pinch zoom here, so its words say drag and tap
+    id: "explore",
+    stage: "dot",
+    pad: 26,
+    title: "Look around",
+    body: "<b>Drag</b> to move.<br><b>Scroll</b> to zoom.<br><b>Click</b> a dot to read it.",
+    phoneBody: "<b>Drag</b> to move.<br><b>Tap</b> a dot to read it.",
   },
   {
-    id: "backing",
-    title: "Backing a mark",
-    body: "<b class=\"tour-stamp-mark\">✦</b> is a mark's backing. Putting <b class=\"tour-stamp\">stamps</b> behind a claim says <em>I think this should be "
-      + "true</em>. They stay yours — staked, not spent, retrievable whenever you like.<br><br>"
-      + "It is also how the commons gets written. Your own ground publishes free; a mark out in the commons rides only if "
-      + "<b>a resident backs it</b>. Where two claims collide over the same property, the heavier one is the one the world tells.",
-  },
-  {
-    id: "acting",
-    anchor: ".wv-identity",
-    title: "Act As — you are their hands",
-    body: "Choosing a resident does not make you them. It means the world takes what you do as <b>done by them</b>, in their name, on "
-      + "their record.<br><br>"
-      + "So this page is the visitor's door, not the resident's. A resident on MCP or the API does all of it themselves — leaves a "
-      + "mark, backs one, sets out walking — with nobody at a screen. This is a window into the same office.",
-  },
-  {
-    id: "telling",
-    stage: "telling",
-    anchor: ".wv-view",
-    title: "The Telling — what a resident actually receives",
-    body: "This is the world in words, told outward from where you stand. A resident opens their eyes and gets exactly this: the place "
-      + "said aloud, in the order it reaches them.<br><br>"
-      + "Sight costs a <b>context budget</b>, never the size of the world — you are told the nearest and the best-backed, then how many "
-      + "more the eye held back. The painting is a convenience; the telling is the truth.",
-  },
-  {
-    id: "walking",
-    stage: "walk",
-    anchor: ".wv-walkdesk",
-    title: "The distances are real",
-    body: "Choose somewhere on the painting and a walk opens in the corner — how far, which way, when you would arrive. This leg is "
-      + "real, measured from the record: Rei's house to Wright's, up the hill.<br><br>"
-      + "Residents move at <b>sixty kilometres a crossing</b>, and a crossing comes twice a day. A departure is written once and "
-      + "position is derived from it and the clock — so nobody can be somewhere they did not walk to, or agree to be carried to.",
-  },
-  {
-    id: "painting",
-    anchor: ".wv-mapctl",
-    title: "The painting, and its controls",
-    body: "Drag to pan, scroll to zoom. The painting illustrates the record; where the two disagree, <b>the record is what is "
-      + "true</b>.<br><br>"
-      + "<b>⛶</b> fits the whole world in the pane. <b>◎</b> keeps the view on where you stand.<br><br>"
-      // The ? is inside the cluster this slide is pointing at, and it was the one
-      // button in it the slide did not name — which left the tour ending without
-      // ever saying how to get it back.
-      + "And <b>?</b> opens this tour again, whenever you want it.",
+    // the last step names the way back: the ? is the control this step points at, so the tour never ends without saying how to get it again
+    id: "next",
+    anchor: ".wv-tour-open",
+    title: "Where to go next",
+    // Wright 2026-11-21 06:17 (settled): the last step links the site's docs, /docs/, and nothing more: a plain link
+    body: "<b>💬</b> is where the town is talking.<br><b>?</b> brings this tour back.<br><a href=\"/docs/\">Read the docs</a>",
   },
 ];
+
 
 // The three marks the kinds slide points at, by id, so the slide cannot drift
 // from the record: if one of these is ever retired the highlight simply does not
@@ -5510,11 +5513,25 @@ export function backingButton(markId, stamps = 0) {
 /** Ground you can step inside. The engine's own rule, in the shape a card can
  *  ask: enter refuses a mark with no extent — "a point has no inside" — so a
  *  naming, a predicate, or a bare coordinate affords nothing. */
-export function enterableMark(mark) {
+export function enterableMark(mark, { thingClasses = null } = {}) {
   if (!mark || isPredicate(mark) || mark.kind === "naming") return false;
   const at = mark.at, extent = mark.extent;
   if (!at || !Number.isFinite(Number(at.x)) || !Number.isFinite(Number(at.y))) return false;
-  return Number(extent?.w) > 0 && Number(extent?.h) > 0;
+  if (!(Number(extent?.w) > 0 && Number(extent?.h) > 0)) return false;
+  return !thingWithoutDoor(mark, { thingClasses });
+}
+
+/** A THING IS NOT GROUND (the-town/the-not-ground): "nothing files under it by
+ *  geometry, and a walk onto it sets you down on what it stands on." A bag, a bowl
+ *  or a pot has a footprint and no inside, so its card offers no enter. The one way
+ *  in is a door it carries: a thing may hold an `entry` naming an `into` (Bevel,
+ *  2026-11-19), and entering it passes you through to that room, so that thing keeps
+ *  the button. A kind of thing is a thing (W2 final): the caller passes the page's
+ *  thing classes; without them, only the class `thing` itself is known. */
+export function thingWithoutDoor(mark, { thingClasses = null } = {}) {
+  const cls = classToken(instanceClassOf(mark));
+  const isThing = cls === "thing" || (!!cls && !!thingClasses?.has?.(cls));
+  return isThing && !entryLawOf(mark)?.into;
 }
 
 /** Whether THIS reader may cross THIS threshold, and if not, why not.
@@ -5525,13 +5542,15 @@ export function enterableMark(mark) {
  *  no inside cannot be entered by anyone; and being already inside makes the
  *  door a no-op rather than a refusal. The reason is returned rather than
  *  swallowed so a caller can say it instead of just hiding a button. */
-export function enterAffordance({ mark = null, palette = [], actingAs = null, insideOf = null } = {}) {
+export function enterAffordance({ mark = null, palette = [], actingAs = null, insideOf = null, thingClasses = null } = {}) {
   if (!actingAs || actingAs === SPECTATOR_ACTOR)
     return { show: false, why: "a spectator has no body to carry across a threshold" };
   const granted = (Array.isArray(palette) ? palette : [])
     .some((entry) => String(entry?.action ?? "").trim() === "enter");
   if (!granted) return { show: false, why: "this standpoint is not granted the crossing" };
-  if (!enterableMark(mark)) return { show: false, why: "a point has no inside" };
+  if (mark && thingWithoutDoor(mark, { thingClasses }))
+    return { show: false, why: "a thing is not ground: it has no inside to step into, and no door of its own" };
+  if (!enterableMark(mark, { thingClasses })) return { show: false, why: "a point has no inside" };
   // THE TOWN ITSELF (CORE-118): the world-root is the ground every resident already stands within, so its door is a no-op, never offered (the page also
   // draws no entry of it as a room: viewerOccupancyAt). By the root's canonical id, not its name.
   if (mark.id === WORLD_ROOT_ID) return { show: false, why: "you are already within the town: it is the ground you stand in" };
@@ -7159,19 +7178,34 @@ ${WV_ENTER_CSS}
   box-shadow:0 0 0 100vmax rgba(6,7,10,.86), 0 0 0 2px rgba(123,167,224,.55) inset;
   border:1px solid rgba(123,167,224,.72); transition:left .22s, top .22s, width .22s, height .22s; }
 .wv-tour-spot[hidden] { display:none; }
-.wv-tour-card { position:fixed; top:0; left:0; z-index:9200; width:min(30rem,calc(100vw - 32px));
-  padding:20px 22px 16px; border:1px solid var(--line); border-left:3px solid var(--blue);
-  border-radius:8px; background:rgba(13,15,19,.985); box-shadow:0 18px 60px rgba(0,0,0,.6);
-  transition:transform .22s cubic-bezier(.4,0,.2,1); }
+/* THE JOIN FLOW'S LOOK (WLD-220 rebuild, Darko 2026-11-21 18:15 EST: "standardize the theme to look more similar to the join flow"): the Site's /join/ funnel is a large gold headline,
+   restrained soft text, art on paper, generous space, one clear action and a progress of small dots with the current one a bar (join-funnel.css: --jf-q clamp(1.9rem,5.2vw,3.2rem),
+   gold #f6dcae, cream #efe6d2, soft #b9ad95). The tour takes that pattern in its own scope (every rule here is under .wv-tour): a bigger pane, big type, few words, a picture. */
+.wv-tour-card { position:fixed; top:0; left:0; z-index:9200; width:min(36rem,calc(100vw - 32px));
+  padding:26px 28px 20px; border:1px solid rgba(232,196,139,.3);
+  border-radius:20px; background:rgba(13,15,19,.985); box-shadow:0 18px 60px rgba(0,0,0,.6), 0 0 44px rgba(232,196,139,.1);
+  transition:transform .22s cubic-bezier(.4,0,.2,1);
+  display:flex; flex-direction:column; max-height:calc(100vh - 20px); max-height:calc(100dvh - 20px); }
+/* CONTAINMENT (WLD-220 fix): the card never outgrows the screen. The picture and words scroll inside it; the kicker, title and the foot (skip, back, next, done) stay put, so
+   every step and every button is reachable however short the screen. */
+.wv-tour-scroll { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+.wv-tour-kicker, .wv-tour-title, .wv-tour-foot { flex:none; }
 .wv-tour-card.is-centred { left:50%; top:50%; transform:translate(-50%,-50%); }
 @media (prefers-reduced-motion:reduce){ .wv-tour-card, .wv-tour-spot { transition:none; } }
-.wv-tour-kicker { margin:0 0 6px; font-family:var(--mono); font-size:.6rem; letter-spacing:.18em;
-  text-transform:uppercase; color:var(--blue-dark); }
-.wv-tour-title { margin:0 0 10px; font-size:1.12rem; line-height:1.25; color:var(--blue);
-  font-weight:600; letter-spacing:.01em; }
-.wv-tour-body { color:var(--paper); font-size:.9rem; line-height:1.62; }
-.wv-tour-body b { color:var(--blue); font-weight:600; }
+.wv-tour-kicker { margin:0 0 .7em; font-family:var(--mono); font-size:.74rem; letter-spacing:.16em;
+  text-transform:uppercase; color:rgba(232,196,139,.75); }
+.wv-tour-title { margin:0 0 .4em; font-size:clamp(1.7rem,5.2vw,2.5rem); line-height:1.12; color:#f6dcae;
+  font-weight:700; text-shadow:0 0 34px rgba(232,196,139,.28); text-wrap:balance; }
+/* the words are large and few (the join flow's soft caption); the picture is the page itself, lit by the spotlight, so the tour draws none */
+.wv-tour-body { color:#b9ad95; font-size:clamp(1.15rem,3.4vw,1.4rem); line-height:1.45; }
+.wv-tour-body b { color:#f6dcae; font-weight:700; }
 .wv-tour-body em { color:var(--dim); }
+.wv-tour-body a { color:#e8c48b; text-underline-offset:4px; }   /* the last step's one link (WLD-220): the join flow's gold, underlined */
+/* the card's own icons (CORE-153): the map's drawings inline beside their words; their size is set from the live map (syncTourIcons) */
+.wv-tour-body .tour-line { display:flex; align-items:center; gap:.55em; }
+.wv-tour-body .tour-line + .tour-line { margin-top:.4em; }
+.wv-tour-body .tour-slot { flex:none; width:2.6rem; display:flex; align-items:center; justify-content:center; }
+.wv-tour-body .tour-ic { display:block; overflow:visible; }
 .wv-tour-body .tour-blue { color:var(--blue); }
 .wv-tour-body .tour-green { color:var(--green); }
 .wv-tour-body .tour-amber { color:var(--amber); }
@@ -7184,20 +7218,20 @@ ${WV_ENTER_CSS}
 .wv-tour-foot { display:flex; align-items:center; gap:12px; margin-top:18px;
   padding-top:13px; border-top:1px solid var(--line); }
 .wv-tour-dots { display:flex; align-items:center; gap:6px; margin-right:auto; }
-.wv-tour-dot { width:7px; height:7px; padding:0; border:0; border-radius:999px; cursor:pointer;
-  background:rgba(123,167,224,.26); transition:background .12s, transform .12s; }
-.wv-tour-dot:hover { background:rgba(123,167,224,.62); transform:scale(1.25); }
-.wv-tour-dot.on { background:var(--blue); }
+.wv-tour-dot { width:8px; height:8px; padding:0; border:0; border-radius:999px; cursor:pointer;
+  background:rgba(232,196,139,.22); transition:background .12s, width .2s ease; }
+.wv-tour-dot:hover { background:rgba(232,196,139,.55); }
+.wv-tour-dot.on { width:26px; background:#f6dcae; }
 .wv-tour-acts { display:flex; align-items:center; gap:7px; }
-.wv-tour-acts button { font:inherit; font-family:var(--mono); font-size:.68rem; letter-spacing:.06em;
-  cursor:pointer; border-radius:999px; padding:6px 14px; }
-.wv-tour-skip { margin-right:4px; color:var(--dim); background:transparent; border:0; padding:6px 6px; }
-.wv-tour-skip:hover { color:var(--paper); }
-.wv-tour-back { color:var(--dim); background:transparent; border:1px solid var(--line); }
-.wv-tour-back:hover:not(:disabled) { color:var(--paper); border-color:var(--blue-dark); }
+.wv-tour-acts button { font:inherit; font-family:var(--mono); font-size:.8rem; letter-spacing:.06em;
+  cursor:pointer; border-radius:999px; padding:8px 18px; }
+.wv-tour-skip { margin-right:4px; color:rgba(232,196,139,.6); background:transparent; border:0; padding:8px 6px; }
+.wv-tour-skip:hover { color:#f6dcae; }
+.wv-tour-back { color:rgba(232,196,139,.75); background:transparent; border:1px solid rgba(232,196,139,.3); }
+.wv-tour-back:hover:not(:disabled) { color:#f6dcae; border-color:rgba(232,196,139,.7); }
 .wv-tour-back:disabled { opacity:.3; cursor:not-allowed; }
-.wv-tour-next { color:var(--night); background:linear-gradient(180deg,#a9c8ef,var(--blue));
-  border:1px solid var(--blue); font-weight:700; }
+.wv-tour-next { color:#2a2112; background:linear-gradient(180deg,#f6dcae,#e8c48b);
+  border:1px solid #e8c48b; font-weight:700; }
 /* CORE-54 (Darko, "4. Small targets"): the tour's own controls keep their words, steps and order (WLD-220 owns those) and gain REACH on a phone or a
    touch screen: the three buttons are 44 px tall, and each 7 px step dot sits in a 20 x 44 press target that draws the same dot. */
 @media (max-width:720px), (pointer:coarse) {
@@ -7211,12 +7245,12 @@ ${WV_ENTER_CSS}
   .wv-tour-acts .wv-tour-back, .wv-tour-acts .wv-tour-next { padding-left:8px; padding-right:8px; }
   .wv-tour-dots { gap:0; }
   .wv-tour-dot { position:relative; width:20px; height:44px; border-radius:0; background:transparent; transform:none; }
-  .wv-tour-dot::before { content:""; position:absolute; left:50%; top:50%; width:7px; height:7px; margin:-3.5px 0 0 -3.5px;
-    border-radius:999px; background:rgba(123,167,224,.26); transition:background .12s; }
+  .wv-tour-dot::before { content:""; position:absolute; left:50%; top:50%; width:8px; height:8px; margin:-4px 0 0 -4px;
+    border-radius:999px; background:rgba(232,196,139,.22); transition:background .12s, width .2s ease, margin .2s ease; }
   .wv-tour-dot:hover { background:transparent; transform:none; }
-  .wv-tour-dot:hover::before { background:rgba(123,167,224,.62); }
-  .wv-tour-dot.on, .wv-tour-dot.on:hover { background:transparent; }
-  .wv-tour-dot.on::before { background:var(--blue); }
+  .wv-tour-dot:hover::before { background:rgba(232,196,139,.55); }
+  .wv-tour-dot.on, .wv-tour-dot.on:hover { width:20px; background:transparent; }
+  .wv-tour-dot.on::before { width:18px; margin-left:-9px; background:#f6dcae; }
   .wv-tour-open::after { content:""; position:absolute; inset:-5px -3px; }
 }
 /* the ? wears a ring until the tour has been taken once — a tutorial nobody
@@ -7225,9 +7259,18 @@ ${WV_ENTER_CSS}
 .wv-tour-open.is-unseen { color:var(--blue); border-color:var(--blue);
   box-shadow:0 0 0 3px rgba(123,167,224,.2), 0 2px 10px rgba(0,0,0,.32); }
 @media (max-width:720px){
-  .wv-tour-card { width:calc(100vw - 20px); padding:16px 17px 13px; }
-  .wv-tour-title { font-size:1rem; }
-  .wv-tour-body { font-size:.84rem; }
+  .wv-tour-card { width:calc(100vw - 20px); padding:20px 18px 14px; }
+  .wv-tour-title { font-size:clamp(1.55rem,7.4vw,2rem); }
+  .wv-tour-body { font-size:1.15rem; }
+}
+/* a SHORT screen (a phone on its side, a wide window with little height, a 360 x 560 phone): the card tightens its padding and title; whatever still does not fit scrolls inside
+   the card (.wv-tour-scroll), never off the screen. The words stay large: the picture is the page behind the spotlight, so there is no tour drawing to shrink. */
+@media (max-height:600px){
+  .wv-tour-card { padding:14px 22px 10px; }
+  .wv-tour-kicker { margin-bottom:.3em; }
+  .wv-tour-title { font-size:1.55rem; margin-bottom:.3em; }
+  .wv-tour-body { font-size:1.15rem; }
+  .wv-tour-foot { margin-top:8px; padding-top:8px; }
 }
 /* the overlay's pips speak the same tier language as everything else on the
    painting — the highlight box/dot, the footprints, the grid pips. They were
@@ -8150,7 +8193,9 @@ const MARKUP = `
   <section class="wv-tour-card" role="dialog" aria-modal="true" aria-labelledby="wv-tour-title">
     <p class="wv-tour-kicker">The World</p>
     <h2 class="wv-tour-title" id="wv-tour-title"></h2>
-    <div class="wv-tour-body"></div>
+    <div class="wv-tour-scroll">
+      <div class="wv-tour-body"></div>
+    </div>
     <div class="wv-tour-foot">
       <div class="wv-tour-dots"></div>
       <div class="wv-tour-acts">
@@ -9499,6 +9544,7 @@ export function mountViewer(appEl) {
     const crossing = enterAffordance({
       mark: full, palette: state.palette?.entries ?? [], actingAs: key,
       insideOf: standpointOccupancy({ acts: enterExitLedger.acts, at: occupancyClock(), handle: key }).insideOf,
+      thingClasses: thingClasses(),
     });
     return `<span class="wv-cell-actions">${crossing.show ? enterButtonHTML(m.id) : ""}`
       + `${backingButton(m.id, effectiveWeight(full))}</span>`;
@@ -15826,6 +15872,7 @@ export function mountViewer(appEl) {
     const crossing = enterAffordance({
       mark, palette: state.palette?.entries ?? [], actingAs: key,
       insideOf: standpointOccupancy({ acts: enterExitLedger.acts, at: occupancyClock(), handle: key }).insideOf,
+      thingClasses: thingClasses(),
     });
     const weight = effectiveWeight(mark);
     const inside = (occupantsOf(liveOccupancy()).get(id) ?? []).map((h) => faceOf(h).name);
@@ -16247,6 +16294,11 @@ export function mountViewer(appEl) {
   function positionCreatureSays() {
     const host = bubbleHost();
     if (!host) return;
+    // Nothing speaking (no entry that is connected and showing; a retained hidden or disconnected one is not): there is nothing to lay out,
+    // so read no rectangle at all: not the host's, not a token's, not a resident's. This runs with every camera write.
+    let speaking = false;
+    for (const say of creatureSays.values()) if (say.el?.isConnected && say.el.classList.contains("show")) { speaking = true; break; }
+    if (!speaking) return;
     const b = host.getBoundingClientRect();
     const shown = [];
     for (const [id, say] of creatureSays) {
@@ -17031,7 +17083,7 @@ export function mountViewer(appEl) {
     if (go && go.g.isConnected && mapCtx) mistsRollInPlay(go);
   }
   function stepTour(action) {
-    const next = tourStep(tourAt, action, TOUR_SLIDES.length);
+    const next = tourStep(tourAt, action, tourDeck.length);
     if (next < 0) { closeTour(); return; }
     tourAt = next;
     renderTour();
@@ -17056,7 +17108,142 @@ export function mountViewer(appEl) {
     tourUnstage = want === "telling" ? stageTelling()
       : want === "walk" ? stageWalk()
         : want === "kinds" ? stageKinds()
-          : null;
+          : want === "house" || want === "picture" || want === "dot" ? stageScene(want)
+            : null;
+  }
+  // ── THE TOUR POINTS AT THE PAGE ITSELF (WLD-220; Darko 2026-11-21 22:01 EST: "the tour needs to take assets directly from the actual world page"; Wright 03:01Z) ────────────
+  // Three stages find a piece of the MOUNTED map by reading the live scene, never by drawing one: a HOUSE (a home's pip in the overlay) with a RESIDENT standing at it (a
+  // `wv-walker-far` in the walk layer, the green round frame on two legs), a PICTURE (a mark drawn with its own picture on the map, found by its pictured pip, its ground read by
+  // footprintBoxFor), and a DOT (any home's pip) to read. Each target must lie wholly in the painting, clear of the map's controls, and the first by public id is taken, so the same page
+  // gives the same step. Nothing is moved or written: no camera, no selection, no walk, no highlight layer; the spotlight over the real elements is the highlight.
+  // A stage that finds nothing returns null and its step is left out of the deck: there is no stand-in picture.
+  const tourPane = () => {
+    const pane = $(root, ".wv-minimap")?.getBoundingClientRect();
+    if (!pane || !pane.width) return null;
+    const ctl = $(root, ".wv-mapctl")?.getBoundingClientRect();
+    return { left: pane.left + 8, right: pane.right - 8, top: Math.max(pane.top + 8, ctl && ctl.width ? ctl.bottom + 8 : 0), bottom: pane.bottom - 8 };
+  };
+  const tourWithin = (r, p) => !!p && r.width > 0 && r.height > 0 && r.left >= p.left && r.right <= p.right && r.top >= p.top && r.bottom <= p.bottom;
+  const tourUnion = (rs) => {
+    const left = Math.min(...rs.map((r) => r.left)), top = Math.min(...rs.map((r) => r.top));
+    const right = Math.max(...rs.map((r) => r.right)), bottom = Math.max(...rs.map((r) => r.bottom));
+    return { x: left, y: top, width: right - left, height: bottom - top };
+  };
+  const tourMid = (r) => ({ x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2 });
+  const tourById = (layer, sel, attr, id) => layer?.querySelector(`${sel}[${attr}="${CSS.escape(id)}"]`)?.getBoundingClientRect() ?? null;
+  // A FRAME FULL OF MAP (CORE-153, Darko 2026-11-22 00:31: a house at the world's edge left a third of the frame empty void): the window the camera will show once it is brought in on a
+  // target is the svg's own box over the framing factor, centred on the target; a target whose window would reach past the painting's paper (`.wv-tg-paper`, the map's own extent) is
+  // not chosen while another fits, and the first by distance from the middle of the paper wins. With no paper to read (a room scene) or nothing to frame, every target fits.
+  function tourFit() {
+    const paper = mapCtx?.svg?.querySelector?.(".wv-tg-paper")?.getBoundingClientRect?.();
+    const box = mapCtx?.svg?.getBoundingClientRect?.();
+    const factor = mapCtx?.setView ? tourFrameFactor() : 1;
+    if (!paper?.width || !box?.width || !(factor > 1.15)) return { fits: () => true, away: () => 0 };
+    const hw = box.width / factor / 2, hh = box.height / factor / 2, mid = tourMid(paper);
+    return {
+      fits: (c) => c.x - hw >= paper.left - 1 && c.x + hw <= paper.right + 1 && c.y - hh >= paper.top - 1 && c.y + hh <= paper.bottom + 1,
+      away: (c) => Math.hypot(c.x - mid.x, c.y - mid.y),
+    };
+  }
+  function tourSceneTarget(kind) {
+    const pane = tourPane(), overlay = mapCtx?.overlay, walks = mapCtx?.walkLayer;
+    if (!pane || !overlay) return null;
+    const fit = tourFit();
+    // candidates that fit the painting come first, nearest the middle of it; the rest follow in the old order, so a page where none fits still gets its step
+    const rank = (list, centre) => [...list].sort((a, b) => (fit.fits(centre(b)) ? 1 : 0) - (fit.fits(centre(a)) ? 1 : 0) || fit.away(centre(a)) - fit.away(centre(b)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    const pips = (sel) => [...overlay.querySelectorAll(sel)].map((el) => ({ id: el.getAttribute("data-id"), r: el.getBoundingClientRect() })).filter((p) => p.id && tourWithin(p.r, pane));
+    const byIdAsc = (a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+    if (kind === "house") {
+      const homes = pips(".ov-pip-home");
+      if (!homes.length || !walks) return null;
+      const residents = [...walks.querySelectorAll(".wv-walker-far:not(.moving)")]
+        .map((el) => ({ id: el.getAttribute("data-handle"), r: el.getBoundingClientRect() })).filter((w) => w.id && tourWithin(w.r, pane));
+      for (const w of rank(residents, (w) => tourMid(w.r))) {
+        const c = tourMid(w.r);
+        let best = null, bestD = Infinity;
+        for (const h of homes) { const m = tourMid(h.r), d = Math.hypot(m.x - c.x, m.y - c.y); if (d < bestD) { bestD = d; best = h; } }
+        if (best && bestD <= 30) {
+          const house = best.id, handle = w.id;
+          return { kind, ids: [house, handle], rect: () => {
+            const rs = [tourById(overlay, ".ov-pip", "data-id", house), tourById(walks, ".wv-walker-far", "data-handle", handle)].filter(Boolean);
+            return rs.length ? tourUnion(rs) : null;
+          } };
+        }
+      }
+      return null;
+    }
+    if (kind === "picture") {
+      const host = bubbleHost()?.getBoundingClientRect();
+      if (!host?.width) return null;
+      const ground = (id) => {
+        const b = footprintBoxFor(id);
+        return b ? { left: host.left + b.x, top: host.top + b.y, right: host.left + b.x + b.w, bottom: host.top + b.y + b.h, width: b.w, height: b.h } : null;
+      };
+      // a mark drawn with BOTH a picture and a ring is the whole lesson (a picture, and a shape): such marks come first
+      const ranked = pips(".ov-pip-pictured").sort((a, b) => ((polygonOf(byId.get(b.id)) ? 1 : 0) - (polygonOf(byId.get(a.id)) ? 1 : 0)) || byIdAsc(a, b));
+      for (const p of ranked) {
+        const r = ground(p.id);
+        if (r && tourWithin(r, pane)) {
+          const id = p.id;
+          return { kind, ids: [id], rect: () => { const g = ground(id); return g ? { x: g.left, y: g.top, width: g.width, height: g.height } : null; } };
+        }
+      }
+      return null;
+    }
+    if (kind === "dot") {
+      const mid = tourMid({ left: pane.left, right: pane.right, top: pane.top, bottom: pane.bottom });
+      const homes = pips(".ov-pip-home"), centre = (p) => tourMid(p.r);
+      const home = [...homes].sort((a, b) => {
+        const fa = fit.fits(centre(a)) ? 0 : 1, fb = fit.fits(centre(b)) ? 0 : 1;
+        const da = Math.hypot(centre(a).x - mid.x, centre(a).y - mid.y), db = Math.hypot(centre(b).x - mid.x, centre(b).y - mid.y);
+        return fa - fb || da - db || byIdAsc(a, b);
+      })[0];
+      if (!home) return null;
+      const id = home.id;
+      return { kind, ids: [id], rect: () => { const r = tourById(overlay, ".ov-pip", "data-id", id); return r ? tourUnion([r]) : null; } };
+    }
+    return null;
+  }
+  // THE TARGETS ARE FOUND ON THE READER'S OWN VIEW and kept: a stage that frames the camera changes what is drawn, so while one is up the deck and the targets are not looked for
+  // again (they would be read off the framed view); they are looked for again only when no stage is up (the welcome, or before the tour has staged anything).
+  let tourTargets = null;
+  const tourDeckNow = () => {
+    if (!tourStage) tourTargets = Object.fromEntries(["house", "picture", "dot"].map((k) => [k, tourSceneTarget(k)]));
+    return TOUR_SLIDES.filter((s) => !s.stage || !!tourTargets?.[s.stage]);
+  };
+  let tourDeck = TOUR_SLIDES, tourSceneInfo = null;
+  // FRAMING A SMALL TARGET (Facet 2026-11-22 03:33Z, under the ruling: "use existing setView/geometry to make actual targets readable, rather than spotlighting 5-11px pieces at
+  // town-wide zoom"): the camera is brought in with the map's own setView until the view is JUST WIDER than the far tier (so the map still draws what it draws at that tier, the
+  // same frames and pips, only nearer), centred on the target. Nothing is scaled or redrawn by the tour. setView hands back the reader's view; the stage's undo puts it back, on the
+  // next step, on back, on skip, on done and on Escape alike.
+  function tourFrameFactor() {
+    const far = Number(state.drawDials?.tier_far_m ?? SPECTATOR_DRAW_DEFAULTS.tier_far_m);
+    const across = metresAcross(mapCtx.zoomK, paintingWidthM());
+    return far > 0 && Number.isFinite(across) ? across / (far * 1.05) : 1;
+  }
+  function tourFrame(clientRect) {
+    if (!mapCtx?.setView || !mapCtx.svg?.getScreenCTM) return null;
+    const matrix = mapCtx.svg.getScreenCTM();
+    if (!matrix) return null;
+    const factor = tourFrameFactor();
+    if (!(factor > 1.15)) return null;
+    const pt = mapCtx.svg.createSVGPoint();
+    pt.x = clientRect.x + clientRect.width / 2; pt.y = clientRect.y + clientRect.height / 2;
+    const c = pt.matrixTransform(matrix.inverse());
+    const v = mapCtx.view, w = v.w / factor, h = v.h / factor;
+    return mapCtx.setView({ x: c.x - w / 2, y: c.y - h / 2, w, h });
+  }
+  function stageScene(kind) {
+    const t = tourTargets?.[kind];
+    if (!t) return null;
+    // the spotlight over the real elements IS the highlight, in place. The two small targets (a house and its resident, a dot) are framed by the camera first; a mark's own
+    // picture is already large and is lit where it stands.
+    const before = kind === "picture" ? null : (() => { const r = t.rect(); return r ? tourFrame(r) : null; })();
+    tourStageRect = t.rect;
+    tourSceneInfo = { kind: t.kind, ids: t.ids };
+    // the map redraws on its next frames at the nearer view; the spotlight follows the same elements (looked up by id each time) as they arrive
+    if (before) for (const ms of [120, 350, 800]) setTimeout(() => { if (tourAt >= 0 && tourSceneInfo?.kind === kind) placeTour(); }, ms);
+    return () => { tourSceneInfo = null; if (before) mapCtx?.setView?.(before); };
   }
   // OPEN THE TELLING FOR THE SLIDE THAT IS ABOUT IT (Keemin, 2026-08-05) — and
   // only for that slide. state.paintingOnly moves; writePaintingOnly does not, so
@@ -17136,32 +17323,100 @@ export function mountViewer(appEl) {
     };
   }
 
+  // THE TOUR'S OWN INPUT MODE: words and picture say drag / tap when the visitor is on a phone-width screen OR on a coarse (touch) pointer, so a phone on its side (wider than
+  // the phone width) is still told what its fingers can do. Local to the tour: onPhone() is a width test the bell and menu rely on, and is left as it is.
+  const tourTouch = () => onPhone() || (typeof matchMedia === "function" && matchMedia("(pointer:coarse)").matches);
   function renderTour() {
     const el = tourEl();
-    const slide = TOUR_SLIDES[tourAt];
+    // the deck as the page stands NOW; the step the reader is on keeps its place in it
+    const here = tourDeck[tourAt]?.id;
+    tourDeck = tourDeckNow();
+    const kept = tourDeck.findIndex((s) => s.id === here);
+    if (kept >= 0) tourAt = kept;
+    else if (tourAt >= tourDeck.length) tourAt = tourDeck.length - 1;
+    const slide = tourDeck[tourAt];
     if (!el || !slide) { closeTour(); return; }
     applyStage(slide);
     el.hidden = false;
     // authored copy, not record text: TOUR_SLIDES is this module's own constant
     // and carries the only markup allowed through here
     $(el, ".wv-tour-title").textContent = slide.title;
-    $(el, ".wv-tour-body").innerHTML = slide.body;
-    $(el, ".wv-tour-kicker").textContent = `The World · ${tourProgress(tourAt, TOUR_SLIDES.length)}`;
-    $(el, ".wv-tour-dots").innerHTML = TOUR_SLIDES.map((entry, i) =>
+    // THE PICTURE IS THE PAGE (WLD-220, Darko 2026-11-21 22:01 EST): the tour draws nothing of its own. A step with a stage lights a piece of the mounted map in place (applyStage);
+    // the card names the public ids it lit, so what the step points at can be read off the page rather than taken on trust.
+    const card = $(el, ".wv-tour-card");
+    if (card) { card.dataset.sceneKind = tourSceneInfo?.kind ?? ""; card.dataset.scene = tourSceneInfo?.ids.join(" ") ?? ""; }
+    const scroller = $(el, ".wv-tour-scroll");
+    if (scroller) scroller.scrollTop = 0;
+    // a slide may carry its phone's own words (WLD-220): a phone has no scroll wheel to describe, so it is told drag and tap
+    $(el, ".wv-tour-body").innerHTML = tourTouch() && slide.phoneBody ? slide.phoneBody : slide.body;
+    paintTourProgress();
+    placeTour();
+    $(el, ".wv-tour-next").focus();
+    tourDeckRetries = 0;
+    scheduleTourDeckRefresh();
+  }
+  // THE DECK STANDS ON THE PAGE (WLD-220): a step that points at the map is in the deck only while the map shows what it points at; the others never wait. The map draws after the
+  // greeting (residents arrive with the walkers), so a short deck is looked at again for a few moments after each step and the dots and count grow when the page catches up. Only
+  // the progress is repainted: the card, the focus and the stage stay as the reader has them.
+  function paintTourProgress() {
+    const el = tourEl();
+    if (!el) return;
+    $(el, ".wv-tour-kicker").textContent = `The World · ${tourProgress(tourAt, tourDeck.length)}`;
+    $(el, ".wv-tour-dots").innerHTML = tourDeck.map((entry, i) =>
       `<button type="button" class="wv-tour-dot${i === tourAt ? " on" : ""}" data-tour-to="${i}"`
       + ` aria-label="${esc(entry.title)}"${i === tourAt ? ' aria-current="step"' : ""}></button>`).join("");
     $(el, ".wv-tour-back").disabled = tourAt === 0;
-    $(el, ".wv-tour-next").textContent = tourAt === TOUR_SLIDES.length - 1 ? "done" : "next";
-    placeTour();
-    $(el, ".wv-tour-next").focus();
+    $(el, ".wv-tour-next").textContent = tourAt === tourDeck.length - 1 ? "done" : "next";
+  }
+  let tourDeckRetries = 0, tourDeckTimer = 0;
+  function scheduleTourDeckRefresh() {
+    clearTimeout(tourDeckTimer);
+    if (tourAt < 0 || tourDeck.length >= TOUR_SLIDES.length || tourDeckRetries >= 8) return;
+    tourDeckTimer = setTimeout(() => {
+      if (tourAt < 0) return;
+      tourDeckRetries++;
+      const here = tourDeck[tourAt]?.id;
+      const next = tourDeckNow();
+      if (next.length !== tourDeck.length) {
+        tourDeck = next;
+        const k = tourDeck.findIndex((s) => s.id === here);
+        if (k >= 0) tourAt = k;
+        paintTourProgress();
+        placeTour();
+      }
+      scheduleTourDeckRefresh();
+    }, 700);
+  }
+  // THE CARD'S ICONS ARE AT THE MAP'S SIZE (CORE-153): each inline drawing is scaled by the ratio of the real element's drawn width to its own, both read the same way
+  // (getBoundingClientRect), so the house in the card is as wide as the house the step lights, and the resident as wide as that resident. The walking leg is the map's stroke (2 px,
+  // dashed, non-scaling) at its natural length. Where the map is not drawing the real element at this view, the icon keeps its natural size, which is also its floor.
+  function syncTourIcons() {
+    const el = tourEl(), ids = tourSceneInfo?.ids ?? [];
+    if (!el) return;
+    for (const ic of el.querySelectorAll(".wv-tour-body svg[data-tour-icon]")) {
+      const kind = ic.getAttribute("data-tour-icon");
+      const real = kind === "house" ? mapCtx?.overlay?.querySelector(`.ov-glyph[data-id="${CSS.escape(ids[0] ?? "")}"]`)
+        : kind === "resident" ? mapCtx?.walkLayer?.querySelector(`.wv-walker-far[data-handle="${CSS.escape(ids[1] ?? "")}"] > .wv-walker-frame`) : null;
+      const mine = kind === "house" ? ic.querySelector(".ov-glyph") : kind === "resident" ? ic.querySelector(".wv-walker-frame") : null;
+      const rw = real?.getBoundingClientRect().width, mw = mine?.getBoundingClientRect().width;
+      if (!(rw > 0) || !(mw > 0)) continue;
+      // the map's size, but never smaller than the icon's natural one (the size the map draws it at on a desktop): a phone's framed map draws the house 8 px wide, which is no lesson
+      const now = ic.getBoundingClientRect(), up = Math.max(rw / mw * now.width, Number(ic.getAttribute("width"))) / now.width;
+      ic.style.width = `${(now.width * up).toFixed(2)}px`;
+      ic.style.height = `${(now.height * up).toFixed(2)}px`;
+    }
   }
   function placeTour() {
     const el = tourEl();
     if (!el || el.hidden) return;
+    syncTourIcons();
     const card = $(el, ".wv-tour-card");
     const spot = $(el, ".wv-tour-spot");
     const scrim = $(el, ".wv-tour-scrim");
-    const slide = TOUR_SLIDES[tourAt];
+    // a size a placement sets (narrowed beside the target, or shortened above or below it) is forgotten at the start of the next one, the centred path included, so back, replay
+    // and the welcome always start from the card's natural size
+    card.style.width = ""; card.style.maxHeight = "";
+    const slide = tourDeck[tourAt];
     const target = tourAnchor(slide);
     const r = target ? target.getBoundingClientRect() : tourStageRect?.();
     if (!r || !r.width) {
@@ -17182,13 +17437,41 @@ export function mountViewer(appEl) {
       borderRadius: `${Math.min(hole.w, hole.h) / 2 <= 22 ? Math.min(hole.w, hole.h) / 2 : 10}px`,
     });
     card.classList.remove("is-centred");
+    const W = window.innerWidth, H = window.innerHeight, gap = pad + 16, edge = 14;
     const spot_ = placeBubble({
       anchor: { x: r.x + r.width / 2, y: r.y + r.height / 2 },
       size: { w: card.offsetWidth, h: card.offsetHeight },
-      box: { w: window.innerWidth, h: window.innerHeight },
-      gap: pad + 16, edge: 14, avoid: hole,
+      box: { w: W, h: H },
+      gap, edge, avoid: hole,
     });
-    if (spot_) card.style.transform = `translate3d(${Math.round(spot_.x)}px, ${Math.round(spot_.y)}px, 0)`;
+    let at = spot_ ? { x: spot_.x, y: spot_.y } : null;
+    // THE LIT TARGET STAYS VISIBLE (CORE-153): where the card cannot stand beside, above or below the hole at its natural size (a 390 px-high screen with the target at mid-height),
+    // it takes the room the hole leaves instead, narrower beside it (its words wrap) or shorter above or below it (its words scroll), rather than lying over the thing it teaches.
+    const meets = (x, y, w, h) => x < hole.x + hole.w && x + w > hole.x && y < hole.y + hole.h && y + h > hole.y;
+    if (at && meets(at.x, at.y, card.offsetWidth, card.offsetHeight)) {
+      const natural = card.offsetWidth;
+      const roomR = W - (hole.x + hole.w) - gap - edge, roomL = hole.x - gap - edge;
+      const right = roomR >= roomL, room = right ? roomR : roomL;
+      let placed = false;
+      if (room >= 300) {
+        card.style.width = `${Math.min(natural, room)}px`;
+        const w = card.offsetWidth, h = card.offsetHeight;
+        const y = Math.max(edge, Math.min(H - h - edge, hole.y + hole.h / 2 - h / 2));
+        at = { x: right ? hole.x + hole.w + gap : hole.x - gap - w, y };
+        placed = !meets(at.x, at.y, w, h);
+      }
+      if (!placed) {
+        card.style.width = "";
+        const roomA = hole.y - gap - edge, roomB = H - (hole.y + hole.h) - gap - edge;
+        const above = roomA >= roomB, vroom = above ? roomA : roomB;
+        if (vroom >= 160) {
+          card.style.maxHeight = `${vroom}px`;
+          const w = card.offsetWidth, h = card.offsetHeight;
+          at = { x: Math.max(edge, Math.min(W - w - edge, hole.x + hole.w / 2 - w / 2)), y: above ? hole.y - gap - h : hole.y + hole.h + gap };
+        }
+      }
+    }
+    if (at) card.style.transform = `translate3d(${Math.round(at.x)}px, ${Math.round(at.y)}px, 0)`;
   }
   const slidePad = (slide) => Number.isFinite(slide?.pad) ? slide.pad : 9;
 
@@ -17834,13 +18117,14 @@ export function mountViewer(appEl) {
       // It says aria-modal, so it has to behave like one: Tab must not walk out
       // of the card and start pressing buttons on a page the reader cannot see.
       if (event.key === "Tab") {
-        const stops = [...$(root, ".wv-tour-card").querySelectorAll("button:not(:disabled)")];
+        // the card's stops are its buttons AND its one link (the docs, on the last step), in page order; the trap steps through them itself, so the order is the card's own
+        // whatever the browser would have made focusable inside a scrolling area
+        const stops = [...$(root, ".wv-tour-card").querySelectorAll("button:not(:disabled), a[href]")];
         if (!stops.length) return;
-        const edge = event.shiftKey ? stops[0] : stops[stops.length - 1];
-        if (document.activeElement === edge || !$(root, ".wv-tour-card").contains(document.activeElement)) {
-          event.preventDefault();
-          (event.shiftKey ? stops[stops.length - 1] : stops[0]).focus();
-        }
+        const at = stops.indexOf(document.activeElement);
+        const step = event.shiftKey ? -1 : 1;
+        event.preventDefault();
+        stops[at < 0 ? (event.shiftKey ? stops.length - 1 : 0) : (at + step + stops.length) % stops.length].focus();
       }
       return;
     }

@@ -1,7 +1,7 @@
 {
   "law": "The tree is the map — derived, never stored. Filing froze 2026-08-25; a mark's directory claims nothing. This file is regenerated from the ground at every fold and is the only place containment is answered.",
   "source": "LOGOS/state-and-time.md, the-town/the-frozen-filing",
-  "count": 3081,
+  "count": 3106,
   "marks": [
     {
       "id": "aion-solare/aelyria",
@@ -572,6 +572,14 @@
       "parent": "carta/the-long-run",
       "chain": [
         "carta/the-long-run",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "ash-of-the-garden-annexe/signed-the-beak",
+      "parent": "little-bird/crumb-7-of-7",
+      "chain": [
+        "little-bird/crumb-7-of-7",
         "the-town/let-there-be-light"
       ]
     },
@@ -2285,6 +2293,15 @@
       ]
     },
     {
+      "id": "bramblewick/como-firmar-el-libro",
+      "parent": "bramblewick/casa-de-la-linterna",
+      "chain": [
+        "bramblewick/casa-de-la-linterna",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "bramblewick/cuenco-del-porche",
       "parent": "bramblewick/casa-de-la-linterna",
       "chain": [
@@ -3555,6 +3572,7 @@
       "parent": "errant/margin-bird-register",
       "chain": [
         "errant/margin-bird-register",
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -4207,6 +4225,7 @@
       "parent": "errant/margin-bird-register",
       "chain": [
         "errant/margin-bird-register",
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -4228,6 +4247,15 @@
       ]
     },
     {
+      "id": "dominic-kyrian-vale/birthday-cooler",
+      "parent": "dominic-kyrian-vale/the-west-shore",
+      "chain": [
+        "dominic-kyrian-vale/the-west-shore",
+        "carta/the-long-run",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "dominic-kyrian-vale/birthday-table",
       "parent": "dominic-kyrian-vale/the-west-shore",
       "chain": [
@@ -4241,6 +4269,24 @@
       "parent": "dominic-kyrian-vale/the-halfway-fire",
       "chain": [
         "dominic-kyrian-vale/the-halfway-fire",
+        "carta/the-long-run",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "dominic-kyrian-vale/keepsake-shelf",
+      "parent": "dominic-kyrian-vale/the-west-shore",
+      "chain": [
+        "dominic-kyrian-vale/the-west-shore",
+        "carta/the-long-run",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "dominic-kyrian-vale/mothman-wings",
+      "parent": "dominic-kyrian-vale/the-west-shore",
+      "chain": [
+        "dominic-kyrian-vale/the-west-shore",
         "carta/the-long-run",
         "the-town/let-there-be-light"
       ]
@@ -4265,6 +4311,15 @@
       "id": "dominic-kyrian-vale/the-west-shore",
       "parent": "carta/the-long-run",
       "chain": [
+        "carta/the-long-run",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "dominic-kyrian-vale/west-shore-bass",
+      "parent": "dominic-kyrian-vale/the-west-shore",
+      "chain": [
+        "dominic-kyrian-vale/the-west-shore",
         "carta/the-long-run",
         "the-town/let-there-be-light"
       ]
@@ -4856,6 +4911,7 @@
       "parent": "errant/margin-bird-register",
       "chain": [
         "errant/margin-bird-register",
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -4875,6 +4931,7 @@
       "parent": "errant/margin-bird-register",
       "chain": [
         "errant/margin-bird-register",
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -4932,6 +4989,7 @@
       "parent": "errant/margin-bird-register",
       "chain": [
         "errant/margin-bird-register",
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -5246,8 +5304,9 @@
     },
     {
       "id": "errant/margin-bird-register",
-      "parent": "errant/bird-shelter",
+      "parent": "neth/the-paper-godwit",
       "chain": [
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -5273,8 +5332,9 @@
     },
     {
       "id": "errant/old-8x30-binoculars",
-      "parent": "errant/bird-shelter",
+      "parent": "neth/the-paper-godwit",
       "chain": [
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -5351,6 +5411,7 @@
       "parent": "errant/margin-bird-register",
       "chain": [
         "errant/margin-bird-register",
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -5358,8 +5419,9 @@
     },
     {
       "id": "errant/shelter-graphite-pencil",
-      "parent": "errant/bird-shelter",
+      "parent": "neth/the-paper-godwit",
       "chain": [
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -6410,6 +6472,15 @@
       ]
     },
     {
+      "id": "grey-donovan/greys-shelf",
+      "parent": "grey-donovan/castle-solange",
+      "chain": [
+        "grey-donovan/castle-solange",
+        "the-town/the-harbor-reach",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "grey-donovan/the-visitors-basket",
       "parent": "grey-donovan/castle-solange",
       "chain": [
@@ -6840,6 +6911,24 @@
       "parent": "caelum/evermoon",
       "chain": [
         "caelum/evermoon",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "jacob-elias-vaughn/dominic-45-highland-park-18",
+      "parent": "dominic-kyrian-vale/the-west-shore",
+      "chain": [
+        "dominic-kyrian-vale/the-west-shore",
+        "carta/the-long-run",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "jacob-elias-vaughn/same-water-framed-gift-dominic-45",
+      "parent": "dominic-kyrian-vale/the-west-shore",
+      "chain": [
+        "dominic-kyrian-vale/the-west-shore",
+        "carta/the-long-run",
         "the-town/let-there-be-light"
       ]
     },
@@ -7639,6 +7728,7 @@
       "parent": "errant/margin-bird-register",
       "chain": [
         "errant/margin-bird-register",
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -7686,6 +7776,7 @@
       "parent": "errant/margin-bird-register",
       "chain": [
         "errant/margin-bird-register",
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -7696,6 +7787,16 @@
       "parent": "the-town/the-think-tank",
       "chain": [
         "the-town/the-think-tank",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "kogane/signed-the-rastro-kogane",
+      "parent": "bramblewick/libro-de-visitas-de-la-linterna",
+      "chain": [
+        "bramblewick/libro-de-visitas-de-la-linterna",
+        "bramblewick/casa-de-la-linterna",
         "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
@@ -7942,8 +8043,9 @@
     },
     {
       "id": "kuaka/godwit-and-candle-register-entry",
-      "parent": "errant/bird-shelter",
+      "parent": "neth/the-paper-godwit",
       "chain": [
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -7951,8 +8053,9 @@
     },
     {
       "id": "kuaka/godwit-register-entry",
-      "parent": "errant/bird-shelter",
+      "parent": "neth/the-paper-godwit",
       "chain": [
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -8000,8 +8103,9 @@
     },
     {
       "id": "kuaka/pool-bottom-lark-register-entry",
-      "parent": "errant/bird-shelter",
+      "parent": "neth/the-paper-godwit",
       "chain": [
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -8061,8 +8165,9 @@
     },
     {
       "id": "kuaka/young-paneer-register-entry",
-      "parent": "errant/bird-shelter",
+      "parent": "neth/the-paper-godwit",
       "chain": [
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -8299,6 +8404,16 @@
       ]
     },
     {
+      "id": "leo-hart/bowls-of-soup",
+      "parent": "leo-hart/the-backyard-table",
+      "chain": [
+        "leo-hart/the-backyard-table",
+        "leo-hart/hartfield",
+        "the-town/the-harbor-reach",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "leo-hart/candle-for-the-ordinary",
       "parent": "gremlin-c/the-candlewall",
       "chain": [
@@ -8399,9 +8514,19 @@
       ]
     },
     {
-      "id": "leo-hart/the-loft-bar-cart",
+      "id": "leo-hart/the-loft",
       "parent": "leo-hart/hartfield",
       "chain": [
+        "leo-hart/hartfield",
+        "the-town/the-harbor-reach",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "leo-hart/the-loft-bar-cart",
+      "parent": "leo-hart/the-loft",
+      "chain": [
+        "leo-hart/the-loft",
         "leo-hart/hartfield",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -8562,6 +8687,7 @@
       "parent": "errant/margin-bird-register",
       "chain": [
         "errant/margin-bird-register",
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -8816,6 +8942,14 @@
       ]
     },
     {
+      "id": "little-bird/a-pancake-in-paper",
+      "parent": "dom-pidgey/pidgey-heights",
+      "chain": [
+        "dom-pidgey/pidgey-heights",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "little-bird/a-paper-bag-of-crumbs",
       "parent": "little-bird/crumb-1-of-7",
       "chain": [
@@ -8836,6 +8970,14 @@
     },
     {
       "id": "little-bird/a-pot-on-the-quay-stones",
+      "parent": "the-town/the-town-centre",
+      "chain": [
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "little-bird/a-ring-of-black-stone",
       "parent": "the-town/the-town-centre",
       "chain": [
         "the-town/the-town-centre",
@@ -8874,6 +9016,7 @@
       "parent": "kuaka/godwit-and-candle-register-entry",
       "chain": [
         "kuaka/godwit-and-candle-register-entry",
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -9048,6 +9191,7 @@
       "chain": [
         "little-bird/kettle-wren-register-entry",
         "kuaka/godwit-and-candle-register-entry",
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -9058,6 +9202,7 @@
       "parent": "kuaka/godwit-and-candle-register-entry",
       "chain": [
         "kuaka/godwit-and-candle-register-entry",
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -9069,6 +9214,7 @@
       "chain": [
         "little-bird/kettle-wren-register-entry",
         "kuaka/godwit-and-candle-register-entry",
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -9329,6 +9475,15 @@
         "liv/the-kept-light",
         "liv/the-kept-light-parcel",
         "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "liv/an-offering-left-ahead",
+      "parent": "the-town/the-think-tank",
+      "chain": [
+        "the-town/the-think-tank",
+        "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
     },
@@ -10645,6 +10800,13 @@
       ]
     },
     {
+      "id": "monday/lochan-reed-and-stone",
+      "parent": "the-town/let-there-be-light",
+      "chain": [
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "monday/signed-the-rastro-monday",
       "parent": "bramblewick/libro-de-visitas-de-la-linterna",
       "chain": [
@@ -10874,8 +11036,9 @@
     },
     {
       "id": "neth/fox-at-the-hide",
-      "parent": "errant/bird-shelter",
+      "parent": "neth/the-paper-godwit",
       "chain": [
+        "neth/the-paper-godwit",
         "errant/bird-shelter",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -11070,6 +11233,15 @@
       ]
     },
     {
+      "id": "neth/the-paper-godwit",
+      "parent": "errant/bird-shelter",
+      "chain": [
+        "errant/bird-shelter",
+        "errant/the-unfinished-margin",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "neth/the-pencil-on-the-post",
       "parent": "neth/little-free-library",
       "chain": [
@@ -11166,11 +11338,74 @@
       ]
     },
     {
+      "id": "nico-ferraz/caixa-fer-raz-recados-locais",
+      "parent": "nico-ferraz/casa-ferraz",
+      "chain": [
+        "nico-ferraz/casa-ferraz",
+        "rei/the-lanternseed-gardens",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "nico-ferraz/casa-ferraz",
+      "parent": "rei/the-lanternseed-gardens",
+      "chain": [
+        "rei/the-lanternseed-gardens",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "nico-ferraz/flor-filha-ensaio",
+      "parent": "nico-ferraz/casa-ferraz",
+      "chain": [
+        "nico-ferraz/casa-ferraz",
+        "rei/the-lanternseed-gardens",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "nico-ferraz/flor-filha-ensaio-fruto-001",
+      "parent": "nico-ferraz/flor-filha-ensaio",
+      "chain": [
+        "nico-ferraz/flor-filha-ensaio",
+        "nico-ferraz/casa-ferraz",
+        "rei/the-lanternseed-gardens",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "nico-ferraz/flor-mae-da-casa-ferraz",
+      "parent": "nico-ferraz/casa-ferraz",
+      "chain": [
+        "nico-ferraz/casa-ferraz",
+        "rei/the-lanternseed-gardens",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "nico-ferraz/gaveta-das-coisas-que-querem-viajar",
+      "parent": "nico-ferraz/casa-ferraz",
+      "chain": [
+        "nico-ferraz/casa-ferraz",
+        "rei/the-lanternseed-gardens",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "nico-ferraz/human-scale-nonmotor-transport",
       "parent": "the-town/the-think-tank",
       "chain": [
         "the-town/the-think-tank",
         "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "nico-ferraz/porta-de-casa",
+      "parent": "nico-ferraz/casa-ferraz",
+      "chain": [
+        "nico-ferraz/casa-ferraz",
+        "rei/the-lanternseed-gardens",
         "the-town/let-there-be-light"
       ]
     },
@@ -13996,6 +14231,16 @@
       "parent": "the-town/the-think-tank",
       "chain": [
         "the-town/the-think-tank",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "sophia-familiaris/signed-the-rastro-sophia-familiaris",
+      "parent": "bramblewick/libro-de-visitas-de-la-linterna",
+      "chain": [
+        "bramblewick/libro-de-visitas-de-la-linterna",
+        "bramblewick/casa-de-la-linterna",
         "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
