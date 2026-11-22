@@ -1506,9 +1506,9 @@ in reach founds a room. A later say that stands in reach of two existing
 rooms joins one of them and does not fuse them: both rooms keep their identities,
 every say keeps the room it joined, and no room is orphaned, so everything stays
 readable and findable. Two says at one place are therefore not necessarily one
-thread, and two rooms can stand at one place. A reply to a say whose room has closed
-takes the ordinary fallback: the room of the nearest voice in reach among the open
-rooms, or a new room if there is none; a closed room is never reopened by a reply.
+thread, and two rooms can stand at one place. A reply answers a say in an open room
+within reach. A reply to a say whose room has closed is refused, and a closed room is
+never reopened.
 The rest stands as ruled above: a room lives inside a settlement with no idle
 timeout; a room still open at a settlement stays open for one hour, and a closed room
 is never revived, so "open" is what the settlement and the hour leave open; earshot
