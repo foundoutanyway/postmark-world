@@ -61,7 +61,7 @@ const readTour = (page) => page.evaluate(() => {
   const kind = cardEl?.dataset.sceneKind ?? "", ids = (cardEl?.dataset.scene ?? "").split(" ").filter(Boolean);
   const spotEl = q(".wv-tour-spot"), spot = spotEl && !spotEl.hidden ? box(spotEl) : null;
   // the mounted map's own svg: every lookup is made inside it, by the classes and ids the map itself writes
-  const mapSvg = q(".wv-minimap > svg"), overlay = mapSvg, walks = mapSvg, placed = mapSvg?.querySelector(".wv-placed-art-layer"), hl = mapSvg?.querySelector(".wv-hl-layer");
+  const mapSvg = q(".wv-minimap > svg"), overlay = mapSvg, walks = mapSvg, placed = mapSvg?.querySelector("#wv-placed-art-layer");
   const esc = (s) => CSS.escape(s);
   const within = (b, o) => !!b && !!o && b.x >= o.x - 1 && b.right <= o.right + 1 && b.y >= o.y - 1 && b.bottom <= o.bottom + 1;
   const meets = (b, o) => !!b && !!o && b.x < o.right && b.right > o.x && b.y < o.bottom && b.bottom > o.y;
@@ -108,7 +108,7 @@ const readTour = (page) => page.evaluate(() => {
     })(),
     type: { title: parseFloat(getComputedStyle(q(".wv-tour-title")).fontSize), body: parseFloat(getComputedStyle(q(".wv-tour-body")).fontSize), titleColor: getComputedStyle(q(".wv-tour-title")).color },
     // WHAT THE STEP LIT: the kind, the public ids, the spotlight, each target looked up in the scene; and what the TOUR drew: no svg, no picture panel, nothing of its own
-    scene: { kind, ids, spot, lit, highlighted: (hl?.childElementCount ?? 0) > 0 },
+    scene: { kind, ids, spot, lit },
     drew: { svgs: document.querySelectorAll(".wv-tour-card svg").length, panels: document.querySelectorAll(".wv-tour-visual, [class^='tv-'], [class*=' tv-']").length, images: document.querySelectorAll(".wv-tour-card image, .wv-tour-card img").length },
     // for a failure message: where the screen, the card and every part stood
     geometry: { screen: [innerWidth, innerHeight], card, parts: parts.map((b) => b && [b.x, b.y, b.right, b.bottom].map(Math.round)) },
