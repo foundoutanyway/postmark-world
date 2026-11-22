@@ -1325,7 +1325,11 @@ test("WLD-220: a phone is told only what a phone has (drag, tap, what is drawn);
   assert.match(next.body, /<b>💬<\/b>/);
   const { readFile } = await import("node:fs/promises");
   const source = await readFile(new URL("../spectator/viewer.mjs", import.meta.url), "utf8");
-  for (const glyph of ["⛶", "💬"]) assert.ok(source.includes(`>${glyph}</button>`), `the map draws a ${glyph} button`);
+  assert.ok(source.includes(">⛶</button>"), "the map draws a ⛶ button");
+  // CORE-147 (Darko 2026-11-21: "move the speech bubbles inside the filters"): the speech bubbles' switch is a layer of the Filters panel, one control and one state, so the map's own
+  // controls no longer carry a standalone 💬 button; the tour's last step still names the town's talk by its glyph
+  assert.ok(!source.includes(">💬</button>"), "no standalone 💬 button is left in the map's controls");
+  assert.ok(source.includes('key: "conversation"') && source.includes('data-dsel-layer="${layer.key}"'), "the speech bubbles' switch is a layer of the Filters panel");
   assert.ok(source.includes('class="ctl wv-tour-open"'), "and the ? the last step points at");
   // the tour's own input mode (words AND picture): phone width OR a coarse pointer; the shared width test stays the width test the bell and menu use
   assert.match(source, /const tourTouch = \(\) => onPhone\(\) \|\| \(typeof matchMedia === "function" && matchMedia\("\(pointer:coarse\)"\)\.matches\);/);
