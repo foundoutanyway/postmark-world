@@ -2141,6 +2141,8 @@ answers **"Moving to higher/lower floors has not been implemented yet. Coming So
 
 ## The spark — a moment remembered (CORE-70, ruled 2026-11-13 and 11-14; WLD-173)
 
+*A spark is a mark that remembers a moment: when it happened, where, and the recounting, headlined by its 150-character body.*
+
 **A spark is a moment someone would retell on its own: one place, one stretch of time, and something in it that turns.** Someone finds out, arrives, gives, fails, or is seen differently.
 
 - What led up to it, and what came right after, go in its recounting, not in sparks of their own.
