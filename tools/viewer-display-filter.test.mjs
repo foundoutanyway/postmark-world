@@ -37,14 +37,17 @@ import { fileURLToPath } from "node:url";
 import {
   emptyDisplaySelection, parseSizeM, markLongerSideM, displaySelectionHides, markInDisplaySelection, displaySelectionChips, clearDisplayChoice,
   displayControlsHTML, sortByDisplayType, townRegionMarks,
+  DISPLAY_LAYERS, DISPLAY_MARK_KINDS, toggleDisplayLayer, layerIsOff, displaySelectionActive, presentKindsMemo,
 } from "../spectator/viewer.mjs";
+import { MARK_ICONS } from "../spectator/mark-icons.mjs";
 import { machinePage, NO_PLAYWRIGHT } from "./page-machine.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 // ── 1. the pure part ────────────────────────────────────────────────────────
 const M = (id, kind, w, h) => ({ id, kind, extent: w === undefined ? undefined : { w, h } });
-const deps = (mine = [], drafts = []) => ({ isMine: (m) => mine.includes(m.id), isDraft: (m) => drafts.includes(m.id) });
+// `whatOf` here is the viewer's own `markWhat`, shrunk to the two kinds these invented marks are: a parcel wears `home`, a sited mark `place`
+const deps = (mine = [], drafts = []) => ({ isMine: (m) => mine.includes(m.id), isDraft: (m) => drafts.includes(m.id), whatOf: (m) => (m.kind === "parcel" ? "home" : "place") });
 
 test("size is the LONGER SIDE in metres of the mark's own extent; under and above are exclusive; a mark with no extent is a point", () => {
   assert.equal(markLongerSideM(M("a", "sited", 30, 90)), 90, "longer side, whichever it is");
@@ -73,20 +76,25 @@ test("whose is OR, the groups are AND, and nothing chosen hides nothing", () => 
   assert.deepEqual(pick({ ...base, mine: true }), ["mine-parcel", "mine-thing", "draft-thing", "big-mine"], "my marks (the existing just-mine set)");
   assert.deepEqual(pick({ ...base, drafts: true }), ["draft-thing"], "my drafts");
   assert.deepEqual(pick({ ...base, mine: true, drafts: true }), ["mine-parcel", "mine-thing", "draft-thing", "big-mine"], "OR within whose");
-  assert.deepEqual(pick({ ...base, parcels: true }), ["mine-parcel", "other-parcel"]);
-  assert.deepEqual(pick({ ...base, mine: true, parcels: true }), ["mine-parcel"], "AND across groups");
-  assert.deepEqual(pick({ ...base, mine: true, parcels: true, sizeMode: "under", sizeM: 20 }), [], "all three");
+  assert.deepEqual(pick({ ...base, off: ["place"] }), ["mine-parcel", "other-parcel"], "the places switched off leave the parcels (the `home` kind stays on)");
+  assert.deepEqual(pick({ ...base, mine: true, off: ["place"] }), ["mine-parcel"], "AND across groups");
+  assert.deepEqual(pick({ ...base, mine: true, off: ["place"], sizeMode: "under", sizeM: 20 }), [], "all three");
+  assert.deepEqual(pick({ ...base, off: ["home"] }), ["mine-thing", "draft-thing", "big-mine"], "the parcels switched off");
+  assert.deepEqual(pick({ ...base, off: ["home", "place"] }), [], "every kind off");
+  assert.deepEqual(pick({ ...base, off: ["door"] }), marks.map((m) => m.id), "a switch for a kind none of these marks wears hides none of them");
   assert.deepEqual(pick({ ...base, mine: true, sizeMode: "under", sizeM: 80 }), ["mine-parcel", "mine-thing", "draft-thing"], "the big mine mark is a non-match of a size choice");
   assert.equal(displaySelectionHides({ ...base, sortByType: true }), false, "sorting alone hides nothing");
 });
 
 test("chips, removal and all-clear", () => {
-  const sel = { ...emptyDisplaySelection(), mine: true, drafts: true, parcels: true, sizeMode: "above", sizeM: 12, sortByType: true };
-  assert.deepEqual(displaySelectionChips(sel).map((c) => c.label), ["my drafts", "my marks", "parcels", "above 12 m"]);
+  const sel = { ...emptyDisplaySelection(), mine: true, drafts: true, off: ["home", "residents"], sizeMode: "above", sizeM: 12, sortByType: true };
+  assert.deepEqual(displaySelectionChips(sel).map((c) => c.label), ["my drafts", "my marks", "no residents", "no parcels", "above 12 m"], "a switched-off layer is a chip, in the panel's order");
+  assert.deepEqual(displaySelectionChips(sel, { bubblesOn: false }).map((c) => c.label), ["my drafts", "my marks", "no residents", "no speech bubbles", "no parcels", "above 12 m"]);
   assert.equal(clearDisplayChoice(sel, "size").sizeM, null);
   assert.equal(clearDisplayChoice(sel, "mine").mine, false);
   assert.equal(clearDisplayChoice(sel, "mine").drafts, true, "one removal restores one choice");
-  assert.equal(clearDisplayChoice(sel, "nonsense").parcels, true, "an unknown key changes nothing");
+  assert.deepEqual(clearDisplayChoice(sel, "off:home").off, ["residents"], "removing a layer chip turns that one layer back on");
+  assert.deepEqual(clearDisplayChoice(sel, "nonsense").off, ["home", "residents"], "an unknown key changes nothing");
   assert.deepEqual(clearDisplayChoice({ ...sel }, "sort").sortByType, false);
   assert.deepEqual(sortByDisplayType([M("b", "thing"), M("a2", "sited"), M("a1", "sited"), M("c", "parcel")]).map((m) => m.id), ["c", "a1", "a2", "b"], "kind, then id: parcel < sited < thing");
 });
@@ -96,22 +104,112 @@ test("the panel: chosen choices are pressed, a household is needed for my marks 
   const off = displayControlsHTML({ sel: emptyDisplaySelection(), signedIn: false });
   assert.match(off.panel, /data-dsel="mine"[^>]*aria-pressed="false" disabled/);
   assert.match(off.panel, /data-dsel="drafts"[^>]*aria-pressed="false" disabled/);
-  assert.match(off.panel, /data-dsel="parcels"[^>]*aria-pressed="false"(?! disabled)/);
+  assert.doesNotMatch(off.panel, /data-dsel="parcels"/, "the old text chip is gone: a parcel is the `home` icon switch now");
+  assert.match(off.panel, /data-dsel-layer="home"[^>]*aria-pressed="true"/, "every layer is ON by default: today's view");
   assert.equal(off.strip, "", "nothing hidden: no strip");
   assert.match(off.panel, /nothing is hidden/);
   assert.match(off.opener, /aria-expanded="false"/);
-  const sel = { ...emptyDisplaySelection(), mine: true, parcels: true, sizeMode: "under", sizeM: 80 };
+  const sel = { ...emptyDisplaySelection(), mine: true, off: ["place"], sizeMode: "under", sizeM: 80 };
   const on = displayControlsHTML({ sel, signedIn: true, open: true, counts: { shown: 2, total: 24 } });
   assert.match(on.panel, /data-dsel="mine"[^>]*aria-pressed="true"/);
-  assert.match(on.panel, /data-dsel="parcels"[^>]*aria-pressed="true"/);
+  assert.match(on.panel, /data-dsel-layer="place"[^>]*aria-pressed="false"/, "a layer switched off reads as off");
+  assert.match(on.panel, /data-dsel-layer="home"[^>]*aria-pressed="true"/);
   assert.match(on.panel, /data-dsel-mode="under"[^>]*aria-pressed="true"/);
   assert.match(on.panel, /value="80"/);
   assert.match(on.strip, /2 of 24 shown/);
-  for (const key of ["mine", "parcels", "size"]) assert.match(on.strip, new RegExp(`data-dsel-remove="${key}"`));
+  for (const key of ["mine", "off:place", "size"]) assert.match(on.strip, new RegExp(`data-dsel-remove="${key}"`));
   assert.match(on.strip, /data-dsel-clear/);
   assert.match(on.opener, /aria-expanded="true"/);
   assert.match(on.opener, /aria-label="3 chosen"/);
   assert.doesNotMatch(on.panel, /facilit|biome/i, "facilities and biomes are left out for now (Darko, 2026-11-20)");
+});
+
+// ── 2b. the icon switches (CORE-147) ────────────────────────────────────────
+test("the layers are the icons the map draws: every switch's glyph is a real MARK_ICONS key, a mark kind IS a `markWhat` kind, and nothing is invented", () => {
+  assert.deepEqual(DISPLAY_LAYERS.map((l) => l.key), ["residents", "conversation", "home", "place", "thing", "door", "dungeon", "stairs", "vehicle", "creature"]);
+  for (const l of DISPLAY_LAYERS) assert.ok(MARK_ICONS[l.icon], `${l.key}: ${l.icon} is an icon the map has`);
+  assert.equal(DISPLAY_LAYERS.find((l) => l.key === "residents").icon, "inside", "a resident is the round frame on two stubby legs");
+  assert.equal(DISPLAY_LAYERS.find((l) => l.key === "conversation").icon, "conversation", "a speech bubble is the conversation badge's glyph");
+  for (const k of DISPLAY_MARK_KINDS) { assert.equal(MARK_ICONS[k].kind, "what", `${k} is a what-icon (what a mark IS)`); assert.equal(k, DISPLAY_LAYERS.find((l) => l.key === k).icon, "the switch wears its own kind's glyph"); }
+  assert.deepEqual([...DISPLAY_MARK_KINDS].sort(), ["creature", "door", "dungeon", "home", "place", "stairs", "thing", "vehicle"], "the closed set of what-icons the map draws, less the speech bubble, which is its own switch");
+  assert.doesNotMatch(JSON.stringify(DISPLAY_LAYERS), /facilit|biome|terrain|grid|mist/i, "content only (Wright, 2026-11-21): no ground, grid, mists or feedback switch");
+});
+
+test("a switch flips one layer, and only a known one; the residents and the speech bubbles hide no MARK; all-on is today's display", () => {
+  const base = emptyDisplaySelection();
+  assert.deepEqual(base.off, [], "nothing off: today's display");
+  const a = toggleDisplayLayer(base, "home");
+  assert.deepEqual(a.off, ["home"]); assert.deepEqual(base.off, [], "pure: the old selection is untouched");
+  assert.deepEqual(toggleDisplayLayer(a, "home").off, [], "a second click turns it back on");
+  assert.deepEqual(toggleDisplayLayer(a, "residents").off, ["home", "residents"]);
+  assert.deepEqual(toggleDisplayLayer(a, "nonsense").off, ["home"], "an unknown key changes nothing");
+  assert.deepEqual(toggleDisplayLayer(a, "conversation").off, ["home"], "the speech bubbles are the page's own remembered layer, not part of the selection");
+  const residentsOnly = toggleDisplayLayer(base, "residents");
+  assert.equal(displaySelectionHides(residentsOnly), false, "switching the residents off hides no mark (the list is untouched)");
+  assert.equal(displaySelectionActive(residentsOnly), true, "but the page shows less than today's: the strip and clear-all are there");
+  assert.equal(displaySelectionActive(base), false); assert.equal(displaySelectionActive(base, { bubblesOn: false }), true, "the speech bubbles off is less than today's too");
+  assert.equal(displaySelectionHides(a), true, "a mark kind off hides marks");
+  assert.equal(layerIsOff(a, "home"), true); assert.equal(layerIsOff(a, "place"), false);
+  assert.equal(layerIsOff(base, "conversation", { bubblesOn: false }), true); assert.equal(layerIsOff(base, "conversation"), false);
+  // a mark that wears no icon (a class declaration) has no switch and is never hidden by one
+  assert.equal(markInDisplaySelection({ id: "c" }, toggleDisplayLayer(base, "place"), { whatOf: () => null }), true);
+});
+
+test("the icon panel: each switch is its glyph + a label + 'on'/'off' + aria-pressed; kinds are offered only for what the world holds; the residents and the speech bubbles always", () => {
+  const html = displayControlsHTML({ sel: emptyDisplaySelection(), signedIn: true, present: ["home", "place"] });
+  assert.match(html.panel, /<span class="wv-ic ic-inside"[^>]*><\/span><span class="wv-dlayer-l">residents<\/span><span class="wv-dlayer-s">on<\/span>/, "the resident token, the word, the state");
+  assert.match(html.panel, /data-dsel-layer="conversation"[^>]*>.*?ic-conversation.*?speech bubbles/s);
+  assert.match(html.panel, /data-dsel-layer="home"[\s\S]*?ic-home[\s\S]*?parcels/);
+  assert.doesNotMatch(html.panel, /data-dsel-layer="(door|dungeon|stairs|vehicle|creature|thing)"/, "no switch for a kind the world does not hold");
+  const kept = displayControlsHTML({ sel: { ...emptyDisplaySelection(), off: ["door"] }, present: [] });
+  assert.match(kept.panel, /data-dsel-layer="door"[^>]*aria-pressed="false"/, "a kind that is switched off stays offered, so it can be switched back on");
+  const off = displayControlsHTML({ sel: { ...emptyDisplaySelection(), off: ["residents"] }, bubblesOn: false, present: ["home"] });
+  assert.match(off.panel, /data-dsel-layer="residents"[^>]*aria-pressed="false"[\s\S]*?wv-dlayer-s">off</);
+  assert.match(off.panel, /data-dsel-layer="conversation"[^>]*aria-pressed="false"/, "the speech bubbles read the page's own layer state");
+  assert.match(off.strip, /no residents/); assert.match(off.strip, /no speech bubbles/); assert.match(off.strip, /data-dsel-remove="bubbles"/); assert.match(off.strip, /data-dsel-remove="off:residents"/);
+  assert.match(off.opener, /aria-label="2 chosen"/);
+  assert.equal(displayControlsHTML({ sel: emptyDisplaySelection() }).strip, "", "everything on: no strip");
+});
+
+// the runtime wiring is source-checked by name (the browser test below drives it): one predicate, the 💬 button gone, nothing duplicated
+test("source: the speech bubbles are ONE control in the Filters panel (the 💬 button is gone), the residents and creatures switches gate their draw AND their hit scan", () => {
+  const src = readFileSync(join(ROOT, "spectator/viewer.mjs"), "utf8");
+  assert.doesNotMatch(src, /class="ctl wv-map-convo"/, "no second control for the speech bubbles");
+  assert.doesNotMatch(src, /closest\("\.wv-map-convo"\)/, "and no handler for it");
+  assert.match(src, /data-dsel-layer="\$\{layer\.key\}"/, "the icon switch markup");
+  assert.match(src, /const dlayer = e\.target\.closest\("\[data-dsel-layer\]"\);\s*if \(dlayer\) \{ toggleLayer\(dlayer\.dataset\.dselLayer\); return; \}/, "its one click route");
+  assert.match(src, /function setBubbles\(on\)[\s\S]*?mapCtx\.toggleConvo\(\)/, "the speech bubbles move through the layer's own toggle (layer, washes, polling, remembered choice)");
+  assert.match(src, /const inView = sceneWalkerSet\(\{[^\n]*\n\s*if \(residentsOff\(\)\) inView\.length = 0;/, "the residents' draw");
+  assert.match(src, /const paths = residentsOff\(\) \? "" : walkPathsSVG\(\);/, "and their walking lines");
+  assert.match(src, /function screenWalkerCandidates\(\) \{\s*if \(residentsOff\(\)\) return \[\];/, "and their hit scan");
+  assert.match(src, /if \(!liveCreatures\.size \|\| creaturesOff\(\)\) return "";/, "the creatures' draw (the hit scan reads these glyphs)");
+  assert.match(src, /whatOf: whatOfMark/, "the mark kinds ask the one predicate with markWhat");
+  assert.match(src, /import \{[^}]*\bmarkWhat\b[^}]*\} from "\.\/mark-icons\.mjs"/);
+  // the kinds list follows what thingClasses() follows: the page's learned thing kinds, with the epoch and the count unchanged
+  assert.match(src, /presentKindsOnce\(\{ epoch: worldEpoch, count: marks\.length, live, things \}/, "the memo's stamp carries the learned thing kinds");
+  assert.match(src, /things = thingKinds\.size;/, "read from the same ledger thingClasses() reads");
+});
+
+test("the present-kinds memo is kept while its inputs hold, and a thing kind learned LATE (epoch and mark count unchanged) makes it recompute", () => {
+  let computes = 0, answer = ["place"];                       // a mark first read as a place...
+  const once = presentKindsMemo();
+  const ask = (s) => once(s, () => { computes += 1; return [...answer]; });
+  assert.deepEqual(ask({ epoch: 3, count: 24, live: 0, things: 0 }), ["place"]);
+  assert.deepEqual(ask({ epoch: 3, count: 24, live: 0, things: 0 }), ["place"]);
+  assert.equal(computes, 1, "nothing moved: the kept answer is returned, not recomputed");
+  answer = ["thing"];                                         // ...becomes a thing when a close look teaches the kind (same epoch, same count)
+  assert.deepEqual(ask({ epoch: 3, count: 24, live: 0, things: 0 }), ["place"], "still the kept answer while the learned-kinds count has not moved");
+  assert.deepEqual(ask({ epoch: 3, count: 24, live: 0, things: 1 }), ["thing"], "a learned thing kind (epoch and mark count unchanged) recomputes: the things switch is offered, the places one is not");
+  assert.equal(computes, 2);
+  assert.deepEqual(ask({ epoch: 3, count: 24, live: 1, things: 1 }), ["thing"]);
+  assert.equal(computes, 3, "a creature going live recomputes too");
+  assert.deepEqual(ask({ epoch: 4, count: 24, live: 1, things: 1 }), ["thing"]);
+  assert.equal(computes, 4, "so does a new record epoch");
+  // an answer drawn before any mark had arrived is never kept
+  const early = presentKindsMemo(); let n = 0;
+  early({ epoch: 1, count: 0, live: 0, things: 0 }, () => { n += 1; return []; });
+  early({ epoch: 1, count: 0, live: 0, things: 0 }, () => { n += 1; return []; });
+  assert.equal(n, 2, "an empty-world answer is not kept");
 });
 
 // ── 3. the shipped consumers, in the real viewer ────────────────────────────
@@ -267,10 +365,10 @@ test("THE SHIPPED CONSUMERS: the huge non-match is drawn, listed and answers a h
     const first = await hover();
     assert.ok(first.count >= 1 && first.widest > 1500, `unfiltered, the huge mark answers the point it covers (${JSON.stringify(first)})`);
 
-    // choose, through the real controls: my marks + parcels + under 80 m
+    // choose, through the real controls: the places switched off (so the parcels are what is left to see) + my marks + under 80 m
     await click(page, ".wv-filters-open"); await page.waitForTimeout(300);
     assert.equal(await page.evaluate(() => document.querySelector(".wv-filters-open").getAttribute("aria-expanded")), "true");
-    await click(page, '[data-dsel="parcels"]'); await page.waitForTimeout(300);
+    await click(page, '[data-dsel-layer="place"]'); await page.waitForTimeout(300);
     await click(page, '[data-dsel="mine"]'); await page.waitForTimeout(300);
     await page.fill("[data-dsel-size]", "80"); await settle(page);
     const chosen = { map: await marksOnMap(page), list: await marksInList(page) };
@@ -285,12 +383,22 @@ test("THE SHIPPED CONSUMERS: the huge non-match is drawn, listed and answers a h
     assert.ok(zoomed.every((id) => MATCHES.includes(id)), "after a zoom, still only matches");
     await page.mouse.wheel(0, 300); await settle(page);
 
-    // removing one chip restores exactly that choice (the size): the matches are unchanged (both parcels are under 80 m); removing my marks widens to all parcels
+    // removing one chip restores exactly that choice. With the places off, the fixture's places (the huge hall, the orchard, the lantern, the bench, the
+    // fountain, the draft) are gone and its parcels stay; a mark that wears no icon (the town's own ground marks) has no switch, so it is not hidden BY the
+    // places switch: the checks are by the fixture's own ids, never by an exact list of everything the world holds.
+    const PLACES = FIXTURE.filter((m) => m.kind !== "parcel").map((m) => m.id).concat(DRAFT.id);
+    const PARCELS = ["other-house/parcel-a", "other-house/parcel-b", ...MATCHES];
     await click(page, '[data-dsel-remove="mine"]'); await settle(page);
     const parcelsOnly = await marksInList(page);
-    assert.deepEqual(parcelsOnly, ["other-house/parcel-a", "other-house/parcel-b", ...MATCHES].sort(), "my marks removed: every parcel under 80 m");
+    for (const id of PARCELS) assert.ok(parcelsOnly.includes(id), `my marks removed: ${id} (a parcel under 80 m) is listed`);
+    for (const id of PLACES) assert.ok(!parcelsOnly.includes(id), `${id} (a place) stays hidden while the places switch is off`);
     await click(page, '[data-dsel-remove="size"]'); await settle(page);
-    assert.deepEqual(await marksInList(page), ["other-house/parcel-a", "other-house/parcel-b", ...MATCHES].sort(), "size removed: all parcels");
+    const placesOffOnly = await marksInList(page);
+    for (const id of PARCELS) assert.ok(placesOffOnly.includes(id), `size removed: ${id} is listed`);
+    for (const id of PLACES) assert.ok(!placesOffOnly.includes(id), `${id} is still hidden: only the size chip was removed`);
+    await click(page, '[data-dsel-remove="off:place"]'); await settle(page);
+    const placesBack = await marksInList(page);
+    for (const id of ALL_IDS) assert.ok(placesBack.includes(id), `the places switched back on: ${id} is listed again`);
     // all-clear: today's display, exactly
     await click(page, "[data-dsel-clear]"); await settle(page);
     assert.deepEqual({ map: await marksOnMap(page), list: await marksInList(page) }, before, "all-clear restores today's unfiltered display");
@@ -321,6 +429,73 @@ test("a spectator (no household) cannot choose my marks or my drafts; the other 
     await click(page, ".wv-filters-open"); await page.waitForTimeout(300);
     const chips = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll("[data-dsel]")].map((b) => [b.dataset.dsel, b.disabled])));
     assert.equal(chips.mine, true); assert.equal(chips.drafts, true);
-    assert.equal(chips.parcels, false); assert.equal(chips.sort, false); assert.equal(chips.new, false);
+    assert.equal(chips.parcels, undefined, "the old text chip is gone"); assert.equal(chips.sort, false); assert.equal(chips.new, false);
+    // the icon switches are open to a spectator too
+    const layers = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll("[data-dsel-layer]")].map((b) => [b.dataset.dselLayer, [b.disabled, b.getAttribute("aria-pressed")]])));
+    for (const k of ["residents", "conversation", "home", "place"]) assert.deepEqual(layers[k], [false, "true"], `${k} is offered, enabled and on`);
+    assert.equal(layers.door, undefined, "no switch for a kind this world does not hold");
+  } finally { await page.close(); }
+});
+
+test("CORE-147: THE ICON SWITCHES in the real viewer: the residents and the speech bubbles are switches in the Filters panel (the 💬 button is gone), each hides its draw and its hit target, and all-clear restores today's view", async (t) => {
+  if (!chromium) return t.skip(SKIP);
+  const { page, errors } = await openPage();
+  try {
+    await frameScene(page, { x0: 0 });
+    assert.equal(await page.evaluate(() => !!document.querySelector(".wv-map-convo")), false, "no second control for the speech bubbles");
+    const state = () => page.evaluate(() => ({
+      bodies: document.querySelectorAll("#wv-walk-layer [data-walker]").length,
+      standpoint: !!document.querySelector(".ov-standpoint"),
+      convoShown: document.getElementById("wv-convo-layer")?.style.display !== "none",
+      pressed: Object.fromEntries([...document.querySelectorAll("[data-dsel-layer]")].map((b) => [b.dataset.dselLayer, b.getAttribute("aria-pressed")])),
+      stored: (() => { try { return localStorage.getItem(Object.keys(localStorage).find((k) => /convo/i.test(k)) ?? "") } catch { return null; } })(),
+      strip: document.querySelector(".wv-dstrip")?.innerText.replace(/\s+/g, " ") ?? "",
+    }));
+    await click(page, ".wv-filters-open"); await page.waitForTimeout(300);   // the kinds the world holds are read when the panel is opened
+    const today = await state();
+    assert.ok(today.bodies > 0, "the acting resident's body is on the map");
+    assert.equal(today.convoShown, true, "the speech bubbles are on by default: today's view");
+    assert.deepEqual([today.pressed.residents, today.pressed.conversation, today.pressed.home, today.pressed.place], ["true", "true", "true", "true"]);
+    assert.equal(today.strip, "", "nothing is hidden: no strip");
+
+    // the residents off: no body, no walking line, no chevron; the viewer's own standpoint marker (selection feedback) stays; the marks and the list are untouched
+    const marksBefore = await marksOnMap(page);
+    await click(page, '[data-dsel-layer="residents"]'); await settle(page);
+    const noRes = await state();
+    assert.equal(noRes.bodies, 0, "no resident is drawn");
+    assert.equal(noRes.standpoint, true, "the acting resident's standpoint marker is selection feedback and stays");
+    assert.equal(noRes.pressed.residents, "false");
+    assert.match(noRes.strip, /no residents/);
+    assert.deepEqual(await marksOnMap(page), marksBefore, "switching the residents off hides no mark");
+    // …and nothing hidden answers a point: the resident's old spot names no resident
+    const spot = await page.evaluate(() => { const e = document.querySelector(".ov-standpoint"); const r = e?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null; });
+    if (spot) { await page.mouse.move(spot.x - 4, spot.y - 4); await page.mouse.move(spot.x, spot.y); await page.waitForTimeout(500); }
+    assert.equal(await page.evaluate(() => document.querySelectorAll(".wv-bubble.is-hover.is-walker, .wv-bubble-walker").length), 0, "a hidden resident takes no hover");
+
+    // the speech bubbles off: the layer is hidden, the choice is the remembered one, the chip says so
+    await click(page, '[data-dsel-layer="conversation"]'); await settle(page);
+    const noBub = await state();
+    assert.equal(noBub.convoShown, false, "the speech-bubble layer is hidden");
+    assert.equal(noBub.pressed.conversation, "false");
+    assert.match(noBub.strip, /no speech bubbles/);
+    // a chip's ✕ turns that one layer back on
+    await click(page, '[data-dsel-remove="bubbles"]'); await settle(page);
+    const bubBack = await state();
+    assert.equal(bubBack.convoShown, true); assert.equal(bubBack.pressed.conversation, "true"); assert.ok(!/speech bubbles/.test(bubBack.strip));
+    assert.equal(bubBack.pressed.residents, "false", "…and only that one");
+
+    // a mark kind off through its icon: its marks leave the map and the list; all-clear puts every layer back
+    await click(page, '[data-dsel-layer="place"]'); await settle(page);
+    assert.equal((await marksOnMap(page)).includes("rig-house/lantern"), false, "a place (the lantern) is gone with the places switch off");
+    assert.equal((await marksOnMap(page)).includes("rig-house/home-parcel"), true, "…and a parcel stays: its own switch is on");
+    await click(page, '[data-dsel-layer="conversation"]'); await settle(page);
+    await click(page, "[data-dsel-clear]"); await settle(page);
+    const cleared = await state();
+    assert.equal(cleared.bodies, today.bodies, "the residents are back as they were");
+    assert.equal(cleared.convoShown, true, "the speech bubbles are back (all-clear is today's view)");
+    assert.deepEqual([cleared.pressed.residents, cleared.pressed.conversation, cleared.pressed.home, cleared.pressed.place], ["true", "true", "true", "true"]);
+    assert.equal(cleared.strip, "");
+    assert.deepEqual(await marksOnMap(page), marksBefore, "and every mark");
+    assert.deepEqual(errors, [], "no page errors");
   } finally { await page.close(); }
 });

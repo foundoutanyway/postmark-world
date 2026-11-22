@@ -12,11 +12,13 @@ const SOURCE = readFileSync(new URL("../spectator/viewer.mjs", import.meta.url),
 const ruleOf = (sel) => { const at = SOURCE.indexOf(`
 ${sel} {`); return at < 0 ? "" : SOURCE.slice(at, SOURCE.indexOf("}", at)); };
 
-test("the bubbles layer defaults ON, and its button says so", () => {
+test("the bubbles layer defaults ON, and its switch (in the Filters panel since CORE-147; the 💬 button is gone) says so", () => {
   assert.ok(SOURCE.includes("let convoVisible = convoStored() ?? true;"), "on unless the reader chose off");
   assert.match(SOURCE, /convoLayer\.style\.display = convoVisible \? "" : "none";/);
   assert.match(SOURCE, /convoHoverLayer\.style\.display = convoVisible \? "" : "none";/);
-  assert.ok(SOURCE.includes("classList.toggle(\"on\", convoVisible)"), "the lit button matches the layer");
+  assert.ok(SOURCE.includes("bubblesOn: bubblesVisible()"), "the lit switch matches the layer (the panel is drawn from the layer's own state)");
+  assert.match(SOURCE, /const bubblesVisible = \(\) => \{ try \{ return convoVisible; \} catch \{ return true; \} \};/);
+  assert.match(SOURCE, /syncDisplayControls\(\);\s*\/\/ the speech bubbles' switch/, "the switch is redrawn when the map mounts, remembered or default");
   assert.match(SOURCE, /if \(convoVisible\) Promise\.resolve\(\)\.then\(\(\) => loadConversations\(\)\)\.then\(drawConversations\)/, "it loads with the map, not on a first click");
 });
 
@@ -48,12 +50,12 @@ test("review: a reader who can act opens a thread only from its own disc; the gr
   assert.doesNotMatch(SOURCE, /Toggled off \(the default\)/, "the stale comment is gone");
 });
 
-test("review: the reader's own choice persists per viewer, in try/catch, and the lit button follows the layer", () => {
+test("review: the reader's own choice persists per viewer, in try/catch, and the lit switch follows the layer", () => {
   assert.match(SOURCE, /let convoVisible = convoStored\(\) \?\? true;/);
   assert.match(SOURCE, /const convoStored = \(\) => \{ try \{ const v = globalThis\.localStorage\?\.getItem\(CONVO_KEY\)/);
   assert.match(SOURCE, /try \{ globalThis\.localStorage\?\.setItem\(CONVO_KEY, on \? "on" : "off"\); \} catch/);
   assert.match(SOURCE, /convoStore\(on\);/);
-  assert.match(SOURCE, /classList\.toggle\("on", convoVisible\)/);
+  assert.match(SOURCE, /bubblesOn: bubblesVisible\(\)/);
 });
 
 // ── POS-779 whole-carrier review W1: a thread on the deck keeps its dashed ring ──

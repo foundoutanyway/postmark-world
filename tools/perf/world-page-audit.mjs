@@ -55,7 +55,7 @@
 //   drawn_marks               distinct drawn marks (#wv-overlay [data-id]) at the start of the drag at that place.
 // A sample is VALID only if every phase ran: no phase's selector missing, no failed request for the page's own
 // document or data, the place under the middle of the map, the camera at the same scale at both places, the camera
-// actually moved during the drag (>= MIN_CAMERA_WRITES writes, >= MIN_TRAVEL_PX of travel), the place still on screen after,
+// actually moved during the drag (>= MIN_CAMERA_WRITES writes, >= MIN_TRAVEL_PX of travel; or a SLOW PAN: >= MIN_TRAVEL_PX but fewer writes, with p95 >= PAN_P95_BAR_MS or longest task > PAN_TASK_BAR_MS, recorded in pan_stalled), the place still on screen after,
 // and the served FRAME (build.json) the same before and after. (C censored is not a failure: see above.) Any invalid sample makes the row invalid
 // (valid: false, with the reasons) and the exit code 2: an invalid row is never a baseline. A medians-of-zero cannot occur:
 // a missing number is null and invalidates the row.
@@ -86,6 +86,8 @@ export const NEAR_CENTRE_M = 500;        // the Town Centre's pill test: the cam
 export const SETTLE_CAP_MS = 20000;     // each "let the page rest" wait between inputs is capped; whether it rested is recorded, never assumed
 export const MIN_CAMERA_WRITES = 5;      // a drag that moved the camera fewer times than this was inert (a slowed page may write it rarely, never not at all)
 export const MIN_TRAVEL_PX = 60;         // …or moved it less far than this (CSS px of the map)
+export const PAN_P95_BAR_MS = 100;       // the routine's bars: a pan whose frame p95 reaches this …
+export const PAN_TASK_BAR_MS = 200;      // … or whose longest task is over this has crossed one
 export const SCALE_TOLERANCE = 0.06;     // both places are panned within 6 % of the same map scale
 
 /** the two named places: what the page's search box finds them by, and the record that says where each is. */
@@ -215,6 +217,10 @@ export function centredWithin(rect, pane, frac = 0.12) {
 export const sameScale = (a, b, tol = SCALE_TOLERANCE) => Number.isFinite(a) && Number.isFinite(b) && b > 0 && Math.abs(a / b - 1) <= tol;
 /** an inert drag: the camera was written too few times or went too short a way. */
 export const dragMoved = ({ writes, travelPx }) => writes >= MIN_CAMERA_WRITES && travelPx >= MIN_TRAVEL_PX;
+/** WLD-226 (Wright 2026-11-22 21:09Z): a real drag (>= MIN_TRAVEL_PX) that the page was too slow to write MIN_CAMERA_WRITES times is a SLOW PAN, not an inert drag, when
+ *  its own pan p95 or longest task crossed the bar. Read from the phase's own fields; nothing a caller passes can set it. */
+export const panStalled = (p) => !!p && Number.isFinite(p.camera_writes) && p.travel_px >= MIN_TRAVEL_PX && p.camera_writes < MIN_CAMERA_WRITES
+  && Number.isFinite(p.frame_p95_ms) && Number.isFinite(p.longest_task_ms) && (p.frame_p95_ms >= PAN_P95_BAR_MS || p.longest_task_ms > PAN_TASK_BAR_MS);
 // WHAT THE PAGE RENDERED vs HOW FRESH THE TOWN IS (WLD-222 fit, Wright 2026-11-21). The frame a sample was measured on is the
 // World code/snapshot and the Site release: the Site's release tag and code, the World sha and its settlement and digest. The town's
 // freshness — the town and its mail moving with town_sha and the crossing — changes between samples without changing what the page renders,
@@ -256,7 +262,7 @@ export function sampleProblems(s, { official }) {
   for (const [k, p] of Object.entries(s.places ?? {})) {
     if (!p.located) bad.push(`${k}: the place was not under the middle of the map`);
     if (!p.scale_ok) bad.push(`${k}: the camera was not at the common scale (${p.scale} vs ${s.scale_ref})`);
-    if (!dragMoved({ writes: p.camera_writes, travelPx: p.travel_px })) bad.push(`${k}: the drag did not move the camera (${p.camera_writes} writes, ${Math.round(p.travel_px)} px)`);
+    if (!dragMoved({ writes: p.camera_writes, travelPx: p.travel_px }) && !panStalled(p)) bad.push(`${k}: the drag did not move the camera (${p.camera_writes} writes, ${Math.round(p.travel_px)} px)`);
     if (!p.still_in_view) bad.push(`${k}: the place had left the screen after the drag`);
     if (!Number.isFinite(p.frame_p95_ms)) bad.push(`${k}: no animation frames in the drag`);
     if (!(p.drawn_marks > 0)) bad.push(`${k}: no drawn marks`);
@@ -304,6 +310,10 @@ export function auditRow({ samples, town, env, official, at }) {
     tags: Object.fromEntries(TAG_KEYS.map((k) => [k, town?.[k] ?? null])),     // provenance labels; null = no tag named, not an unknown snapshot
     freshness_varied: fresh.size > 1,
     censored: metrics.interactive_ms ? metrics.interactive_ms.n_censored > 0 : null,
+    // slow pans: drags that travelled but that the page could not write 5 times, with their raw numbers; a finding, not an invalidity (see panStalled)
+    pan_stalled: samples.flatMap((s, i) => Object.entries(s.places ?? {}).filter(([, p]) => panStalled(p)).map(([k, p]) => ({
+      sample: i + 1, place: k, camera_writes: p.camera_writes, travel_px: p.travel_px, frame_p95_ms: p.frame_p95_ms, longest_task_ms: p.longest_task_ms, frames: p.frames, long_tasks: p.long_tasks,
+    }))),
     town, env, metrics,
     samples: samples.map(({ places: pl, ...rest }) => ({ ...rest, places: pl })),
   };
