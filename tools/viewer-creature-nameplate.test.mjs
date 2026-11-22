@@ -224,8 +224,9 @@ test("wiring: the closure is gone, and the one call site passes the looked-up ro
 // tools/viewer-shell-css.test.mjs carries the account (and the correction of the earlier +2634 / 113998 figures). CREATURE_CSS and both of its neighbours are untouched.
 // RE-PINNED FOR THE WLD-220 NARROW-SHORT FIX: +134 bytes (115553 -> 115687), the tour's short-screen media query and its comment only; tools/viewer-shell-css.test.mjs carries the account.
 // RE-PINNED FOR THE WLD-220 REAL-PAGE CORRECTION: the tour's drawn-picture rules are removed (115687 -> 113276, -2411), only .wv-tour / .tv-* rules; tools/viewer-shell-css.test.mjs carries the account.
-const PINNED_MASKED_STYLE_SHA256 = "f054d1d989de1f59a9ce8c13913be1fa7f6a07cdbe1d2067f09e66565f9a2804";
-const PINNED_MASKED_STYLE_BYTES = 113276;
+// RE-PINNED FOR THE TOUR ICONS (CORE-153): the card's icon rows only, +442 bytes (113276 -> 113718), under .wv-tour-body; tools/viewer-shell-css.test.mjs carries the account.
+const PINNED_MASKED_STYLE_SHA256 = "5dd4a46071032a2dd9ede4f8ea57a618415eb11964dd1b6306ad34641f5eb5d1";
+const PINNED_MASKED_STYLE_BYTES = 113718;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";

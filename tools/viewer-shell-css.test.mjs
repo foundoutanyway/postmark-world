@@ -114,8 +114,10 @@ import { MARK_ICON_CSS } from "../spectator/mark-icons.mjs";
 // every `.wv-tour-visual` / `.tv-*` rule (the paper panel, the labels, the controls row, the pointer) and the short-screen two-column reflow are REMOVED, and the short-screen block
 // is a plain tightening at every width: -2411 bytes (115687 -> 113276). Whole account over the prior tour's 111364: +1912 (the join-flow theme, the bounded scrolling card and the
 // compact short-screen block, less the removed picture rules). Only .wv-tour rules move; measured by this test's own masked-emission route.
-const PINNED_MASKED_STYLE_SHA256 = "f054d1d989de1f59a9ce8c13913be1fa7f6a07cdbe1d2067f09e66565f9a2804";
-const PINNED_MASKED_STYLE_BYTES = 113276;
+// RE-PINNED FOR CORE-54 / WLD-220's TOUR ICONS (Darko 2026-11-22 00:31: the card shows the map's own house and resident), knowingly, an INTENDED change to STYLE: the card's icon rows (.tour-line, .tour-slot,
+// .tour-ic, all under .wv-tour-body and a comment), +442 bytes (113276 -> 113718), nothing else moved. Measured by this test's own masked-emission route.
+const PINNED_MASKED_STYLE_SHA256 = "5dd4a46071032a2dd9ede4f8ea57a618415eb11964dd1b6306ad34641f5eb5d1";
+const PINNED_MASKED_STYLE_BYTES = 113718;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";

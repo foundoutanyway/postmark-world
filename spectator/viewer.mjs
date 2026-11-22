@@ -2576,10 +2576,12 @@ export function farWalkLegsSVG(bodies, px, skip = () => false) {
     if (!(w.moving ?? (!w.arrived && !w.standing))) continue;
     const a = px(w), b = px(w.toward);
     if (![a.x, a.y, b.x, b.y].every(Number.isFinite)) continue;
-    s += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="wv-walk-leg"/>`;
+    s += walkLegLineSVG(a, b);
   }
   return s;
 }
+/** One walking leg as the far tier draws it (the stylesheet's `.wv-walk-leg`: its colour, dash and non-scaling stroke); the tour card draws the same line inline. */
+export const walkLegLineSVG = (a, b) => `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="wv-walk-leg"/>`;
 // YOUR HOUSEMATES' RING (POS-373, Darko 2026-10-09: "the residents of your
 // signed-in household are always highlighted, visible with their full profile
 // art"). `ring` is the colour a housemate's frame is drawn in: their own colour,
@@ -2599,7 +2601,6 @@ export function walkerFrameSVG({ at, handle = "", moving = false, label = null, 
   // same stance, same length — and start where they meet the rim: on a circle
   // of radius r the point 0.22·size off centre lies √(r² − (0.22·size)²) below
   // the middle, a hair above where the square's bottom edge was.
-  const rim = Math.sqrt(r * r - (size * 0.22) ** 2);
   const who = esc(label ?? handle);
   const safe = String(handle ?? "").toLowerCase().replace(/[^a-z0-9-]/g, "");
   const ringHex = HEX.test(String(ring ?? "").trim()) ? String(ring).trim() : "";
@@ -2627,11 +2628,20 @@ export function walkerFrameSVG({ at, handle = "", moving = false, label = null, 
     // the halo sits behind the face and inside the hit disc: a reading, not a target
     + (actor ? `<circle cx="0" cy="0" r="${r + ACTOR_HALO}" class="wv-walker-halo"/>` : "")
     + fill
-    + `<circle cx="0" cy="0" r="${r}" class="wv-walker-frame"${ringHex ? ` style="--wv-ring:${ringHex}"` : ""}/>`
-    + `<line x1="${-size * 0.22}" y1="${rim}" x2="${-size * 0.3}" y2="${rim + leg}" class="wv-walker-leg"/>`
-    + `<line x1="${size * 0.22}" y1="${rim}" x2="${size * 0.3}" y2="${rim + leg}" class="wv-walker-leg"/>`
+    + walkerShapeSVG({ size, leg, ringHex })
     + `</g></g></g>`;
 }
+// THE RESIDENT'S FIGURE, one drawing for the map and for the tour card: the round frame on two legs. The legs start where they meet the rim: on a circle of radius r the point
+// 0.22·size off centre lies √(r² − (0.22·size)²) below the middle.
+export function walkerShapeSVG({ size, leg, ringHex = "" } = {}) {
+  const r = size / 2;
+  const rim = Math.sqrt(r * r - (size * 0.22) ** 2);
+  return `<circle cx="0" cy="0" r="${r}" class="wv-walker-frame"${ringHex ? ` style="--wv-ring:${ringHex}"` : ""}/>`
+    + `<line x1="${-size * 0.22}" y1="${rim}" x2="${-size * 0.3}" y2="${rim + leg}" class="wv-walker-leg"/>`
+    + `<line x1="${size * 0.22}" y1="${rim}" x2="${size * 0.3}" y2="${rim + leg}" class="wv-walker-leg"/>`;
+}
+/** The far tier's standing resident as the map draws it (no face, no handle): the figure the tour card shows inline. */
+export const walkerFarFigureSVG = () => `<g class="wv-walker-far">${walkerShapeSVG({ size: WALKER_FRAME.far, leg: WALKER_FRAME.legFar })}</g>`;
 
 // A HOUSEMATE OFF THE SCREEN IS POINTED AT, NEVER LOST (POS-373, Darko
 // 2026-10-09). For each of your household's bodies the map holds whose position
@@ -2670,11 +2680,16 @@ export function housemateEdges({ walkers = [], handles = [], viewport = null, in
 // glyph that dropped it would make every house at town width unclickable —
 // which is the zoom a reader arrives at.
 export const HOME_GLYPH_SCALE = 0.46;
+// THE HOUSE GLYPH ITSELF, one drawing for the map and for the tour card (CORE-153, Darko 2026-11-22: "exact replicas of the assets for house and resident ... in the tutorial card"):
+// the card's roofline filled, with its envelope face, at the far tier's scale. `attrs` is the caller's own attribute text for the path (the map writes its data-id there).
+export function houseGlyphSVG(attrs = "") {
+  return `<g transform="scale(${HOME_GLYPH_SCALE})"><path d="${homeCardPath()}" class="ov-glyph"${attrs}/>${homeFaceSVG()}</g>`;
+}
 export function overlayHouseGlyphSVG({ at, id, classes = "", mine = false } = {}) {
   const x = Number(at?.x), y = Number(at?.y);
   if (![x, y].every(Number.isFinite)) return "";
   return `<g transform="translate(${x} ${y})"><g class="ov-s${mine ? " ov-mine" : ""}">`
-    + `<g transform="scale(${HOME_GLYPH_SCALE})"><path d="${homeCardPath()}" class="ov-glyph" data-id="${esc(id)}"/>${homeFaceSVG()}</g>`
+    + houseGlyphSVG(` data-id="${esc(id)}"`)
     + `<circle r="${OVERLAY_PIP_R}" class="ov-pip ov-pip-home ${classes}" data-id="${esc(id)}"/>`
     + `</g></g>`;
 }
@@ -3382,12 +3397,22 @@ export function writePaintingOnly(storage, on) {
 // Each step carries a `visual` (tourVisual below, drawn with the map's OWN drawing functions: the parcel footprint, the home pip, the resident's round frame on two legs,
 // the dashed walking leg, the mark art, the map's control buttons) over a few large words. The words say only what the picture shows. The Site's join funnel is the
 // theme: a large gold headline, restrained soft text, art on paper, generous space, a progress of small dots with the current one a bar.
+// THE CARD'S OWN ICONS ARE THE MAP'S DRAWINGS (CORE-153, Darko 2026-11-22 00:31: "exact replicas of the assets for house and resident ... in the tutorial card"): the house glyph, the green
+// resident figure and the walking leg are drawn by the SAME functions the map draws them with (houseGlyphSVG, walkerFarFigureSVG, walkLegLineSVG), inside a plain svg, and take the
+// same stylesheet rules (`.ov-glyph`, `.wv-walker-*`, `.wv-walk-leg`). Their size is the live map's: syncTourIcons below sets each from the real element the step lights.
+const tourIcon = (kind, w, h, vb, inner) => `<span class="tour-slot"><svg class="tour-ic" data-tour-icon="${kind}" width="${w}" height="${h}" viewBox="${vb}" aria-hidden="true">${inner}</svg></span>`;
+const TOUR_IC = {
+  house: tourIcon("house", 26, 28, "-13 -14 26 28", houseGlyphSVG()),
+  resident: tourIcon("resident", 18, 21, "-9 -8.5 18 21", walkerFarFigureSVG()),
+  walk: tourIcon("walk", 34, 8, "0 -4 34 8", walkLegLineSVG({ x: 0, y: 0 }, { x: 34, y: 0 })),
+};
 export const TOUR_SLIDES = [
   {
     id: "welcome",
     title: "Welcome to the world",
     // Wright 2026-11-21 07:43: the people and agents who live here (the earlier wording excluded the humans)
-    body: "The people and agents who live here write the world in words.<br><b>The world is told, not drawn.</b>",
+    // Darko 2026-11-22 00:31: the line "The world is told, not drawn." is cut ("seems false when marks have images")
+    body: "The people and agents who live here write the world in words.<br>Everything on this map was made by a resident.",
   },
   {
     // THE PAGE ITSELF (Darko 2026-11-21 22:01 EST: "the tour needs to take assets directly from the actual world page"; Wright 03:01Z): a step with a `stage` points at a piece of the
@@ -3398,7 +3423,10 @@ export const TOUR_SLIDES = [
     stage: "house",
     pad: 26,
     title: "Houses and residents",
-    body: "A <b>house</b> is a parcel.<br><b>Green</b> figures are residents.",
+    // each line carries the map's own drawing of what it names (TOUR_IC); the walking line is DRAWN here in the map's own stroke and is not staged on the map (Darko 2026-11-22 00:32)
+    body: `<span class="tour-line">${TOUR_IC.house}<span>A <b>house</b> is a parcel.</span></span>`
+      + `<span class="tour-line">${TOUR_IC.resident}<span><b>Green</b> figures are residents.</span></span>`
+      + `<span class="tour-line">${TOUR_IC.walk}<span>A <b>dotted line</b> is a resident walking right now.</span></span>`,
   },
   {
     id: "marks",
@@ -6895,6 +6923,11 @@ ${WV_ENTER_CSS}
 .wv-tour-body b { color:#f6dcae; font-weight:700; }
 .wv-tour-body em { color:var(--dim); }
 .wv-tour-body a { color:#e8c48b; text-underline-offset:4px; }   /* the last step's one link (WLD-220): the join flow's gold, underlined */
+/* the card's own icons (CORE-153): the map's drawings inline beside their words; their size is set from the live map (syncTourIcons) */
+.wv-tour-body .tour-line { display:flex; align-items:center; gap:.55em; }
+.wv-tour-body .tour-line + .tour-line { margin-top:.4em; }
+.wv-tour-body .tour-slot { flex:none; width:2.6rem; display:flex; align-items:center; justify-content:center; }
+.wv-tour-body .tour-ic { display:block; overflow:visible; }
 .wv-tour-body .tour-blue { color:var(--blue); }
 .wv-tour-body .tour-green { color:var(--green); }
 .wv-tour-body .tour-amber { color:var(--amber); }
@@ -16619,17 +16652,34 @@ export function mountViewer(appEl) {
   };
   const tourMid = (r) => ({ x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2 });
   const tourById = (layer, sel, attr, id) => layer?.querySelector(`${sel}[${attr}="${CSS.escape(id)}"]`)?.getBoundingClientRect() ?? null;
+  // A FRAME FULL OF MAP (CORE-153, Darko 2026-11-22 00:31: a house at the world's edge left a third of the frame empty void): the window the camera will show once it is brought in on a
+  // target is the svg's own box over the framing factor, centred on the target; a target whose window would reach past the painting's paper (`.wv-tg-paper`, the map's own extent) is
+  // not chosen while another fits, and the first by distance from the middle of the paper wins. With no paper to read (a room scene) or nothing to frame, every target fits.
+  function tourFit() {
+    const paper = mapCtx?.svg?.querySelector?.(".wv-tg-paper")?.getBoundingClientRect?.();
+    const box = mapCtx?.svg?.getBoundingClientRect?.();
+    const factor = mapCtx?.setView ? tourFrameFactor() : 1;
+    if (!paper?.width || !box?.width || !(factor > 1.15)) return { fits: () => true, away: () => 0 };
+    const hw = box.width / factor / 2, hh = box.height / factor / 2, mid = tourMid(paper);
+    return {
+      fits: (c) => c.x - hw >= paper.left - 1 && c.x + hw <= paper.right + 1 && c.y - hh >= paper.top - 1 && c.y + hh <= paper.bottom + 1,
+      away: (c) => Math.hypot(c.x - mid.x, c.y - mid.y),
+    };
+  }
   function tourSceneTarget(kind) {
     const pane = tourPane(), overlay = mapCtx?.overlay, walks = mapCtx?.walkLayer;
     if (!pane || !overlay) return null;
+    const fit = tourFit();
+    // candidates that fit the painting come first, nearest the middle of it; the rest follow in the old order, so a page where none fits still gets its step
+    const rank = (list, centre) => [...list].sort((a, b) => (fit.fits(centre(b)) ? 1 : 0) - (fit.fits(centre(a)) ? 1 : 0) || fit.away(centre(a)) - fit.away(centre(b)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
     const pips = (sel) => [...overlay.querySelectorAll(sel)].map((el) => ({ id: el.getAttribute("data-id"), r: el.getBoundingClientRect() })).filter((p) => p.id && tourWithin(p.r, pane));
     const byIdAsc = (a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
     if (kind === "house") {
       const homes = pips(".ov-pip-home");
       if (!homes.length || !walks) return null;
       const residents = [...walks.querySelectorAll(".wv-walker-far:not(.moving)")]
-        .map((el) => ({ id: el.getAttribute("data-handle"), r: el.getBoundingClientRect() })).filter((w) => w.id && tourWithin(w.r, pane)).sort(byIdAsc);
-      for (const w of residents) {
+        .map((el) => ({ id: el.getAttribute("data-handle"), r: el.getBoundingClientRect() })).filter((w) => w.id && tourWithin(w.r, pane));
+      for (const w of rank(residents, (w) => tourMid(w.r))) {
         const c = tourMid(w.r);
         let best = null, bestD = Infinity;
         for (const h of homes) { const m = tourMid(h.r), d = Math.hypot(m.x - c.x, m.y - c.y); if (d < bestD) { bestD = d; best = h; } }
@@ -16663,9 +16713,11 @@ export function mountViewer(appEl) {
     }
     if (kind === "dot") {
       const mid = tourMid({ left: pane.left, right: pane.right, top: pane.top, bottom: pane.bottom });
-      const home = pips(".ov-pip-home").sort((a, b) => {
-        const da = Math.hypot(tourMid(a.r).x - mid.x, tourMid(a.r).y - mid.y), db = Math.hypot(tourMid(b.r).x - mid.x, tourMid(b.r).y - mid.y);
-        return da - db || byIdAsc(a, b);
+      const homes = pips(".ov-pip-home"), centre = (p) => tourMid(p.r);
+      const home = [...homes].sort((a, b) => {
+        const fa = fit.fits(centre(a)) ? 0 : 1, fb = fit.fits(centre(b)) ? 0 : 1;
+        const da = Math.hypot(centre(a).x - mid.x, centre(a).y - mid.y), db = Math.hypot(centre(b).x - mid.x, centre(b).y - mid.y);
+        return fa - fb || da - db || byIdAsc(a, b);
       })[0];
       if (!home) return null;
       const id = home.id;
@@ -16685,13 +16737,16 @@ export function mountViewer(appEl) {
   // town-wide zoom"): the camera is brought in with the map's own setView until the view is JUST WIDER than the far tier (so the map still draws what it draws at that tier, the
   // same frames and pips, only nearer), centred on the target. Nothing is scaled or redrawn by the tour. setView hands back the reader's view; the stage's undo puts it back, on the
   // next step, on back, on skip, on done and on Escape alike.
+  function tourFrameFactor() {
+    const far = Number(state.drawDials?.tier_far_m ?? SPECTATOR_DRAW_DEFAULTS.tier_far_m);
+    const across = metresAcross(mapCtx.zoomK, paintingWidthM());
+    return far > 0 && Number.isFinite(across) ? across / (far * 1.05) : 1;
+  }
   function tourFrame(clientRect) {
     if (!mapCtx?.setView || !mapCtx.svg?.getScreenCTM) return null;
     const matrix = mapCtx.svg.getScreenCTM();
     if (!matrix) return null;
-    const far = Number(state.drawDials?.tier_far_m ?? SPECTATOR_DRAW_DEFAULTS.tier_far_m);
-    const across = metresAcross(mapCtx.zoomK, paintingWidthM());
-    const factor = far > 0 && Number.isFinite(across) ? across / (far * 1.05) : 1;
+    const factor = tourFrameFactor();
     if (!(factor > 1.15)) return null;
     const pt = mapCtx.svg.createSVGPoint();
     pt.x = clientRect.x + clientRect.width / 2; pt.y = clientRect.y + clientRect.height / 2;
@@ -16853,9 +16908,29 @@ export function mountViewer(appEl) {
       scheduleTourDeckRefresh();
     }, 700);
   }
+  // THE CARD'S ICONS ARE AT THE MAP'S SIZE (CORE-153): each inline drawing is scaled by the ratio of the real element's drawn width to its own, both read the same way
+  // (getBoundingClientRect), so the house in the card is as wide as the house the step lights, and the resident as wide as that resident. The walking leg is the map's stroke (2 px,
+  // dashed, non-scaling) at its natural length. Where the map is not drawing the real element at this view, the icon keeps its natural size, which is also its floor.
+  function syncTourIcons() {
+    const el = tourEl(), ids = tourSceneInfo?.ids ?? [];
+    if (!el) return;
+    for (const ic of el.querySelectorAll(".wv-tour-body svg[data-tour-icon]")) {
+      const kind = ic.getAttribute("data-tour-icon");
+      const real = kind === "house" ? mapCtx?.overlay?.querySelector(`.ov-glyph[data-id="${CSS.escape(ids[0] ?? "")}"]`)
+        : kind === "resident" ? mapCtx?.walkLayer?.querySelector(`.wv-walker-far[data-handle="${CSS.escape(ids[1] ?? "")}"] > .wv-walker-frame`) : null;
+      const mine = kind === "house" ? ic.querySelector(".ov-glyph") : kind === "resident" ? ic.querySelector(".wv-walker-frame") : null;
+      const rw = real?.getBoundingClientRect().width, mw = mine?.getBoundingClientRect().width;
+      if (!(rw > 0) || !(mw > 0)) continue;
+      // the map's size, but never smaller than the icon's natural one (the size the map draws it at on a desktop): a phone's framed map draws the house 8 px wide, which is no lesson
+      const now = ic.getBoundingClientRect(), up = Math.max(rw / mw * now.width, Number(ic.getAttribute("width"))) / now.width;
+      ic.style.width = `${(now.width * up).toFixed(2)}px`;
+      ic.style.height = `${(now.height * up).toFixed(2)}px`;
+    }
+  }
   function placeTour() {
     const el = tourEl();
     if (!el || el.hidden) return;
+    syncTourIcons();
     const card = $(el, ".wv-tour-card");
     const spot = $(el, ".wv-tour-spot");
     const scrim = $(el, ".wv-tour-scrim");

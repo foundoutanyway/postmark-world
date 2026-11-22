@@ -82,8 +82,24 @@ const readTour = (page) => page.evaluate(() => {
     const pip = overlay?.querySelector(`.ov-pip.ov-pip-home[data-id="${esc(ids[0])}"]`);
     lit.dot = { found: !!pip, inSpot: within(box(pip), spot), rect: box(pip) };
   }
+  // THE FRAME IS FULL OF MAP (CORE-153): the share of the map pane the painting's paper (.wv-tg-paper, its own extent) does not cover, in screen pixels
+  const paneR = q(".wv-minimap")?.getBoundingClientRect(), paperR = q(".wv-minimap .wv-tg-paper")?.getBoundingClientRect();
+  let voidShare = null;
+  if (paneR && paperR && paneR.width > 0 && paneR.height > 0) {
+    const iw = Math.max(0, Math.min(paneR.right, paperR.right) - Math.max(paneR.left, paperR.left)), ih = Math.max(0, Math.min(paneR.bottom, paperR.bottom) - Math.max(paneR.top, paperR.top));
+    voidShare = 1 - (iw * ih) / (paneR.width * paneR.height);
+  }
+  // THE CARD'S ICONS ARE THE MAP'S DRAWINGS (CORE-153): each inline icon's own shape, read next to the real element the step lights
+  const icons = {};
+  for (const ic of card ? document.querySelectorAll(".wv-tour-body svg.tour-ic") : []) {
+    const kind = ic.getAttribute("data-tour-icon"), r = ic.getBoundingClientRect();
+    if (kind === "house") { const mine = ic.querySelector("path.ov-glyph"), real = overlay?.querySelector('.ov-glyph[data-id="' + esc(ids[0] ?? "") + '"]'); icons.house = { d: mine?.getAttribute("d") ?? null, realD: real?.getAttribute("d") ?? null, fill: mine ? getComputedStyle(mine).fill : null, realFill: real ? getComputedStyle(real).fill : null, w: r.width, mineW: mine?.getBoundingClientRect().width ?? 0, realW: real?.getBoundingClientRect().width ?? 0, face: ic.querySelectorAll(".ov-home-envelope, .ov-home-flap").length, realFace: real?.parentNode?.querySelectorAll(".ov-home-envelope, .ov-home-flap").length ?? 0 }; }
+    if (kind === "resident") { const mine = ic.querySelector(".wv-walker-far > .wv-walker-frame"), real = walks?.querySelector('.wv-walker-far[data-handle="' + esc(ids[1] ?? "") + '"] > .wv-walker-frame'); icons.resident = { r: mine?.getAttribute("r") ?? null, realR: real?.getAttribute("r") ?? null, fill: mine ? getComputedStyle(mine).fill : null, realFill: real ? getComputedStyle(real).fill : null, stroke: mine ? getComputedStyle(mine).stroke : null, realStroke: real ? getComputedStyle(real).stroke : null, legs: ic.querySelectorAll(".wv-walker-leg").length, w: r.width, mineW: mine?.getBoundingClientRect().width ?? 0, realW: real?.getBoundingClientRect().width ?? 0 }; }
+    if (kind === "walk") { const ln = ic.querySelector("line.wv-walk-leg"), cs = ln ? getComputedStyle(ln) : null; icons.walk = { stroke: cs?.stroke ?? null, width: cs?.strokeWidth ?? null, dash: cs?.strokeDasharray ?? null, opacity: cs?.opacity ?? null, vector: cs?.vectorEffect ?? null }; }
+  }
   const s = q(".wv-tour-scroll");
   return {
+    voidShare, icons,
     open: !q(".wv-tour")?.hidden && !!card && card.w > 0,
     kicker: q(".wv-tour-kicker")?.textContent ?? null,
     title: q(".wv-tour-title")?.textContent ?? null,
@@ -109,7 +125,7 @@ const readTour = (page) => page.evaluate(() => {
     type: { title: parseFloat(getComputedStyle(q(".wv-tour-title")).fontSize), body: parseFloat(getComputedStyle(q(".wv-tour-body")).fontSize), titleColor: getComputedStyle(q(".wv-tour-title")).color },
     // WHAT THE STEP LIT: the kind, the public ids, the spotlight, each target looked up in the scene; and what the TOUR drew: no svg, no picture panel, nothing of its own
     scene: { kind, ids, spot, lit, cameraW: parseFloat((mapSvg?.getAttribute("viewBox") ?? "").split(/\s+/)[2]) },
-    drew: { svgs: document.querySelectorAll(".wv-tour-card svg").length, panels: document.querySelectorAll(".wv-tour-visual, [class^='tv-'], [class*=' tv-']").length, images: document.querySelectorAll(".wv-tour-card image, .wv-tour-card img").length },
+    drew: { svgs: document.querySelectorAll(".wv-tour-card svg").length, panels: document.querySelectorAll(".wv-tour-visual, [class^='tv-'], [class*=' tv-']").length, images: document.querySelectorAll(".wv-tour-card image, .wv-tour-card img").length, icons: document.querySelectorAll(".wv-tour-card svg.tour-ic").length },
     // for a failure message: where the screen, the card and every part stood
     geometry: { screen: [innerWidth, innerHeight], card, parts: parts.map((b) => b && [b.x, b.y, b.right, b.bottom].map(Math.round)) },
   };
@@ -127,7 +143,8 @@ function contained(s, what) {
   assert.ok(s.cardOnScreen && s.controlsInCard && s.controlsOnScreen, `${what}: the card and every control are whole on the screen ${JSON.stringify({ card: s.cardOnScreen, inCard: s.controlsInCard, onScreen: s.controlsOnScreen, geometry: s.geometry })}`);
   assert.ok(s.reach && s.reach.bottomOk && s.reach.titleOnScreen && s.reach.footOnScreen, `${what}: the words' end is reachable, the title and foot stay on the screen ${JSON.stringify(s.reach)}`);
   assert.ok(!s.reach.scrolls || /auto|scroll/.test(s.reach.overflowY), `${what}: whatever overflows scrolls inside the card`);
-  assert.deepEqual(s.drew, { svgs: 0, panels: 0, images: 0 }, `${what}: the tour drew nothing of its own (no svg, no picture panel, no image)`);
+  // the tour draws no picture of its own: the only svgs in its card are the step-2 icons, which are the map's own drawings (checked against the real elements in step 2)
+  assert.deepEqual({ ...s.drew, svgs: s.drew.svgs - s.drew.icons }, { svgs: 0, panels: 0, images: 0, icons: s.drew.icons }, `${what}: the tour drew nothing of its own (no svg but the map's icons, no picture panel, no image)`);
 }
 
 // the page with no picture on any mark: every JSON answer the page reads has its `image` fields taken out before the page sees them, and the shelf is refused
@@ -187,6 +204,8 @@ function assertLit(s, what, phone) {
   for (const [name, b] of [["house", lit.house?.rect], ["resident", lit.resident?.rect], ["mark", lit.pip?.rect], ["dot", lit.dot?.rect]]) {
     if (b) assert.ok(!meetsCard(b), `${what}: the lit ${name} is not under the card ${JSON.stringify({ card: [c.x, c.y, c.right, c.bottom].map(Math.round), [name]: [b.x, b.y, b.right, b.bottom].map(Math.round) })}`);
   }
+  // THE CLASS FIX (CORE-153): a step the tour frames (the house, the dot) never shows a frame that is more than a small share void beyond the map, so a near-edge target cannot pass again
+  if (kind === "house" || kind === "dot") assert.ok(s.voidShare !== null && s.voidShare <= 0.08, `${what}: the frame is full of map (void share ${s.voidShare})`);
   if (kind === "house") {
     assert.equal(ids.length, 2, `${what}: a house id and a resident handle`);
     assert.ok(lit.house.found && lit.house.inSpot, `${what}: the house ${ids[0]} is the map's own home pip, inside the spotlight ${JSON.stringify({ spot, house: lit.house })}`);
@@ -223,7 +242,8 @@ async function onThePage(t, { viewport, phone }) {
   assert.equal(s1.next, "next");
   assert.equal(s1.backDisabled, true, "nothing before the first step");
   contained(s1, "step 1");
-  assert.match(s1.text, /^The people and agents who live here write the world in words\.The world is told, not drawn\.$/, "the welcome: the accepted sentence (the people, humans included, and the agents; Wright 2026-11-21 07:43) and its one bold line, nothing more");
+  assert.match(s1.text, /^The people and agents who live here write the world in words\.Everything on this map was made by a resident\.$/, "the welcome: the accepted sentence (the people, humans included, and the agents; Wright 2026-11-21 07:43) and one short true line (Darko 2026-11-22 00:31 cut the told-not-drawn line), nothing more");
+  assert.doesNotMatch(s1.text, /told, not drawn/i, "the cut line stays cut");
   // the join flow's big type (a large gold headline, a large soft caption)
   assert.ok(s1.type.title >= 27 && s1.type.body >= 17, `large type: headline ${s1.type.title}px, caption ${s1.type.body}px`);
   assert.equal(s1.type.titleColor, "rgb(246, 220, 174)", "the join flow's gold");
@@ -238,8 +258,23 @@ async function onThePage(t, { viewport, phone }) {
   assert.equal(sp.onDot, 1);
   assert.equal(sp.backDisabled, false);
   contained(sp, "step 2");
-  assert.match(sp.text, /^A house is a parcel\.Green figures are residents\.$/, "a few large words: a house is a parcel, green figures are residents");
-  assert.doesNotMatch(sp.text, /click|tap|drag|scroll|zoom|hover|wheel|dotted|walking/i, "no input is named and no walking line is claimed: a phone reads the same words");
+  assert.match(sp.text, /^A house is a parcel\.Green figures are residents\.A dotted line is a resident walking right now\.$/, "a few large words: a house is a parcel, green figures are residents, a dotted line is a resident walking right now (Darko 2026-11-22 00:32)");
+  assert.doesNotMatch(sp.text, /click|tap|drag|scroll|zoom|hover|wheel/i, "no input is named: a phone reads the same words");
+  // THE FRAME IS FULL OF MAP (CORE-153, Darko 2026-11-22 00:31): a house at the world's edge left a third of the frame void; the framed house is chosen where the framed window stays on the paper
+  assert.ok(sp.voidShare !== null && sp.voidShare <= 0.08, `step 2: the frame is full of map, not void beyond it (void share ${sp.voidShare})`);
+  // THE CARD'S ICONS ARE THE MAP'S OWN DRAWINGS (Darko 2026-11-22 00:31: "exact replicas of the assets for house and resident ... in the tutorial card"): the same path, face, frame and legs, in the
+  // colours the lit house and resident are drawn in, at the map's width (or the icon's natural floor), never a redraw
+  const ic = sp.icons;
+  assert.ok(ic.house?.d && ic.house.d === ic.house.realD, `the card's house is the map's own glyph path ${JSON.stringify(ic.house)}`);
+  assert.equal(ic.house.fill, ic.house.realFill, "in the map's house colour");
+  assert.equal(ic.house.face, ic.house.realFace, "with the map's envelope face");
+  assert.ok(ic.house.mineW >= ic.house.realW - 0.6, `and at least the map's size (${ic.house.mineW} against ${ic.house.realW})`);
+  assert.ok(ic.resident?.r && ic.resident.r === ic.resident.realR, `the card's resident is the map's own frame ${JSON.stringify(ic.resident)}`);
+  assert.equal(ic.resident.fill, ic.resident.realFill, "in the map's resident fill");
+  assert.equal(ic.resident.stroke, ic.resident.realStroke, "and its green");
+  assert.equal(ic.resident.legs, 2, "on its two legs");
+  assert.ok(ic.resident.mineW >= ic.resident.realW - 0.6, `and at least the map's size (${ic.resident.mineW} against ${ic.resident.realW})`);
+  assert.deepEqual(ic.walk, { stroke: "rgb(224, 80, 122)", width: "2px", dash: "5px, 4px", opacity: "0.75", vector: "non-scaling-stroke" }, "the walking line is the map's own stroke, colour and dash (.wv-walk-leg); no walk is faked on the map");
   assert.equal(sp.scene.kind, "house");
   assertLit(sp, "step 2", phone);
   const cam0 = parseFloat(before.viewBox.split(/\s+/)[2]);

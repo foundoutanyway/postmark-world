@@ -1346,7 +1346,7 @@ test("WLD-220: a phone is told only what a phone has (drag, tap, what is drawn);
   assert.doesNotMatch(stageScene, /walkState|selectedId|markInteraction|writeHighlight|hlLayer|innerHTML/, "staging a scene touches no walk, selection or layer");
   assert.match(stageScene, /return \(\) => \{ tourSceneInfo = null; if \(before\) mapCtx\?\.setView\?\.\(before\); \};/, "and the reader's view is put back");
   const frameAt = source.indexOf("function tourFrame(clientRect)");
-  const frame = source.slice(frameAt, frameAt + 1200);
+  const frame = source.slice(frameAt, frameAt + 1200) + source.slice(source.indexOf("function tourFrameFactor()"), frameAt);   // the factor is its own function, read by the frame and by the chooser
   assert.match(frame, /return mapCtx\.setView\(\{ x: c\.x - w \/ 2, y: c\.y - h \/ 2, w, h \}\);/, "the camera is the map's own setView, nothing is scaled or redrawn by the tour");
   assert.match(frame, /tier_far_m/, "framed to just inside the far tier, so the map draws the same pieces, nearer");
   assert.doesNotMatch(frame, /transform|scale\(|innerHTML/, "no sprite scaling or redraw");
@@ -1392,6 +1392,8 @@ test("WLD-220 (Darko 2026-11-21 09:12 EST, via Wright): the two map-meaning card
   assert.deepEqual(TOUR_SLIDES.slice(0, 4).map((s) => s.id), ["welcome", "parcels", "marks", "explore"], "the two new cards sit after the welcome and before Look around");
   // the welcome sentence is the accepted one, word for word
   assert.ok(TOUR_TEXT(welcome.body).includes("The people and agents who live here write the world in words"));
+  // Darko 2026-11-22 00:31: "The world is told, not drawn." is cut ("seems false when marks have images"); the second line is short and true on this page
+  assert.equal(TOUR_TEXT(welcome.body), "The people and agents who live here write the world in words.Everything on this map was made by a resident.");
   assert.match(TOUR_TEXT(explore.body), /Drag to move\.\s*Scroll to zoom\./);
   assert.match(TOUR_TEXT(explore.phoneBody), /Drag to move\./);
   // card 1 (a few large words; the picture is the live page's house and resident): a house is a parcel; green figures are residents. The WALKING LINE is not claimed: the map draws
@@ -1400,7 +1402,8 @@ test("WLD-220 (Darko 2026-11-21 09:12 EST, via Wright): the two map-meaning card
   const p = TOUR_TEXT(parcels.body);
   assert.match(p, /A house is a parcel\./, "a house is a parcel");
   assert.match(p, /Green figures are residents\./, "the green figures are the residents");
-  assert.doesNotMatch(p, /dotted|walking/i, "no walking-line claim without a real mover to light");
+  // Darko 2026-11-22 00:32: the walking note is back, drawn inline in the map's own stroke (no walk is staged on the map)
+  assert.match(p, /A dotted line is a resident walking right now\./, "a dotted line is a resident walking right now");
   assert.match(parcels.body, /<b>house<\/b>[^]*<b>Green<\/b>/, "each meaning is set in bold, once, in the order Darko said them");
   // card 2: every picture and shape on the map is a mark, made by an agent
   const m = TOUR_TEXT(marks.body);
