@@ -68,7 +68,7 @@ const readTour = (page) => page.evaluate(() => {
   // each lit target, looked up in the MOUNTED scene by its public id, with whether it lies wholly inside the spotlight
   const lit = {};
   if (kind === "house") {
-    const pip = overlay?.querySelector(`.ov-pip.ov-pip-home[data-id="${esc(ids[0])}"]`), man = walks?.querySelector(`.wv-walker-far[data-handle="${esc(ids[1])}"]`);
+    const pip = overlay?.querySelector(`.ov-pip.ov-pip-home[data-id="${esc(ids[0])}"]`), man = walks?.querySelector(`.wv-walker-far[data-handle="${esc(ids[1])}"]`);   // the far tier's frame on two legs: the tour frames to just inside that tier, so it is the piece drawn
     lit.house = { found: !!pip, inSpot: within(box(pip), spot), rect: box(pip), count: overlay?.querySelectorAll(`.ov-pip[data-id="${esc(ids[0])}"]`).length };
     lit.resident = { found: !!man, inSpot: within(box(man), spot), rect: box(man), moving: !!man?.classList.contains("moving"), stroke: man ? getComputedStyle(man.querySelector(".wv-walker-frame")).stroke : null };
   }
@@ -108,7 +108,7 @@ const readTour = (page) => page.evaluate(() => {
     })(),
     type: { title: parseFloat(getComputedStyle(q(".wv-tour-title")).fontSize), body: parseFloat(getComputedStyle(q(".wv-tour-body")).fontSize), titleColor: getComputedStyle(q(".wv-tour-title")).color },
     // WHAT THE STEP LIT: the kind, the public ids, the spotlight, each target looked up in the scene; and what the TOUR drew: no svg, no picture panel, nothing of its own
-    scene: { kind, ids, spot, lit },
+    scene: { kind, ids, spot, lit, cameraW: parseFloat((mapSvg?.getAttribute("viewBox") ?? "").split(/\s+/)[2]) },
     drew: { svgs: document.querySelectorAll(".wv-tour-card svg").length, panels: document.querySelectorAll(".wv-tour-visual, [class^='tv-'], [class*=' tv-']").length, images: document.querySelectorAll(".wv-tour-card image, .wv-tour-card img").length },
     // for a failure message: where the screen, the card and every part stood
     geometry: { screen: [innerWidth, innerHeight], card, parts: parts.map((b) => b && [b.x, b.y, b.right, b.bottom].map(Math.round)) },
@@ -234,6 +234,8 @@ async function onThePage(t, { viewport, phone }) {
   assert.doesNotMatch(sp.text, /click|tap|drag|scroll|zoom|hover|wheel|dotted|walking/i, "no input is named and no walking line is claimed: a phone reads the same words");
   assert.equal(sp.scene.kind, "house");
   assertLit(sp, "step 2", phone);
+  const cam0 = parseFloat(before.viewBox.split(/\s+/)[2]);
+  assert.ok(sp.scene.cameraW < cam0 * 0.8, `step 2: the camera is framed in on the house and resident by the map's own setView (view ${Math.round(sp.scene.cameraW)} wide against the reader's ${Math.round(cam0)})`);
   out.sp = sp;
 
   // ── next: a mark with its own picture, on the live map ─────────────────────
@@ -246,6 +248,7 @@ async function onThePage(t, { viewport, phone }) {
   assert.match(sm.text, /^Every picture and shape on the map is a mark, made by an agent\.$/);
   assert.equal(sm.scene.kind, "picture");
   assertLit(sm, "step 3", phone);
+  assert.equal(sm.scene.cameraW, cam0, "step 3 lights the picture where it stands: the reader's own view is back, not the previous step's framing");
   out.sm = sm;
 
   // ── next: the look-around step, in this screen's words, on a real dot ──────
@@ -264,6 +267,7 @@ async function onThePage(t, { viewport, phone }) {
   }
   assert.equal(s2.scene.kind, "dot");
   assertLit(s2, "step 4", phone);
+  assert.ok(s2.scene.cameraW < cam0 * 0.8, `step 4: the camera is framed in on the dot (view ${Math.round(s2.scene.cameraW)} wide against ${Math.round(cam0)})`);
   out.s2 = s2;
 
   // ── back (to the marks card), then a dot to the last step, which says done ─
@@ -277,6 +281,7 @@ async function onThePage(t, { viewport, phone }) {
   contained(s3, "step 5");
   assert.match(s3.text, /^💬 is where the town is talking\.\? brings this tour back\.Read the docs$/);
   assert.equal(s3.scene.kind, "", "the last step lights the page's own ?, by anchor, and stages nothing");
+  assert.equal(s3.scene.cameraW, cam0, "and the reader's own view is back on the last step (back, and a jump by a dot, leave no framing behind)");
   assert.ok(s3.scene.spot && s3.scene.spot.w > 0, "the spotlight is on the real ? button");
   out.s3 = s3;
 

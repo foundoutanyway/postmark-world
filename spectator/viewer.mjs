@@ -16673,15 +16673,43 @@ export function mountViewer(appEl) {
     }
     return null;
   }
-  const tourDeckNow = () => TOUR_SLIDES.filter((s) => !s.stage || !!tourSceneTarget(s.stage));
+  // THE TARGETS ARE FOUND ON THE READER'S OWN VIEW and kept: a stage that frames the camera changes what is drawn, so while one is up the deck and the targets are not looked for
+  // again (they would be read off the framed view); they are looked for again only when no stage is up (the welcome, or before the tour has staged anything).
+  let tourTargets = null;
+  const tourDeckNow = () => {
+    if (!tourStage) tourTargets = Object.fromEntries(["house", "picture", "dot"].map((k) => [k, tourSceneTarget(k)]));
+    return TOUR_SLIDES.filter((s) => !s.stage || !!tourTargets?.[s.stage]);
+  };
   let tourDeck = TOUR_SLIDES, tourSceneInfo = null;
+  // FRAMING A SMALL TARGET (Facet 2026-11-22 03:33Z, under the ruling: "use existing setView/geometry to make actual targets readable, rather than spotlighting 5-11px pieces at
+  // town-wide zoom"): the camera is brought in with the map's own setView until the view is JUST WIDER than the far tier (so the map still draws what it draws at that tier, the
+  // same frames and pips, only nearer), centred on the target. Nothing is scaled or redrawn by the tour. setView hands back the reader's view; the stage's undo puts it back, on the
+  // next step, on back, on skip, on done and on Escape alike.
+  function tourFrame(clientRect) {
+    if (!mapCtx?.setView || !mapCtx.svg?.getScreenCTM) return null;
+    const matrix = mapCtx.svg.getScreenCTM();
+    if (!matrix) return null;
+    const far = Number(state.drawDials?.tier_far_m ?? SPECTATOR_DRAW_DEFAULTS.tier_far_m);
+    const across = metresAcross(mapCtx.zoomK, paintingWidthM());
+    const factor = far > 0 && Number.isFinite(across) ? across / (far * 1.05) : 1;
+    if (!(factor > 1.15)) return null;
+    const pt = mapCtx.svg.createSVGPoint();
+    pt.x = clientRect.x + clientRect.width / 2; pt.y = clientRect.y + clientRect.height / 2;
+    const c = pt.matrixTransform(matrix.inverse());
+    const v = mapCtx.view, w = v.w / factor, h = v.h / factor;
+    return mapCtx.setView({ x: c.x - w / 2, y: c.y - h / 2, w, h });
+  }
   function stageScene(kind) {
-    const t = tourSceneTarget(kind);
+    const t = tourTargets?.[kind];
     if (!t) return null;
-    // the spotlight over the real elements IS the highlight, in place: the stage writes nothing to the page, so there is nothing to put back but its own bookkeeping
+    // the spotlight over the real elements IS the highlight, in place. The two small targets (a house and its resident, a dot) are framed by the camera first; a mark's own
+    // picture is already large and is lit where it stands.
+    const before = kind === "picture" ? null : (() => { const r = t.rect(); return r ? tourFrame(r) : null; })();
     tourStageRect = t.rect;
     tourSceneInfo = { kind: t.kind, ids: t.ids };
-    return () => { tourSceneInfo = null; };
+    // the map redraws on its next frames at the nearer view; the spotlight follows the same elements (looked up by id each time) as they arrive
+    if (before) for (const ms of [120, 350, 800]) setTimeout(() => { if (tourAt >= 0 && tourSceneInfo?.kind === kind) placeTour(); }, ms);
+    return () => { tourSceneInfo = null; if (before) mapCtx?.setView?.(before); };
   }
   // OPEN THE TELLING FOR THE SLIDE THAT IS ABOUT IT (Keemin, 2026-08-05) — and
   // only for that slide. state.paintingOnly moves; writePaintingOnly does not, so

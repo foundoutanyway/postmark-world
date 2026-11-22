@@ -1339,11 +1339,20 @@ test("WLD-220: a phone is told only what a phone has (drag, tap, what is drawn);
   assert.match(source, /walks\.querySelectorAll\("\.wv-walker-far:not\(\.moving\)"\)/);
   assert.match(source, /pips\("\.ov-pip-pictured"\)/);
   assert.match(source, /footprintBoxFor\(id\)/);
-  // the page stays as the visitor had it: the stage moves no camera, selection or walk and writes nothing to the map (the spotlight over the real elements is the highlight)
-  const stageScene = source.slice(source.indexOf("function stageScene(kind)"), source.indexOf("function stageScene(kind)") + 700);
-  assert.doesNotMatch(stageScene, /setView|walkState|selectedId|markInteraction|writeHighlight|hlLayer|innerHTML/, "staging a scene touches no camera, walk, selection or layer");
-  // a step whose stage finds nothing is left out, never replaced by a stand-in
-  assert.match(source, /const tourDeckNow = \(\) => TOUR_SLIDES\.filter\(\(s\) => !s\.stage \|\| !!tourSceneTarget\(s\.stage\)\);/);
+  // the page stays as the visitor had it: the stage writes nothing to the map and touches no selection or walk (the spotlight over the real elements is the highlight). The only thing it
+  // moves is the CAMERA, through the map's own setView, and the reader's view is handed back by the stage's undo (next, back, skip, done, Escape)
+  const stageAt = source.indexOf("function stageScene(kind)");
+  const stageScene = source.slice(stageAt, source.indexOf("// OPEN THE TELLING FOR THE SLIDE", stageAt));
+  assert.doesNotMatch(stageScene, /walkState|selectedId|markInteraction|writeHighlight|hlLayer|innerHTML/, "staging a scene touches no walk, selection or layer");
+  assert.match(stageScene, /return \(\) => \{ tourSceneInfo = null; if \(before\) mapCtx\?\.setView\?\.\(before\); \};/, "and the reader's view is put back");
+  const frameAt = source.indexOf("function tourFrame(clientRect)");
+  const frame = source.slice(frameAt, frameAt + 1200);
+  assert.match(frame, /return mapCtx\.setView\(\{ x: c\.x - w \/ 2, y: c\.y - h \/ 2, w, h \}\);/, "the camera is the map's own setView, nothing is scaled or redrawn by the tour");
+  assert.match(frame, /tier_far_m/, "framed to just inside the far tier, so the map draws the same pieces, nearer");
+  assert.doesNotMatch(frame, /transform|scale\(|innerHTML/, "no sprite scaling or redraw");
+  // a step whose stage finds nothing is left out, never replaced by a stand-in; targets are read off the reader's own view, not off a framed one
+  assert.match(source, /return TOUR_SLIDES\.filter\(\(s\) => !s\.stage \|\| !!tourTargets\?\.\[s\.stage\]\);/);
+  assert.match(source, /if \(!tourStage\) tourTargets = Object\.fromEntries/);
   // the short screen tightens the card and scrolls inside it; there is no tour drawing to shrink
   assert.match(source, /@media \(max-height:600px\)\{/);
   assert.doesNotMatch(source, /@media \(max-height:600px\) and/);
