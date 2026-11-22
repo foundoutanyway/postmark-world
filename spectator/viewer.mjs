@@ -3658,7 +3658,7 @@ export const TOUR_SLIDES = [
     anchor: ".wv-tour-open",
     title: "Where to go next",
     // Wright 2026-11-21 06:17 (settled): the last step links the site's docs, /docs/, and nothing more: a plain link
-    body: "<b>💬</b> is where the town is talking.<br><b>?</b> brings this tour back.<br><a href=\"/docs/\">Read the docs</a>",
+    body: "<b>Filters</b> shows or hides speech bubbles, where the town is talking.<br><b>?</b> brings this tour back.<br><a href=\"/docs/\">Read the docs</a>",
   },
 ];
 

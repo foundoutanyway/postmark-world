@@ -323,7 +323,7 @@ async function onThePage(t, { viewport, phone }) {
   assert.equal(s3.title, "Where to go next");
   assert.equal(s3.next, "done", "the last step finishes");
   contained(s3, "step 5");
-  assert.match(s3.text, /^💬 is where the town is talking\.\? brings this tour back\.Read the docs$/);
+  assert.match(s3.text, /^Filters shows or hides speech bubbles, where the town is talking\.\? brings this tour back\.Read the docs$/);
   assert.equal(s3.scene.kind, "", "the last step lights the page's own ?, by anchor, and stages nothing");
   assert.equal(s3.scene.cameraW, cam0, "and the reader's own view is back on the last step (back, and a jump by a dot, leave no framing behind)");
   assert.ok(s3.scene.spot && s3.scene.spot.w > 0, "the spotlight is on the real ? button");
