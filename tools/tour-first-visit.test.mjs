@@ -70,6 +70,18 @@ const readTour = (page) => page.evaluate(() => {
     controlsInCard: parts.every((b) => b && b.w > 0 && inside(b, card)),
     controlsOnScreen: parts.every((b) => b && inside(b, screen)),
     phone: matchMedia("(max-width:720px)").matches,
+    // CONTAINMENT: the card's scrolling area really scrolls (or has nothing to scroll), its picture's top and its words' bottom can both be brought to view inside it,
+    // and the title and foot never leave the screen. Scrolled to the end and back, so a read leaves the card as it was.
+    reach: (() => {
+      const s = q(".wv-tour-scroll"); if (!s) return null;
+      const sr0 = s.getBoundingClientRect(), overflowY = getComputedStyle(s).overflowY, scrolls = s.scrollHeight > s.clientHeight + 1;
+      s.scrollTop = s.scrollHeight;
+      const sr = s.getBoundingClientRect(), b = q(".wv-tour-body").getBoundingClientRect(), bottomOk = b.bottom <= sr.bottom + 1;
+      s.scrollTop = 0;
+      const v = q(".wv-tour-visual").getBoundingClientRect(), topOk = v.top >= sr.top - 1;
+      const title = q(".wv-tour-title").getBoundingClientRect(), foot = q(".wv-tour-foot").getBoundingClientRect();
+      return { overflowY, scrolls, bottomOk, topOk, titleOnScreen: title.top >= 0 && title.bottom <= innerHeight, footOnScreen: foot.top >= 0 && foot.bottom <= innerHeight, areaH: Math.round(sr0.height) };
+    })(),
     // the type (the join flow's large words) and the PICTURE the step shows: drawn with the map's own pieces, whole inside the card, its labels not clipped
     type: { title: parseFloat(getComputedStyle(q(".wv-tour-title")).fontSize), body: parseFloat(getComputedStyle(q(".wv-tour-body")).fontSize), titleColor: getComputedStyle(q(".wv-tour-title")).color },
     visual: (() => {
@@ -80,7 +92,7 @@ const readTour = (page) => page.evaluate(() => {
       return { w: r.width, h: r.height, insideCard: within(r, c), svgW: sr?.width ?? 0, svgH: sr?.height ?? 0,
         labels: [...v.querySelectorAll("svg text")].map((t) => t.textContent), labelsInside: [...v.querySelectorAll("svg text")].every((t) => within(t.getBoundingClientRect(), sr)),
         walkers: v.querySelectorAll(".wv-walker-frame").length, movers: v.querySelectorAll(".wv-walker-far.moving").length, leg: !!v.querySelector(".wv-walk-leg"), legDash: getComputedStyle(v.querySelector(".wv-walk-leg") ?? v).strokeDasharray,
-        pips: v.querySelectorAll(".ov-pip").length, parcels: v.querySelectorAll("polygon.wv-fp").length, images: v.querySelectorAll("svg image").length,
+        pips: v.querySelectorAll(".ov-pip").length, parcels: v.querySelectorAll("polygon.wv-fp").length, images: v.querySelectorAll("svg image").length, frames: v.querySelectorAll(".tv-frame").length, cursor: !!v.querySelector(".tv-cursor"), homePips: v.querySelectorAll(".ov-pip.t-home").length, toolbar: v.querySelectorAll(".tv-ctl, .tv-search").length,
         walkerStroke: walker ? getComputedStyle(walker).stroke : null, ctls: [...v.querySelectorAll(".tv-ctl")].map((e) => e.textContent), search: !!v.querySelector(".tv-search") };
     })(),
     // for a failure message: where the screen, the card and every part stood
@@ -88,12 +100,38 @@ const readTour = (page) => page.evaluate(() => {
   };
 });
 
-async function onThePage(t, { viewport, phone }) {
+// a step is CONTAINED when the card, its title and every control are on the screen and its picture and words can both be brought to view in the scrolling area
+function contained(s, what) {
+  assert.ok(s.cardOnScreen && s.controlsInCard && s.controlsOnScreen, `${what}: the card and every control are whole on the screen ${JSON.stringify({ card: s.cardOnScreen, inCard: s.controlsInCard, onScreen: s.controlsOnScreen, geometry: s.geometry })}`);
+  assert.ok(s.reach && s.reach.topOk && s.reach.bottomOk && s.reach.titleOnScreen && s.reach.footOnScreen, `${what}: the picture's top and the words' end are reachable, the title and foot stay on the screen ${JSON.stringify(s.reach)}`);
+  assert.ok(!s.reach.scrolls || /auto|scroll/.test(s.reach.overflowY), `${what}: whatever overflows scrolls inside the card`);
+}
+// a real, loadable 1 x 1 picture for the shelf route (the page's mark pictures come through /shelf/, proxied to a host this fixture does not reach), or a refusal
+const PNG_1X1 = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
+async function shelf(page, mode) {
+  if (mode === "failed") await page.route("**/shelf/**", (route) => route.abort());
+  else if (mode === "absent") {
+    // no mark carries a picture: every JSON answer the page reads has its `image` fields taken out before the page sees them
+    await page.route("**/*", async (route) => {
+      const u = new URL(route.request().url());
+      if (u.hostname !== "localhost" || u.pathname.startsWith("/shelf/") || !["fetch", "xhr"].includes(route.request().resourceType())) return route.continue();
+      const res = await route.fetch();
+      if (!/json/.test(res.headers()["content-type"] ?? "")) return route.fulfill({ response: res });
+      const strip = (v) => Array.isArray(v) ? v.map(strip) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).filter(([k]) => k !== "image").map(([k, x]) => [k, strip(x)])) : v;
+      let body = await res.text();
+      try { body = JSON.stringify(strip(JSON.parse(body))); } catch { /* not whole JSON: left as it came */ }
+      return route.fulfill({ response: res, body });
+    });
+  } else await page.route("**/shelf/**", (route) => route.fulfill({ status: 200, contentType: "image/png", body: PNG_1X1 }));
+}
+
+async function onThePage(t, { viewport, phone, art = "present", only = null }) {
   if (!chromium) { t.skip("NO PLAYWRIGHT — the first-visit tour went UNGUARDED"); return; }
   const ctx = await machineContext(browser, { viewport, ...(phone ? { isMobile: true, hasTouch: true, deviceScaleFactor: 1 } : {}) });
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e.message).slice(0, 160)));
+  await shelf(page, art);
   await page.goto(`http://localhost:${port}/?lite=0`, { waitUntil: "domcontentloaded", timeout: 90_000 });
   // a spectator is greeted on every visit (Keemin 2026-08-12), with no key and no click
   await page.waitForSelector(".wv-tour-card", { state: "visible", timeout: 90_000 });
@@ -117,6 +155,50 @@ async function onThePage(t, { viewport, phone }) {
   const out = {};
   await settle();
 
+  // ── the short regression: every step of the greeting is contained on a screen that is wide and short, and its buttons still work ──
+  if (only === "short") {
+    for (let i = 0; i < 5; i++) {
+      const s = await readTour(page);
+      assert.equal(s.kicker, `The World · ${i + 1} / 5`);
+      contained(s, `step ${i + 1} at ${viewport.width} x ${viewport.height}`);
+      assert.ok(s.visual && s.visual.insideCard, `step ${i + 1}: the picture is whole inside the card`);
+      assert.ok(s.visual.svgH >= 90 || s.visual.ctls.length, `step ${i + 1}: the picture is not a miniature (${Math.round(s.visual.svgW)} x ${Math.round(s.visual.svgH)})`);
+      assert.ok(s.type.title >= 22 && s.type.body >= 17, `step ${i + 1}: the words stay large (${s.type.title}px / ${s.type.body}px)`);
+      out[`s${i + 1}`] = s;
+      if (i < 4) await press(".wv-tour-next");
+    }
+    await press(".wv-tour-back");
+    assert.equal((await readTour(page)).kicker, "The World · 4 / 5", "back works at this size");
+    await press(".wv-tour-next");
+    await press(".wv-tour-next");
+    await page.waitForSelector(".wv-tour", { state: "hidden", timeout: 10_000 });
+    assert.equal((await readTour(page)).open, false, "done closes it at this size");
+    assert.deepEqual(errors, [], "no page error");
+    await ctx.close();
+    return out;
+  }
+  // ── the picture on the marks step when there is none to show (absent) or it will not load (failed): the shape alone, never an empty frame or a pip called "picture" ──
+  if (only === "marks") {
+    await press(".wv-tour-next");
+    await press(".wv-tour-next");
+    // a failed picture is heard after the step draws: wait for the fallback to take the image out
+    if (art === "failed") await page.waitForFunction(() => !document.querySelector(".wv-tour-visual image"), null, { timeout: 15_000 });
+    await settle();
+    const s = await readTour(page);
+    assert.equal(s.title, "Everything is a mark");
+    contained(s, `the marks step with ${art} art`);
+    assert.equal(s.visual.images, 0, `${art} art: no <image> is left in the picture`);
+    assert.equal(s.visual.frames, 0, `${art} art: no empty picture frame`);
+    assert.ok(!s.visual.labels.includes("picture"), `${art} art: nothing is labelled "picture"`);
+    assert.deepEqual(s.visual.labels.filter((w) => w !== "made by an agent"), ["shape"], `${art} art: the shape, labelled, and said to be an agent's`);
+    assert.equal(s.visual.parcels, 1, "the shape is the map's own footprint");
+    assert.equal(s.visual.pips, 1, "with the shape's own pip and no stand-in for a picture");
+    out.sm = s;
+    assert.deepEqual(errors, [], "no page error");
+    await ctx.close();
+    return out;
+  }
+
   // ── step 1 of 5: the greeting, whole on the screen ─────────────────────────
   const s1 = await readTour(page);
   assert.equal(s1.phone, !!phone);
@@ -137,6 +219,7 @@ async function onThePage(t, { viewport, phone }) {
   const v1 = picture(s1, "step 1");
   assert.ok(v1.labels.includes("the lamp is always lit") && v1.labelsInside, "the welcome draws the sentence and the lit lamp it puts on a parcel, its words whole");
   assert.ok(v1.parcels === 1 && v1.pips === 1, "on the map's parcel footprint, with the map's pip");
+  contained(s1, "step 1");
   out.s1 = s1;
 
   // ── next: Darko's two map-meaning cards (2026-11-21 09:12 EST), the same words on both screens ──
@@ -160,6 +243,7 @@ async function onThePage(t, { viewport, phone }) {
   assert.equal(vp.walkerStroke, "rgb(132, 201, 143)", "a resident is the map's green");
   for (const word of ["house", "resident", "walking now"]) assert.ok(vp.labels.includes(word), `the picture labels the ${word}`);
   assert.ok(vp.labelsInside, "every label is whole inside its picture");
+  contained(sp, "step 2");
   out.sp = sp;
   await press(".wv-tour-next");
   const sm = await readTour(page);
@@ -169,11 +253,14 @@ async function onThePage(t, { viewport, phone }) {
   assert.ok(sm.cardOnScreen && sm.controlsInCard && sm.controlsOnScreen, `step 3 fits whole: ${JSON.stringify({ card: sm.cardOnScreen, inCard: sm.controlsInCard, onScreen: sm.controlsOnScreen, geometry: sm.geometry })}`);
   assert.match(sm.text, /^Every picture and shape on the map is a mark, made by an agent\.$/);
   const vm = picture(sm, "step 3");
-  // a mark's picture (the record's own image when one is loaded, else the map's pip) and a mark's shape (the map's footprint), each labelled, and said to be an agent's
-  assert.ok(vm.images === 1 || vm.pips >= 2, `a picture mark is drawn (${vm.images} images, ${vm.pips} pips)`);
+  // a mark's picture (the record's own image, through the map's shelf route; the stub above answers it with a real, loadable image) and a mark's shape (the map's footprint),
+  // each labelled, and said to be an agent's
+  assert.equal(vm.images, 1, "a picture mark is drawn: the record's own image");
+  assert.equal(vm.frames, 1, "in its frame");
   assert.equal(vm.parcels, 1, "and a shape mark (a footprint)");
   for (const word of ["picture", "shape", "made by an agent"]) assert.ok(vm.labels.includes(word), `the picture labels: ${word}`);
   assert.ok(vm.labelsInside);
+  contained(sm, "step 3");
   out.sm = sm;
 
   // ── next: the look-around step, in this screen's words ─────────────────────
@@ -191,7 +278,12 @@ async function onThePage(t, { viewport, phone }) {
     assert.match(s2.text, /^Drag to move\.Scroll to zoom\.Click a dot to read it\.$/);
   }
   const v2 = picture(s2, "step 4");
-  assert.ok(v2.search && v2.ctls.join("") === "⛶💬?", `the map's own search and its fit, conversations and tour buttons are drawn (${v2.ctls.join(" ")})`);
+  // Look around teaches its caption with the map's own pieces (a home pip: moved, made bigger, read) and a pointer, in this screen's gestures; not a toolbar
+  assert.ok(v2.homePips >= (phone ? 2 : 4) && v2.cursor, `native home pips and a pointer are drawn (${v2.homePips} pips, pointer ${v2.cursor})`);
+  assert.deepEqual(v2.labels, phone ? ["drag", "tap"] : ["drag", "scroll", "click"], "each gesture is named once, in this screen's words");
+  assert.equal(v2.toolbar, 0, "no repeated toolbar");
+  assert.ok(v2.labelsInside);
+  contained(s2, "step 4");
   out.s2 = s2;
 
   // ── back (to the marks card), then a dot to the last step, which says done ─
@@ -206,6 +298,7 @@ async function onThePage(t, { viewport, phone }) {
   assert.match(s3.text, /^💬 is where the town is talking\.\? brings this tour back\.Read the docs$/);
   const v3 = picture(s3, "step 5");
   assert.ok(v3.ctls.join("") === "💬?", "the conversations and tour buttons, drawn large");
+  contained(s3, "step 5");
   out.s3 = s3;
 
   // ── the last step's one link, /docs/ (Wright 2026-11-21 06:17): whole on the screen, keyboard-usable, and the tour's own click handling does not swallow it ──
@@ -214,16 +307,26 @@ async function onThePage(t, { viewport, phone }) {
     const a = document.querySelector('.wv-tour-body a'); if (!a) return null;
     const card = document.querySelector(".wv-tour-card").getBoundingClientRect(), r = a.getBoundingClientRect();
     const all = [...document.querySelectorAll(".wv-tour-body a")];
-    a.focus();
     return { count: all.length, href: a.getAttribute("href"), text: a.textContent, whole: r.width > 0 && r.x >= card.x && r.right <= card.right && r.y >= card.y && r.bottom <= card.bottom && r.x >= 0 && r.right <= innerWidth && r.bottom <= innerHeight,
-      focusable: document.activeElement === a, underline: getComputedStyle(a).textDecorationLine, color: getComputedStyle(a).color, body: getComputedStyle(document.querySelector(".wv-tour-body")).color };
+      underline: getComputedStyle(a).textDecorationLine, color: getComputedStyle(a).color, body: getComputedStyle(document.querySelector(".wv-tour-body")).color };
   });
   assert.ok(link, "the last step has a link");
   assert.equal(link.count, 1, "one link, and no other in the tour");
   assert.equal(link.href, "/docs/");
   assert.equal(link.text, "Read the docs");
   assert.ok(link.whole, "the link lies wholly on the screen and inside the card");
-  assert.ok(link.focusable, "a keyboard reaches it (it takes focus)");
+  // the keyboard reaches it with the REAL Tab, from the focus the tour ships (the card puts it on "next"), and the trap carries it round the card's stops, link included, both ways
+  const focusedNow = () => page.evaluate(() => { const a = document.activeElement; return a ? (a.matches(".wv-tour-body a") ? "link" : a.matches(".wv-tour-dot") ? `dot${a.dataset.tourTo}` : a.matches(".wv-tour-skip,.wv-tour-back,.wv-tour-next") ? a.className.replace("wv-tour-", "") : `other:${a.tagName}.${a.className}`) : "none"; });
+  assert.equal(await focusedNow(), "next", "the tour ships its focus on next");
+  await page.keyboard.press("Tab");
+  assert.equal(await focusedNow(), "link", "Tab from the last stop wraps forward to the card's first stop, the docs link");
+  await page.keyboard.press("Tab");
+  assert.equal(await focusedNow(), "dot0", "Tab on from the link goes to the first step dot");
+  await page.keyboard.press("Shift+Tab");
+  assert.equal(await focusedNow(), "link", "Shift+Tab goes back through the link");
+  await page.keyboard.press("Shift+Tab");
+  assert.equal(await focusedNow(), "next", "and Shift+Tab from the link wraps to the card's last stop: focus never leaves the card");
+  for (let i = 0; i < 12; i++) { await page.keyboard.press("Tab"); assert.ok(await page.evaluate(() => !!document.activeElement?.closest(".wv-tour-card")), "twelve Tabs never leave the card"); }
   assert.ok(link.underline.includes("underline") || link.color !== link.body, `the link reads as a link (underline ${link.underline}, colour ${link.color} against the body's ${link.body})`);
   // a real press on it: nothing in the page's click handling cancels the navigation. A listener AFTER the page's own delegate records whether it was cancelled, then cancels it
   // itself so the test page stays put (this fixture does not serve the Site's /docs/, and is not asked to).
@@ -258,4 +361,20 @@ test("the page, on a phone (390 x 844, touch): five steps (the two map-meaning c
 
 test("the page, on a desktop (1440 x 900): the same five steps in the cursor's words", async (t) => {
   await onThePage(t, { viewport: { width: 1440, height: 900 }, phone: false });
+});
+
+test("the page, on a phone on its side (844 x 390, touch): every step, its picture and every button contained and reachable", async (t) => {
+  await onThePage(t, { viewport: { width: 844, height: 390 }, phone: true, only: "short" });
+});
+
+test("the page, on a short desktop window (1440 x 480): every step, its picture and every button contained and reachable", async (t) => {
+  await onThePage(t, { viewport: { width: 1440, height: 480 }, phone: false, only: "short" });
+});
+
+test("a mark's picture that is ABSENT (no mark has one): the marks step shows the shape alone", async (t) => {
+  await onThePage(t, { viewport: { width: 1440, height: 900 }, phone: false, art: "absent", only: "marks" });
+});
+
+test("a mark's picture that FAILS to load: the marks step falls back to the shape alone, no empty frame", async (t) => {
+  await onThePage(t, { viewport: { width: 1440, height: 900 }, phone: false, art: "failed", only: "marks" });
 });

@@ -103,10 +103,13 @@ import { MARK_ICON_CSS } from "../spectator/mark-icons.mjs";
 // `.wv-tour-body a` (the card's blue, underline offset, and a comment), 196 bytes, on top of main's STYLE (111168 -> 111364), nothing removed or moved. Measured by this test's own masked-emission
 // route on the merged WLD-220 branch (the same route the pins above name). Alone on its old base the rule was 108530 -> 108726 (955f7eb3...); main has since moved to CORE-54's 111168.
 // RE-PINNED FOR THE WLD-220 VISUAL REBUILD (Darko 2026-11-21 18:14/18:15 EST: use the actual visuals; the join flow's theme; fewer, larger words), knowingly, an INTENDED change to STYLE over the pin
-// above: the tour's own rules only, every one under `.wv-tour` / `.tv-*` (the join-flow headline, soft text, paper picture panel and progress dots, the picture classes, the control row), +2634 bytes
+// above: the tour's own rules only, every one under `.wv-tour` / `.tv-*` (the join-flow headline, soft text, paper picture panel and progress dots, the picture classes, the control row), +2779 bytes
 // (111364 -> 114143), nothing outside the tour touched. Measured by this test's own masked-emission route on the WLD-220 branch (the same route the pins above name).
-const PINNED_MASKED_STYLE_SHA256 = "95ed6cc693ab42a59a707bb709f31646ed4f7694aa75803d716174d75894dbd4";
-const PINNED_MASKED_STYLE_BYTES = 114143;
+// RE-PINNED FOR THE WLD-220 FIX (containment of tall cards, the Look around picture): +1410 bytes (114143 -> 115553), again only .wv-tour / .tv-* rules (the card as a bounded
+// flex column, its scrolling area, the short-screen reflow, the pointer mark). Whole account over main's 111364: +4189 (2779 + 1410). The earlier "+2634" figure here and
+// "113998" in tools/viewer-creature-nameplate.test.mjs were stale intermediate measurements (111364 -> 113998 is +2634; the pin that landed was 114143, +2779).
+const PINNED_MASKED_STYLE_SHA256 = "f974e4ee0f8c3a6a62b3543c21c814eb5cfce8c9cc185b137c7a785273330193";
+const PINNED_MASKED_STYLE_BYTES = 115553;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";

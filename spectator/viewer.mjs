@@ -3436,7 +3436,7 @@ const tvPip = (x, y, key, classes, k = 2.2) => tvAt(k, x, y, (at) => overlayPipS
 const tvWalker = (x, y, moving, k = 2.6) => tvAt(k, x, y, (at) => walkerFrameSVG({ at, handle: moving ? "walking-resident" : "resident", moving }));
 const tvSvg = (inner, label) => `<svg class="tv-svg" viewBox="0 0 ${TV_W} ${TV_H}" role="img" aria-label="${esc(label)}">${inner}</svg>`;
 const tvControl = (glyph, word, big = false) => `<span class="tv-ctl-cell"><span class="tv-ctl${big ? " tv-big" : ""}">${glyph}</span><span class="tv-ctl-word">${esc(word)}</span></span>`;
-export function tourVisual(kind, { picture = null } = {}) {
+export function tourVisual(kind, { picture = null, phone = false } = {}) {
   if (kind === "welcome") {
     // words become the map: a sentence, an arrow, and the lit thing it puts on a parcel (the tour's old example, "the lamp is always lit")
     return tvSvg(
@@ -3458,21 +3458,30 @@ export function tourVisual(kind, { picture = null } = {}) {
   }
   if (kind === "marks") {
     // a mark's picture (the record's own) and a mark's shape (a footprint), each made by an agent
-    const art = picture?.href
-      ? `<clipPath id="tv-art-clip"><rect x="28" y="36" width="158" height="112" rx="4"/></clipPath><image ${thumbImageAttrs(picture.href, null)} x="28" y="36" width="158" height="112" preserveAspectRatio="xMidYMid slice" clip-path="url(#tv-art-clip)" class="tv-art"/>`
-      : tvPip(107, 92, "place", "t-market", 3);
+    // WITHOUT a picture (none loaded yet, or its load failed) the step shows the shape alone, centred: no frame, no pip standing in for a picture, no "picture" label
+    const pill = `<rect class="tv-pill" x="96" y="190" width="208" height="32" rx="16"/><text class="tv-pilltext" x="200" y="212" text-anchor="middle">made by an agent</text>`;
+    if (!picture?.href) {
+      return tvSvg(
+        `<polygon class="wv-fp t-constitution tv-poly" points="120,46 224,34 272,96 230,152 130,146"/>` + tvPip(196, 92, "place", "t-constitution", 1.8)
+        + tvLabel(196, 178, "shape") + pill,
+        "A mark's shape on the map, made by an agent");
+    }
     return tvSvg(
-      `<rect class="tv-frame" x="22" y="30" width="170" height="124" rx="8"/>${art}`
+      `<rect class="tv-frame" x="22" y="30" width="170" height="124" rx="8"/>`
+      + `<clipPath id="tv-art-clip"><rect x="28" y="36" width="158" height="112" rx="4"/></clipPath><image ${thumbImageAttrs(picture.href, null)} x="28" y="36" width="158" height="112" preserveAspectRatio="xMidYMid slice" clip-path="url(#tv-art-clip)" class="tv-art"/>`
       + `<polygon class="wv-fp t-constitution tv-poly" points="228,46 332,34 380,96 338,152 238,146"/>` + tvPip(304, 92, "place", "t-constitution", 1.8)
-      + tvLabel(107, 178, "picture") + tvLabel(304, 178, "shape")
-      + `<rect class="tv-pill" x="96" y="190" width="208" height="32" rx="16"/><text class="tv-pilltext" x="200" y="212" text-anchor="middle">made by an agent</text>`,
+      + tvLabel(107, 178, "picture") + tvLabel(304, 178, "shape") + pill,
       "A mark's picture and a mark's shape, each made by an agent");
   }
   if (kind === "explore") {
-    // the map's own control buttons, as they are drawn there (glyphs from the real buttons), each with its one word
-    return `<div class="tv-controls" role="img" aria-label="The map's search box and its fit, conversations and tour buttons">`
-      + `<span class="tv-search">find a house or resident</span>`
-      + `<span class="tv-ctls">${tvControl("⛶", "fit")}${tvControl("💬", "talk")}${tvControl("?", "tour")}</span></div>`;
+    // the three things the words teach, shown on the map's own pieces (a home pip) with a minimal gesture mark: DRAG moves (a pip and the way it goes), SCROLL zooms (the same pip
+    // small, then large; a phone has no scroll wheel here, so its picture leaves this one out), CLICK / TAP a dot reads it (the pip with a pointer on it)
+    const cells = phone ? [110, 290] : [70, 200, 330];
+    const drag = (cx) => tvPip(cx - 30, 98, "home", "t-home", 2.2) + `<path class="tv-arrow" d="M${cx - 2} 98 H${cx + 36} M${cx + 26} 88 L${cx + 38} 98 L${cx + 26} 108"/>` + tvLabel(cx, 196, "drag");
+    const zoom = (cx) => tvPip(cx - 32, 106, "home", "t-home", 1.4) + `<path class="tv-arrow" d="M${cx - 14} 100 H${cx + 2} M${cx - 8} 94 L${cx + 2} 100 L${cx - 8} 106"/>` + tvPip(cx + 34, 94, "home", "t-home", 3.2) + tvLabel(cx, 196, "scroll");
+    const read = (cx) => tvPip(cx, 92, "home", "t-home", 2.6) + `<path class="tv-cursor" d="M${cx + 10} 100 l0 26 l7 -6 l5 12 l6 -3 l-5 -11 l9 -1 z"/>` + tvLabel(cx, 196, phone ? "tap" : "click");
+    return tvSvg(phone ? drag(cells[0]) + read(cells[1]) : drag(cells[0]) + zoom(cells[1]) + read(cells[2]),
+      phone ? "Drag a house to move the map; tap a dot to read it" : "Drag a house to move the map; scroll to make it bigger; click a dot to read it");
   }
   if (kind === "next") {
     return `<div class="tv-controls" role="img" aria-label="The conversations button and the tour button"><span class="tv-ctls">${tvControl("💬", "talk", true)}${tvControl("?", "tour", true)}</span></div>`;
@@ -6931,7 +6940,12 @@ ${WV_ENTER_CSS}
 .wv-tour-card { position:fixed; top:0; left:0; z-index:9200; width:min(36rem,calc(100vw - 32px));
   padding:26px 28px 20px; border:1px solid rgba(232,196,139,.3);
   border-radius:20px; background:rgba(13,15,19,.985); box-shadow:0 18px 60px rgba(0,0,0,.6), 0 0 44px rgba(232,196,139,.1);
-  transition:transform .22s cubic-bezier(.4,0,.2,1); }
+  transition:transform .22s cubic-bezier(.4,0,.2,1);
+  display:flex; flex-direction:column; max-height:calc(100vh - 20px); max-height:calc(100dvh - 20px); }
+/* CONTAINMENT (WLD-220 fix): the card never outgrows the screen. The picture and words scroll inside it; the kicker, title and the foot (skip, back, next, done) stay put, so
+   every step and every button is reachable however short the screen. */
+.wv-tour-scroll { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+.wv-tour-kicker, .wv-tour-title, .wv-tour-foot { flex:none; }
 .wv-tour-card.is-centred { left:50%; top:50%; transform:translate(-50%,-50%); }
 @media (prefers-reduced-motion:reduce){ .wv-tour-card, .wv-tour-spot { transition:none; } }
 .wv-tour-kicker { margin:0 0 .7em; font-family:var(--mono); font-size:.74rem; letter-spacing:.16em;
@@ -6948,6 +6962,7 @@ ${WV_ENTER_CSS}
 .tv-arrow { fill:none; stroke:#8a7a5e; stroke-width:3.5; stroke-linecap:round; stroke-linejoin:round; }
 .wv-tour-visual .tv-parcel { fill:rgba(132,201,143,.3); stroke-width:3.5; }   /* two classes, so they win over the map's own .wv-fp (fill:none; 1.4), which the stylesheet states later */
 .wv-tour-visual .tv-poly { fill:rgba(123,167,224,.28); stroke-width:3.5; }
+.tv-cursor { fill:#2b2418; stroke:#fffaf0; stroke-width:2; stroke-linejoin:round; }
 .tv-frame { fill:#fffaf0; stroke:#8a7a5e; stroke-width:3; }
 .tv-pill { fill:#2b2418; }
 .tv-pilltext { font:700 20px Georgia,serif; fill:#f6dcae; }
@@ -7023,6 +7038,18 @@ ${WV_ENTER_CSS}
   .wv-tour-title { font-size:clamp(1.55rem,7.4vw,2rem); }
   .wv-tour-body { font-size:1.15rem; }
   .wv-tour-visual { padding:8px; }
+}
+/* a SHORT screen (a phone on its side, a wide window with little height): the card goes wide and the picture sits beside the words rather than above them, still large;
+   whatever still does not fit scrolls inside the card (.wv-tour-scroll), never off the screen */
+@media (max-height:600px){
+  .wv-tour-card { width:min(52rem,calc(100vw - 20px)); padding:14px 22px 10px; }
+  .wv-tour-kicker { margin-bottom:.3em; }
+  .wv-tour-title { font-size:1.55rem; margin-bottom:.3em; }
+  .wv-tour-scroll { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); gap:0 22px; align-items:center; }
+  .wv-tour-visual { margin:0; }
+  .wv-tour-visual .tv-svg { max-height:calc(100vh - 190px); max-height:calc(100dvh - 190px); }
+  .wv-tour-body { font-size:1.15rem; }
+  .wv-tour-foot { margin-top:8px; padding-top:8px; }
 }
 /* the overlay's pips speak the same tier language as everything else on the
    painting — the highlight box/dot, the footprints, the grid pips. They were
@@ -7942,8 +7969,10 @@ const MARKUP = `
   <section class="wv-tour-card" role="dialog" aria-modal="true" aria-labelledby="wv-tour-title">
     <p class="wv-tour-kicker">The World</p>
     <h2 class="wv-tour-title" id="wv-tour-title"></h2>
-    <div class="wv-tour-visual" hidden></div>
-    <div class="wv-tour-body"></div>
+    <div class="wv-tour-scroll">
+      <div class="wv-tour-visual" hidden></div>
+      <div class="wv-tour-body"></div>
+    </div>
     <div class="wv-tour-foot">
       <div class="wv-tour-dots"></div>
       <div class="wv-tour-acts">
@@ -16751,11 +16780,18 @@ export function mountViewer(appEl) {
     // record when one is loaded (the media door's own image, the first by id), else a drawn pip: the tour never waits on the network and never invents a picture.
     const vis = $(el, ".wv-tour-visual");
     if (vis) {
+      // the picture comes by the map's own validated route (markImagePath: the mark's image through the shelf route), never a url of this step's own
       const art = slide.visual === "marks"
-        ? [...byId.values()].filter((m) => typeof m?.image === "string" && m.image.startsWith("https://media.postmark.town/")).sort((a, b) => String(a.id).localeCompare(String(b.id)))[0] ?? null
+        ? [...byId.values()].map((m) => ({ id: m?.id, href: markImagePath(m) })).filter((m) => m.href).sort((a, b) => String(a.id).localeCompare(String(b.id)))[0] ?? null
         : null;
-      vis.innerHTML = slide.visual ? tourVisual(slide.visual, { picture: art ? { href: art.image, id: art.id } : null }) : "";
+      vis.innerHTML = slide.visual ? tourVisual(slide.visual, { picture: art, phone: onPhone() }) : "";
       vis.hidden = !slide.visual;
+      // a picture that fails to load is not left as an empty frame: the step falls back to the shape alone (an <image> error does not bubble, so it is heard on the image itself)
+      vis.querySelector("image")?.addEventListener("error", () => {
+        if (TOUR_SLIDES[tourAt]?.visual === "marks") vis.innerHTML = tourVisual("marks", { picture: null });
+      }, { once: true });
+      const scroller = $(el, ".wv-tour-scroll");
+      if (scroller) scroller.scrollTop = 0;
     }
     // a slide may carry its phone's own words (WLD-220): a phone has no scroll wheel to describe, so it is told drag and tap
     $(el, ".wv-tour-body").innerHTML = onPhone() && slide.phoneBody ? slide.phoneBody : slide.body;
@@ -17434,13 +17470,14 @@ export function mountViewer(appEl) {
       // It says aria-modal, so it has to behave like one: Tab must not walk out
       // of the card and start pressing buttons on a page the reader cannot see.
       if (event.key === "Tab") {
-        const stops = [...$(root, ".wv-tour-card").querySelectorAll("button:not(:disabled)")];
+        // the card's stops are its buttons AND its one link (the docs, on the last step), in page order; the trap steps through them itself, so the order is the card's own
+        // whatever the browser would have made focusable inside a scrolling area
+        const stops = [...$(root, ".wv-tour-card").querySelectorAll("button:not(:disabled), a[href]")];
         if (!stops.length) return;
-        const edge = event.shiftKey ? stops[0] : stops[stops.length - 1];
-        if (document.activeElement === edge || !$(root, ".wv-tour-card").contains(document.activeElement)) {
-          event.preventDefault();
-          (event.shiftKey ? stops[stops.length - 1] : stops[0]).focus();
-        }
+        const at = stops.indexOf(document.activeElement);
+        const step = event.shiftKey ? -1 : 1;
+        event.preventDefault();
+        stops[at < 0 ? (event.shiftKey ? stops.length - 1 : 0) : (at + step + stops.length) % stops.length].focus();
       }
       return;
     }

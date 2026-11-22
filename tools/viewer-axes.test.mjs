@@ -1324,10 +1324,9 @@ test("WLD-220: a phone is told only what a phone has (drag, tap, what is drawn);
   assert.match(TOUR_TEXT(explore.body), /\bScroll\b.*\bzoom\b/i, "the desktop is told its wheel");
   assert.match(TOUR_TEXT(explore.body), /\bClick\b/);
   for (const slide of [welcome, parcels, marks, next]) assert.equal(slide.phoneBody, undefined, `${slide.id} has one wording: nothing in it names an input`);
-  // the pictures show only controls the map really draws: the search, the fit button, the conversations lens and the ? itself (drawn from the real glyphs)
-  const exploreSvg = tourVisual("explore");
-  assert.match(exploreSvg, /find a house or resident/);
-  for (const glyph of ["⛶", "💬", "?"]) assert.ok(exploreSvg.includes(`>${glyph}</span>`), `Look around draws the ${glyph} control`);
+  // the last step's picture shows only controls the map really draws: the conversations lens and the ? itself (drawn from the real glyphs)
+  const nextSvg = tourVisual("next");
+  for (const glyph of ["💬", "?"]) assert.ok(nextSvg.includes(`>${glyph}</span>`), `the last step draws the ${glyph} control`);
   assert.match(next.body, /<b>💬<\/b>/);
   const { readFile } = await import("node:fs/promises");
   const source = await readFile(new URL("../spectator/viewer.mjs", import.meta.url), "utf8");
@@ -1385,12 +1384,25 @@ test("WLD-220 (Darko 2026-11-21 09:12 EST, via Wright): the two map-meaning card
   assert.match(parcelsSvg, /class="wv-walk-leg"/, "with the dashed leg");
   assert.match(parcelsSvg, /class="wv-walk-dest"/, "and the ring where they are going");
   for (const word of ["house", "resident", "walking now"]) assert.ok(parcelsSvg.includes(`>${word}</text>`), `the picture labels the ${word}`);
-  const marksPic = tourVisual("marks", { picture: { href: "https://media.postmark.town/media/x/y.jpg" } });
-  assert.match(marksPic, /<image [^>]*href="https:\/\/media\.postmark\.town\/media\/x\/y\.jpg"/, "a mark's picture is the record's own image from the media door");
+  const marksPic = tourVisual("marks", { picture: { href: "/shelf/x/y.jpg" } });
+  assert.match(marksPic, /<image [^>]*href="\/shelf\/x\/y\.jpg"/, "a mark's picture is the record's own image by the map's shelf route (markImagePath)");
   assert.match(marksPic, /<polygon class="wv-fp t-constitution tv-poly"/, "a mark's shape is the map's footprint");
   assert.match(marksPic, />made by an agent<\/text>/);
   for (const word of ["picture", "shape"]) assert.ok(marksPic.includes(`>${word}</text>`), `the picture labels the ${word}`);
-  assert.doesNotMatch(tourVisual("marks"), /<image /, "with no record picture loaded it draws the map's pip, never an invented picture");
+  // no picture (absent, or its load failed): the shape alone, honestly; no image, no "picture" label, no frame, no pip standing in for a picture
+  const shapeOnly = tourVisual("marks");
+  assert.doesNotMatch(shapeOnly, /<image |tv-frame|>picture<\/text>/, "with no picture it draws no image, no empty frame and no 'picture' label");
+  assert.match(shapeOnly, /<polygon class="wv-fp t-constitution tv-poly"/);
+  assert.equal((shapeOnly.match(/class="ov-pip /g) ?? []).length, 1, "the one pip is the shape's own, not a stand-in for a picture");
+  assert.match(shapeOnly, />shape<\/text>/);
+  assert.match(shapeOnly, />made by an agent<\/text>/);
+  // Look around teaches its three gestures on the map's own pieces (a home pip), with a pointer and arrows, and no toolbar of buttons
+  const lookDesk = tourVisual("explore"), lookPhone = tourVisual("explore", { phone: true });
+  for (const word of ["drag", "scroll", "click"]) assert.ok(lookDesk.includes(`>${word}</text>`), `the desktop picture teaches ${word}`);
+  assert.deepEqual([...lookPhone.matchAll(/class="tv-label"[^>]*>([^<]*)</g)].map((m) => m[1]), ["drag", "tap"], "a phone is taught drag and tap only: no scroll wheel");
+  assert.ok((lookDesk.match(/class="ov-pip t-home/g) ?? []).length >= 4, "the map's home pip is the thing being moved, zoomed and read");
+  assert.match(lookDesk, /class="tv-cursor"/);
+  assert.doesNotMatch(lookDesk, /tv-ctl|tv-search|⛶|💬/, "not a repeated toolbar");
   assert.match(tourVisual("welcome"), /the lamp is always lit/);
   // every picture is well-formed (each opened tag is closed): an SVG that does not parse draws nothing
   for (const kind of ["welcome", "parcels", "marks", "explore", "next"]) {
