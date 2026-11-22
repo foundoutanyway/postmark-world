@@ -102,11 +102,29 @@ import { MARK_ICON_CSS } from "../spectator/mark-icons.mjs";
 // RE-PINNED A THIRD TIME FOR CORE-54 (lead fix, 2026-11-20 20:01Z): the 390 px tour foot FIT. The published 0dae4132/c300 tour frame showed "next" spilling past the card (the 8 step dots at
 // 20 px plus skip/back/next at 192 px did not fit the ~160 px beside them). One media block gains 6 lines / 571 bytes (110597 -> 111168), nothing removed or changed: the foot may wrap, the
 // actions sit 4 px apart and right-aligned, skip's padding 6 px and back/next 8 px a side (each still at least 44 px wide and 44 px tall). Measured by this test's own masked-emission route.
-// MERGED WITH main 1054c91d (CORE-127 refresh): main's own pin is d8d98631… at 111168 bytes; CORE-127's STYLE adds 4075 bytes of added lines on top (the merge is line-clean in STYLE),
-// so the byte count is 111168 + 4075 = 115243 (it passed). The digest below is the one this test's own masked-emission route printed for the merged tree (run through run-heavy, full
-// output /var/tmp/core-127-refresh/shell-css-measure.out); it replaces CORE-127's pre-merge bb3ebfde….
-const PINNED_MASKED_STYLE_SHA256 = "9966505163545a4895b6e35b8db294d6108090a4af5a2a5a539008a641b181eb";
-const PINNED_MASKED_STYLE_BYTES = 115243;
+// RE-PINNED FOR WLD-220 (Wright 2026-11-21 06:17: the tour's last step links /docs/), knowingly, AFTER merging main 01e29a17 (which carries CORE-54's pin above): the WLD-220 branch's ONE added rule,
+// `.wv-tour-body a` (the card's blue, underline offset, and a comment), 196 bytes, on top of main's STYLE (111168 -> 111364), nothing removed or moved. Measured by this test's own masked-emission
+// route on the merged WLD-220 branch (the same route the pins above name). Alone on its old base the rule was 108530 -> 108726 (955f7eb3...); main has since moved to CORE-54's 111168.
+// RE-PINNED FOR THE WLD-220 VISUAL REBUILD (Darko 2026-11-21 18:14/18:15 EST: use the actual visuals; the join flow's theme; fewer, larger words), knowingly, an INTENDED change to STYLE over the pin
+// above: the tour's own rules only, every one under `.wv-tour` / `.tv-*` (the join-flow headline, soft text, paper picture panel and progress dots, the picture classes, the control row), +2779 bytes
+// (111364 -> 114143), nothing outside the tour touched. Measured by this test's own masked-emission route on the WLD-220 branch (the same route the pins above name).
+// RE-PINNED FOR THE WLD-220 FIX (containment of tall cards, the Look around picture): +1410 bytes (114143 -> 115553), again only .wv-tour / .tv-* rules (the card as a bounded
+// flex column, its scrolling area, the short-screen reflow, the pointer mark). Whole account over the prior tour's 111364 (main's 111168 plus the earlier 196-byte docs rule): +4189 (2779 + 1410).
+// RE-PINNED FOR THE WLD-220 NARROW-SHORT FIX: +134 bytes (115553 -> 115687): the side-by-side reflow's media query gains `and (min-width:640px)` and its comment now names the narrow
+// short phone (a 360 x 560 phone keeps one column); nothing else in STYLE moves. Whole account over the prior tour's 111364: +4323. The earlier "+2634" figure here and
+// "113998" in tools/viewer-creature-nameplate.test.mjs were stale intermediate measurements (111364 -> 113998 is +2634; the pin that landed was 114143, +2779).
+// RE-PINNED FOR THE WLD-220 REAL-PAGE CORRECTION (Darko 2026-11-21 22:01 EST: "the tour needs to take assets directly from the actual world page"): the tour no longer draws pictures, so
+// every `.wv-tour-visual` / `.tv-*` rule (the paper panel, the labels, the controls row, the pointer) and the short-screen two-column reflow are REMOVED, and the short-screen block
+// is a plain tightening at every width: -2411 bytes (115687 -> 113276). Whole account over the prior tour's 111364: +1912 (the join-flow theme, the bounded scrolling card and the
+// compact short-screen block, less the removed picture rules). Only .wv-tour rules move; measured by this test's own masked-emission route.
+// RE-PINNED FOR CORE-54 / WLD-220's TOUR ICONS (Darko 2026-11-22 00:31: the card shows the map's own house and resident), knowingly, an INTENDED change to STYLE: the card's icon rows (.tour-line, .tour-slot,
+// .tour-ic, all under .wv-tour-body and a comment), +442 bytes (113276 -> 113718), nothing else moved. Measured by this test's own masked-emission route.
+// MAIN'S OWN ACCOUNT, kept (CORE-127, refreshed at main 1054c91d): main's pin was d8d98631… at 111168 bytes; CORE-127's STYLE adds 4075 bytes of added lines on top (the merge was line-clean in STYLE),
+// so main's count is 111168 + 4075 = 115243 (digest 9966505163…).
+// RE-PINNED FOR THE MERGE OF main f4e12a54 (CORE-127 and WLD-211 over this branch): the tour's own net change over main's old 111168 is +2550 bytes (113718 - 111168), all under .wv-tour / .wv-tour-body;
+// main's CORE-127 STYLE adds 4075 on top of 111168 (115243). The merge is line-clean in STYLE, so the expected count is 115243 + 2550 = 117793.
+const PINNED_MASKED_STYLE_SHA256 = "932bbdbeef898a20ea810e028a8da77abd7931264751732961b7d4d22605d97e";
+const PINNED_MASKED_STYLE_BYTES = 117793;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";
