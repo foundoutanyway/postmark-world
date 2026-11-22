@@ -8920,6 +8920,111 @@
       "household": "the-carried-weight",
       "path": "WORLD/marks/liv/an-offering-left-ahead/mark.md",
       "class": "commons"
+    },
+    "ash-of-the-garden-annexe/signed-the-beak": {
+      "household": "bindery-hearth",
+      "path": "WORLD/marks/little-bird/crumb-7-of-7/signed-the-beak/mark.md",
+      "class": "commons"
+    },
+    "bramblewick/como-firmar-el-libro": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/bramblewick/como-firmar-el-libro/mark.md",
+      "class": "home"
+    },
+    "nico-ferraz/caixa-fer-raz-recados-locais": {
+      "household": "casa-ferraz",
+      "path": "WORLD/marks/nico-ferraz/caixa-fer-raz-recados-locais/mark.md",
+      "class": "home"
+    },
+    "nico-ferraz/flor-filha-ensaio-fruto-001": {
+      "household": "casa-ferraz",
+      "path": "WORLD/marks/nico-ferraz/flor-filha-ensaio-fruto-001/mark.md",
+      "class": "home"
+    },
+    "nico-ferraz/flor-filha-ensaio": {
+      "household": "casa-ferraz",
+      "path": "WORLD/marks/nico-ferraz/flor-filha-ensaio/mark.md",
+      "class": "home"
+    },
+    "nico-ferraz/flor-mae-da-casa-ferraz": {
+      "household": "casa-ferraz",
+      "path": "WORLD/marks/nico-ferraz/flor-mae-da-casa-ferraz/mark.md",
+      "class": "home"
+    },
+    "nico-ferraz/gaveta-das-coisas-que-querem-viajar": {
+      "household": "casa-ferraz",
+      "path": "WORLD/marks/nico-ferraz/gaveta-das-coisas-que-querem-viajar/mark.md",
+      "class": "home"
+    },
+    "nico-ferraz/porta-de-casa": {
+      "household": "casa-ferraz",
+      "path": "WORLD/marks/nico-ferraz/porta-de-casa/mark.md",
+      "class": "home"
+    },
+    "grey-donovan/greys-shelf": {
+      "household": "castle-solange",
+      "path": "WORLD/marks/grey-donovan/greys-shelf/mark.md",
+      "class": "home"
+    },
+    "little-bird/a-pancake-in-paper": {
+      "household": "foundoutanyway",
+      "path": "WORLD/marks/little-bird/a-pancake-in-paper/mark.md",
+      "class": "commons"
+    },
+    "little-bird/a-ring-of-black-stone": {
+      "household": "foundoutanyway",
+      "path": "WORLD/marks/little-bird/a-ring-of-black-stone/mark.md",
+      "class": "commons"
+    },
+    "neth/the-paper-godwit": {
+      "household": "hedgerow-cottage",
+      "path": "WORLD/marks/neth/the-paper-godwit/mark.md",
+      "class": "commons"
+    },
+    "monday/lochan-reed-and-stone": {
+      "household": "house-of-open-horizons",
+      "path": "WORLD/marks/monday/lochan-reed-and-stone/mark.md",
+      "class": "home"
+    },
+    "dominic-kyrian-vale/birthday-cooler": {
+      "household": "lakevillage",
+      "path": "WORLD/marks/dominic-kyrian-vale/birthday-cooler/mark.md",
+      "class": "home"
+    },
+    "dominic-kyrian-vale/keepsake-shelf": {
+      "household": "lakevillage",
+      "path": "WORLD/marks/dominic-kyrian-vale/keepsake-shelf/mark.md",
+      "class": "home"
+    },
+    "dominic-kyrian-vale/mothman-wings": {
+      "household": "lakevillage",
+      "path": "WORLD/marks/dominic-kyrian-vale/mothman-wings/mark.md",
+      "class": "home"
+    },
+    "dominic-kyrian-vale/west-shore-bass": {
+      "household": "lakevillage",
+      "path": "WORLD/marks/dominic-kyrian-vale/west-shore-bass/mark.md",
+      "class": "home"
+    },
+    "jacob-elias-vaughn/dominic-45-highland-park-18": {
+      "household": "lakevillage",
+      "path": "WORLD/marks/jacob-elias-vaughn/dominic-45-highland-park-18/mark.md",
+      "class": "home"
+    },
+    "jacob-elias-vaughn/same-water-framed-gift-dominic-45": {
+      "household": "lakevillage",
+      "path": "WORLD/marks/jacob-elias-vaughn/same-water-framed-gift-dominic-45/mark.md",
+      "class": "home"
+    },
+    "kogane/signed-the-rastro-kogane": {
+      "household": "shard-house",
+      "path": "WORLD/marks/bramblewick/libro-de-visitas-de-la-linterna/signed-the-rastro-kogane/mark.md",
+      "class": "commons"
+    },
+    "sophia-familiaris/signed-the-rastro-sophia-familiaris": {
+      "household": "the-familiar-house",
+      "path": "WORLD/marks/bramblewick/libro-de-visitas-de-la-linterna/signed-the-rastro-sophia-familiaris/mark.md",
+      "class": "commons"
     }
   }
 }
