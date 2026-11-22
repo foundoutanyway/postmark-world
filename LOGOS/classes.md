@@ -1456,9 +1456,11 @@ essentially expire … just group the conversations by location in a settlement
 and just remove the whole expiry within a settlement for conversations."* And
 on the key: *"whatever the logic is for the location/earshot based
 conversation bubbles, just covering time spanning the settlement."* So: the
-grouping is the earshot's, unchanged (voices chain by earshot, or by sharing a
-deck); the **time** split is gone. Every voice at one location in one
-settlement is ONE thread. The published settlement does not itself split a room;
+**time** split is gone, and a room does not expire inside a settlement.
+*(Amended 2026-11-22, Darko, POS-1185; WLD-242: voices no longer chain into one
+thread by earshot or by sharing a deck, so two says at one place are not
+necessarily one thread. Earshot and the deck still set who is in reach; a say joins
+one room and keeps it, see § Rooms never fuse on a later say below.)* The published settlement does not itself split a room;
 its continuation and its hearing follow the hour rule in the next paragraph
 *(amended 2026-11-14, Darko, CORE-97)*. The say edge keeps six dials: `earshot_m`, `fade_min` (the
 display fade), `speak_every_s`, `text_max`, `hear_max`, `presence_min`. The node
@@ -1474,8 +1476,8 @@ class is a different dial for a different class and is not touched.
 **A room still talking carries across a settlement (ruled 2026-11-14, Darko;
 CORE-97; amends the settlement split above).** *"allowing conversations to persist
 an hour after settlement and if anyone contributes during that time they can keep
-it going?"* So: a room is the same cluster as above (voices chained by earshot, or
-sharing a deck). When a settlement publishes, a room whose newest say came before
+it going?"* So: a room is the one a say joined when it was spoken (§ Rooms never
+fuse on a later say, below). When a settlement publishes, a room whose newest say came before
 it stays open for one hour. A say that belongs to that room within the hour
 carries the same room through the settlement, and the room then lives as rooms do
 inside a settlement, with no idle timeout, until the next settlement, where the
@@ -1489,6 +1491,24 @@ silence rule and no new idle timeout inside a settlement: the hour is counted fr
 settlement, once. The earshot and deck grouping, the display fade and the caps
 are unchanged, the node `the-town/conversation-lull-min` stays retired in place,
 and the sound class's `thread_close_min` remains a separate dial.
+
+**Rooms never fuse on a later say (ruled 2026-11-22, Darko; POS-1185, WLD-242).**
+*"I'd like a solution where we simply dont merge separate conversations just
+because there is a geometric linker later on, go with whatever's sensible. The
+goal/floor is for everything to be readable and findable (no orphans), we can tweak
+the design in the coming weeks based on feedback"* So: a say
+joins one room when it is spoken, and keeps it. A reply joins the room of the say it
+answers, while that room is open. Any other say joins the room of the nearest voice
+in earshot among the open rooms, a tie going to the most recent voice; a say with no
+voice in earshot founds a room. A later say that stands in earshot of two existing
+rooms joins one of them and does not fuse them: both rooms keep their identities,
+every say keeps the room it joined, and no room is orphaned, so everything stays
+readable and findable. Two says at one place are therefore not necessarily one
+thread, and two rooms can stand at one place. The rest stands as ruled above: a room
+lives inside a settlement with no idle timeout; a room still open at a settlement stays open for one hour,
+and a closed room is never revived, so "open" is what the settlement and the hour
+leave open (a reply to a say in a closed room does not revive that room: it is placed
+as any other say is); earshot and deck reach, the display fade and the caps are unchanged.
 
 ## The four papers of record — letter, ledger, ballot, project
 
