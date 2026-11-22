@@ -87,7 +87,10 @@ import { MARK_ICON_CSS } from "../spectator/mark-icons.mjs";
 // digests it is checked against: 94d56a41… (107135 bytes) on the POS-945 merge-base, ed771ead… (107711 bytes, the pin above) on this main,
 // and 37ddf8f8… (107954 bytes, the pin the reviewed head 6f4c906a carried) on that head. A line diff of the masked texts, main to the merge,
 // is exactly the 8 `.wv-bymail*` lines and none removed, the same 8 lines the reviewed head added over its own base.
-// RE-PINNED FOR CORE-54 (Darko 2026-11-20, "4. Small targets"), knowingly, an INTENDED change to STYLE over the pin above: the phone/touch hit-area
+// RE-PINNED IN CORE-127 (World viewer filters, PR #417), an INTENDED change to STYLE: the display-filter opener, its desktop popover and
+// its 390 px sheet (`.wv-filters-open`, `.wv-dpanel`, `.wv-dstrip`, `.wv-dfilter-host`) add 4075 bytes of CSS and nothing else moved (a line
+// diff of the masked texts, main 6928feab to the head, is added lines only).
+// CORE-54's account, as main carries it (Darko 2026-11-20, "4. Small targets"), knowingly, an INTENDED change to STYLE over the pin above: the phone/touch hit-area
 // rules (the round map controls and root mark, the tour's three buttons and step dots, the mark bubble's close) and the touch-reach constants' CSS
 // neighbours: 1877 bytes added (108530 -> 110407), nothing removed or changed; then the chooser row's 44 px reach (`.wv-choose-row`, one media rule,
 // 190 bytes, 110407 -> 110597) when the crowded press's choices joined the phone column (Wright 16:57Z). The digest below was measured by this test's own masked-emission route
@@ -116,8 +119,12 @@ import { MARK_ICON_CSS } from "../spectator/mark-icons.mjs";
 // compact short-screen block, less the removed picture rules). Only .wv-tour rules move; measured by this test's own masked-emission route.
 // RE-PINNED FOR CORE-54 / WLD-220's TOUR ICONS (Darko 2026-11-22 00:31: the card shows the map's own house and resident), knowingly, an INTENDED change to STYLE: the card's icon rows (.tour-line, .tour-slot,
 // .tour-ic, all under .wv-tour-body and a comment), +442 bytes (113276 -> 113718), nothing else moved. Measured by this test's own masked-emission route.
-const PINNED_MASKED_STYLE_SHA256 = "5dd4a46071032a2dd9ede4f8ea57a618415eb11964dd1b6306ad34641f5eb5d1";
-const PINNED_MASKED_STYLE_BYTES = 113718;
+// MAIN'S OWN ACCOUNT, kept (CORE-127, refreshed at main 1054c91d): main's pin was d8d98631… at 111168 bytes; CORE-127's STYLE adds 4075 bytes of added lines on top (the merge was line-clean in STYLE),
+// so main's count is 111168 + 4075 = 115243 (digest 9966505163…).
+// RE-PINNED FOR THE MERGE OF main f4e12a54 (CORE-127 and WLD-211 over this branch): the tour's own net change over main's old 111168 is +2550 bytes (113718 - 111168), all under .wv-tour / .wv-tour-body;
+// main's CORE-127 STYLE adds 4075 on top of 111168 (115243). The merge is line-clean in STYLE, so the expected count is 115243 + 2550 = 117793.
+const PINNED_MASKED_STYLE_SHA256 = "932bbdbeef898a20ea810e028a8da77abd7931264751732961b7d4d22605d97e";
+const PINNED_MASKED_STYLE_BYTES = 117793;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";

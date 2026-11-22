@@ -225,8 +225,11 @@ test("wiring: the closure is gone, and the one call site passes the looked-up ro
 // RE-PINNED FOR THE WLD-220 NARROW-SHORT FIX: +134 bytes (115553 -> 115687), the tour's short-screen media query and its comment only; tools/viewer-shell-css.test.mjs carries the account.
 // RE-PINNED FOR THE WLD-220 REAL-PAGE CORRECTION: the tour's drawn-picture rules are removed (115687 -> 113276, -2411), only .wv-tour / .tv-* rules; tools/viewer-shell-css.test.mjs carries the account.
 // RE-PINNED FOR THE TOUR ICONS (CORE-153): the card's icon rows only, +442 bytes (113276 -> 113718), under .wv-tour-body; tools/viewer-shell-css.test.mjs carries the account.
-const PINNED_MASKED_STYLE_SHA256 = "5dd4a46071032a2dd9ede4f8ea57a618415eb11964dd1b6306ad34641f5eb5d1";
-const PINNED_MASKED_STYLE_BYTES = 113718;
+// MAIN'S OWN ACCOUNT, kept (CORE-127, refreshed at main 1054c91d): the display-filter opener, its desktop popover and its 390 px sheet add 4075 bytes to main's 111168 (115243, digest 9966505163…);
+// CREATURE_CSS and both of its neighbours untouched.
+// RE-PINNED FOR THE MERGE OF main f4e12a54 over this branch: main's 115243 plus the tour's net +2550 (113718 - 111168) = 117793 expected (line-clean in STYLE); tools/viewer-shell-css.test.mjs carries the account.
+const PINNED_MASKED_STYLE_SHA256 = "932bbdbeef898a20ea810e028a8da77abd7931264751732961b7d4d22605d97e";
+const PINNED_MASKED_STYLE_BYTES = 117793;
 
 const HOME_TOKEN = "\u0000HOME_COLUMN_CSS\u0000";
 const ICON_TOKEN = "\u0000MARK_ICON_CSS\u0000";
