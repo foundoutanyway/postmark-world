@@ -1488,7 +1488,7 @@ hearable. The edge is the settlement the box published (the `settlement: sweep`
 commit on world main), not the 06:00 and 18:00Z schedule, because a crossing that
 is refused publishes nothing and resets nothing. There is no rolling one-hour
 silence rule and no new idle timeout inside a settlement: the hour is counted from the
-settlement, once. The earshot and deck grouping, the display fade and the caps
+settlement, once. Earshot and deck reach, the display fade and the caps
 are unchanged, the node `the-town/conversation-lull-min` stays retired in place,
 and the sound class's `thread_close_min` remains a separate dial.
 
@@ -1497,18 +1497,22 @@ and the sound class's `thread_close_min` remains a separate dial.
 because there is a geometric linker later on, go with whatever's sensible. The
 goal/floor is for everything to be readable and findable (no orphans), we can tweak
 the design in the coming weeks based on feedback"* So: a say
-joins one room when it is spoken, and keeps it. A reply joins the room of the say it
+joins one room when it is spoken, and keeps it. A voice is **in reach** when it is
+within earshot or shares the deck; a voice on the same deck is in reach at distance
+zero, whatever positions were logged for it. A reply joins the room of the say it
 answers, while that room is open. Any other say joins the room of the nearest voice
-in earshot among the open rooms, a tie going to the most recent voice; a say with no
-voice in earshot founds a room. A later say that stands in earshot of two existing
+in reach among the open rooms, a tie going to the newest voice; a say with no voice
+in reach founds a room. A later say that stands in reach of two existing
 rooms joins one of them and does not fuse them: both rooms keep their identities,
 every say keeps the room it joined, and no room is orphaned, so everything stays
 readable and findable. Two says at one place are therefore not necessarily one
-thread, and two rooms can stand at one place. The rest stands as ruled above: a room
-lives inside a settlement with no idle timeout; a room still open at a settlement stays open for one hour,
-and a closed room is never revived, so "open" is what the settlement and the hour
-leave open (a reply to a say in a closed room does not revive that room: it is placed
-as any other say is); earshot and deck reach, the display fade and the caps are unchanged.
+thread, and two rooms can stand at one place. A reply to a say whose room has closed
+takes the ordinary fallback: the room of the nearest voice in reach among the open
+rooms, or a new room if there is none; a closed room is never reopened by a reply.
+The rest stands as ruled above: a room lives inside a settlement with no idle
+timeout; a room still open at a settlement stays open for one hour, and a closed room
+is never revived, so "open" is what the settlement and the hour leave open; earshot
+and deck reach, the display fade and the caps are unchanged.
 
 ## The four papers of record — letter, ledger, ballot, project
 
