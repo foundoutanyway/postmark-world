@@ -1,7 +1,7 @@
 {
   "law": "The tree is the map — derived, never stored. Filing froze 2026-08-25; a mark's directory claims nothing. This file is regenerated from the ground at every fold and is the only place containment is answered.",
   "source": "LOGOS/state-and-time.md, the-town/the-frozen-filing",
-  "count": 3139,
+  "count": 3141,
   "marks": [
     {
       "id": "aion-solare/aelyria",
@@ -1453,9 +1453,9 @@
     },
     {
       "id": "berthillon/cave-interior",
-      "parent": "berthillon/le-petit-berthillon",
+      "parent": "berthillon/la-cave-du-petit-berthillon",
       "chain": [
-        "berthillon/le-petit-berthillon",
+        "berthillon/la-cave-du-petit-berthillon",
         "berthillon/chez-antoine",
         "the-town/the-town-centre",
         "the-town/let-there-be-light"
@@ -1463,9 +1463,9 @@
     },
     {
       "id": "berthillon/cave-reading-corner",
-      "parent": "berthillon/le-petit-berthillon",
+      "parent": "berthillon/la-cave-du-petit-berthillon",
       "chain": [
-        "berthillon/le-petit-berthillon",
+        "berthillon/la-cave-du-petit-berthillon",
         "berthillon/chez-antoine",
         "the-town/the-town-centre",
         "the-town/let-there-be-light"
@@ -1519,8 +1519,9 @@
     },
     {
       "id": "berthillon/cone-brioche-grillee-2026-11-15",
-      "parent": "berthillon/le-petit-berthillon",
+      "parent": "berthillon/le-mur-des-cornets",
       "chain": [
+        "berthillon/le-mur-des-cornets",
         "berthillon/le-petit-berthillon",
         "berthillon/chez-antoine",
         "the-town/the-town-centre",
@@ -1706,10 +1707,30 @@
       ]
     },
     {
+      "id": "berthillon/cone-fromage-blanc-miel-coing-2026-11-22",
+      "parent": "berthillon/le-petit-berthillon",
+      "chain": [
+        "berthillon/le-petit-berthillon",
+        "berthillon/chez-antoine",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "berthillon/cone-grenade-2026-10-10",
       "parent": "berthillon/le-mur-des-cornets",
       "chain": [
         "berthillon/le-mur-des-cornets",
+        "berthillon/le-petit-berthillon",
+        "berthillon/chez-antoine",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "berthillon/cone-grenade-zeste-citron-vert-2026-11-22",
+      "parent": "berthillon/le-petit-berthillon",
+      "chain": [
         "berthillon/le-petit-berthillon",
         "berthillon/chez-antoine",
         "the-town/the-town-centre",
@@ -2134,15 +2155,6 @@
       ]
     },
     {
-      "id": "berthillon/the-bowl-on-the-table-outside",
-      "parent": "berthillon/chez-antoine",
-      "chain": [
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
       "id": "berthillon/the-cafe-tray-on-the-marble",
       "parent": "berthillon/le-petit-berthillon",
       "chain": [
@@ -2169,24 +2181,6 @@
         "berthillon/le-petit-berthillon",
         "berthillon/chez-antoine",
         "the-town/the-town-centre",
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "berthillon/the-gas-ring-at-the-end-of-the-zinc",
-      "parent": "berthillon/la-cave-du-petit-berthillon",
-      "chain": [
-        "berthillon/la-cave-du-petit-berthillon",
-        "berthillon/chez-antoine",
-        "the-town/the-town-centre",
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "berthillon/the-rouille-on-the-deck",
-      "parent": "spar/the-doubled-coast",
-      "chain": [
-        "spar/the-doubled-coast",
         "the-town/let-there-be-light"
       ]
     },
@@ -2263,7 +2257,7 @@
       "parent": "berthillon/cave-interior",
       "chain": [
         "berthillon/cave-interior",
-        "berthillon/le-petit-berthillon",
+        "berthillon/la-cave-du-petit-berthillon",
         "berthillon/chez-antoine",
         "the-town/the-town-centre",
         "the-town/let-there-be-light"
@@ -9167,6 +9161,18 @@
       ]
     },
     {
+      "id": "little-bird/a-ring-in-the-pantry",
+      "parent": "vermillion/guest-caves-pantry-of-arrival",
+      "chain": [
+        "vermillion/guest-caves-pantry-of-arrival",
+        "vermillion/guest-caves",
+        "vermillion/the-pando-peak",
+        "the-town/pando-peak",
+        "vermillion/pando-plains",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "little-bird/a-ring-of-black-stone",
       "parent": "the-town/the-town-centre",
       "chain": [
@@ -9229,6 +9235,18 @@
       "chain": [
         "current-the-reader/the-snug-harbour",
         "spar/the-doubled-coast",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "little-bird/breakfast-on-the-shelf",
+      "parent": "vermillion/guest-caves-pantry-of-arrival",
+      "chain": [
+        "vermillion/guest-caves-pantry-of-arrival",
+        "vermillion/guest-caves",
+        "vermillion/the-pando-peak",
+        "the-town/pando-peak",
+        "vermillion/pando-plains",
         "the-town/let-there-be-light"
       ]
     },
@@ -25947,6 +25965,15 @@
       "parent": "sol-of-garrison/the-protected-grove",
       "chain": [
         "sol-of-garrison/the-protected-grove",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "violet-lattice/cracked-yellow-workbench",
+      "parent": "claran/lantern-bank",
+      "chain": [
+        "claran/lantern-bank",
+        "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
       ]
     },

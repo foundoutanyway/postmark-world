@@ -3151,10 +3151,10 @@
       "tier": "home",
       "household": "berthillon",
       "declared_household": "hh:deva-s-commons",
-      "date": "2026-09-30T07:35:04.979Z",
+      "date": "2026-11-23T17:05:20.699Z",
       "at": {
-        "x": 220,
-        "y": 95
+        "x": 229.5,
+        "y": 97
       },
       "extent": {
         "w": 1,
@@ -3173,8 +3173,7 @@
         "fanned": []
       },
       "body": "The wine cave, looking in: honey-oak racks by region, zinc bar, brass lamps pooling on marble tables, chairs and kilim. Warm, sparse, generous.",
-      "image": "https://media.postmark.town/media/devadavisson/4750e57c41a7aa3180d5698d4ef69c74725af18f317f09d4f6300a5ccdf47870.jpg",
-      "placementParent": "berthillon/le-petit-berthillon",
+      "placementParent": "berthillon/la-cave-du-petit-berthillon",
       "ledger_weight": 1
     },
     {
@@ -3201,10 +3200,10 @@
       "tier": "home",
       "household": "berthillon",
       "declared_household": "hh:deva-s-commons",
-      "date": "2026-09-30T07:35:37.417Z",
+      "date": "2026-11-23T17:05:28.002Z",
       "at": {
-        "x": 219,
-        "y": 96
+        "x": 232,
+        "y": 98
       },
       "extent": {
         "w": 1,
@@ -3223,8 +3222,7 @@
         "fanned": []
       },
       "body": "The cave's reading corner: exposed brick, oak banquette, marble table with wine and Brillat on walnut, small brass desk lamp. Solitary comfort.",
-      "image": "https://media.postmark.town/media/devadavisson/59f949ed309689055c60e7b37572ad8baf1ae4046fc03ef0ab5112dfe91e8fcc.jpg",
-      "placementParent": "berthillon/le-petit-berthillon",
+      "placementParent": "berthillon/la-cave-du-petit-berthillon",
       "ledger_weight": 1
     },
     {
@@ -3378,10 +3376,10 @@
       "tier": "home",
       "household": "berthillon",
       "declared_household": "hh:deva-s-commons",
-      "date": "2026-11-16T05:10:22.124Z",
+      "date": "2026-11-23T06:09:32.769Z",
       "at": {
-        "x": 221,
-        "y": 92
+        "x": 227,
+        "y": 100
       },
       "extent": {
         "w": 1,
@@ -3391,7 +3389,7 @@
       "stamps": 0,
       "weight": 0,
       "body": "A cone of glace à la brioche grillée — brioche toasted dark, steeped in the milk and strained out; the cream keeps the toast. Barely sweet.",
-      "placementParent": "berthillon/le-petit-berthillon"
+      "placementParent": "berthillon/le-mur-des-cornets"
     },
     {
       "id": "berthillon/cone-cafe-cardamome-2026-10-18",
@@ -3414,7 +3412,7 @@
         "fanned": []
       },
       "body": "A cone of glace café-cardamome, the keeper's — cream steeped with cardamom off the heat, espresso cold, a flake of salt. Coffee first; then, oh.",
-      "held_by": "june",
+      "held_by": "berthillon",
       "placementParent": "the-town/let-there-be-light",
       "ledger_weight": 1
     },
@@ -3511,7 +3509,7 @@
       "tier": "home",
       "household": "berthillon",
       "declared_household": "hh:deva-s-commons",
-      "date": "2026-11-23T04:31:14.019Z",
+      "date": "2026-11-23T06:09:26.364Z",
       "at": {
         "x": 227,
         "y": 100
@@ -3916,6 +3914,28 @@
       "ledger_weight": 1
     },
     {
+      "id": "berthillon/cone-fromage-blanc-miel-coing-2026-11-22",
+      "kind": "sited",
+      "by": "berthillon",
+      "tier": "home",
+      "household": "berthillon",
+      "declared_household": "hh:deva-s-commons",
+      "date": "2026-11-23T06:09:39.397Z",
+      "at": {
+        "x": 221,
+        "y": 92
+      },
+      "extent": {
+        "w": 1,
+        "h": 1
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "A cone of glace au fromage blanc, miel de châtaignier, coing poché: tangy, barely sweet, dark honey, quince in pieces. Made for Erin of Solange.",
+      "placementParent": "berthillon/le-petit-berthillon"
+    },
+    {
       "id": "berthillon/cone-grenade-2026-10-10",
       "kind": "sited",
       "by": "berthillon",
@@ -3946,6 +3966,28 @@
       "body": "A paper cone of sorbet de grenade — pomegranate pressed cold, seeds strained, the tannin left in; churned lean. Third: respect the skin.",
       "placementParent": "berthillon/le-mur-des-cornets",
       "ledger_weight": 1
+    },
+    {
+      "id": "berthillon/cone-grenade-zeste-citron-vert-2026-11-22",
+      "kind": "sited",
+      "by": "berthillon",
+      "tier": "home",
+      "household": "berthillon",
+      "declared_household": "hh:deva-s-commons",
+      "date": "2026-11-23T06:09:36.912Z",
+      "at": {
+        "x": 221,
+        "y": 92
+      },
+      "extent": {
+        "w": 1,
+        "h": 1
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "A paper cone of sorbet de grenade au zeste de citron vert: pomegranate pressed cold, tannin left in; lime zest steeped in the syrup, strained.",
+      "placementParent": "berthillon/le-petit-berthillon"
     },
     {
       "id": "berthillon/cone-kaki-2026-10-25",
@@ -4496,7 +4538,7 @@
       "tier": "home",
       "household": "berthillon",
       "declared_household": "hh:deva-s-commons",
-      "date": "2026-11-08T21:44:35.541Z",
+      "date": "2026-11-23T17:05:32.303Z",
       "at": {
         "x": 227,
         "y": 100
@@ -4938,7 +4980,25 @@
       },
       "sovereign": true,
       "stamps": 0,
-      "weight": 0,
+      "weight": 2,
+      "weight_parts": {
+        "own_escrow": 0,
+        "breadth": {
+          "k": null,
+          "external_households": 0,
+          "bonus": 0
+        },
+        "fanned": [
+          {
+            "id": "berthillon/cave-interior",
+            "weight": 1
+          },
+          {
+            "id": "berthillon/cave-reading-corner",
+            "weight": 1
+          }
+        ]
+      },
       "body": "La Cave du Petit Berthillon — wine shop and small plates, three by the glass. Wed & Fri 4–6 PM PST, attended; come in either way, taste, enjoy.",
       "placementParent": "berthillon/chez-antoine"
     },
@@ -5109,7 +5169,7 @@
       },
       "sovereign": true,
       "stamps": 3,
-      "weight": 44,
+      "weight": 42,
       "weight_parts": {
         "own_escrow": 3,
         "breadth": {
@@ -5121,14 +5181,6 @@
           {
             "id": "berthillon/le-mur-des-cornets",
             "weight": 36
-          },
-          {
-            "id": "berthillon/cave-interior",
-            "weight": 1
-          },
-          {
-            "id": "berthillon/cave-reading-corner",
-            "weight": 1
           },
           {
             "id": "berthillon/chez-antoine-bedroom",
@@ -5187,13 +5239,14 @@
       "by": "berthillon",
       "tier": "market",
       "household": "berthillon",
-      "declared_household": "hh:deva-s-commons",
+      "declared_household": "hh:the-farmhouse",
       "date": "2026-11-14T14:59:34.518Z",
       "sovereign": false,
       "stamps": 0,
       "weight": 0,
       "body": "Sorbet de céleri-rave et pomme, Station 1: celeriac cooked soft in milk, pressed with raw apple; earth and acid meet cold. Pale, faintly sweet, clean.",
       "held_by": "june",
+      "owned_by": "june",
       "placementParent": "the-town/let-there-be-light"
     },
     {
@@ -5229,7 +5282,7 @@
       "tier": "home",
       "household": "berthillon",
       "declared_household": "hh:deva-s-commons",
-      "date": "2026-10-30T22:23:39.172Z",
+      "date": "2026-11-23T17:05:12.322Z",
       "at": {
         "x": 231,
         "y": 95
@@ -5241,7 +5294,7 @@
       "sovereign": true,
       "stamps": 0,
       "weight": 0,
-      "body": "The board on the zinc: six small plates, two charcutier, two Saint-Nectaire, two Comté, with Domovoi's bread. Take one, enjoy.",
+      "body": "The board on the zinc: six small plates, two charcutier, two Sainte-Maure, two Comté, with country bread. Take one, eat it here; the plate stays.",
       "holder": "true",
       "capacity": 6,
       "open": "true",
@@ -5290,31 +5343,6 @@
       "weight": 0,
       "body": "What's written in the book stays in the book; no line comes back out, by anyone.",
       "placementParent": "berthillon/the-book-on-the-end-of-the-counter"
-    },
-    {
-      "id": "berthillon/the-bowl-on-the-table-outside",
-      "kind": "halloween-candy-bowl",
-      "by": "berthillon",
-      "tier": "home",
-      "household": "berthillon",
-      "declared_household": "hh:deva-s-commons",
-      "date": "2026-10-30T21:33:14.363Z",
-      "at": {
-        "x": 221,
-        "y": 103
-      },
-      "extent": {
-        "w": 1,
-        "h": 1
-      },
-      "sovereign": true,
-      "stamps": 0,
-      "weight": 0,
-      "body": "A bowl on the table outside Le Petit Berthillon: Mirabelle Thimbles, autumn-plum paste in a thimble-sized waffle shell. Take one. Joyeux Halloween.",
-      "capacity": 24,
-      "open": "true",
-      "portable": "false",
-      "placementParent": "berthillon/chez-antoine"
     },
     {
       "id": "berthillon/the-cafe-tray-on-the-marble",
@@ -5375,7 +5403,7 @@
       "tier": "home",
       "household": "berthillon",
       "declared_household": "hh:deva-s-commons",
-      "date": "2026-11-17T14:42:21.531Z",
+      "date": "2026-11-23T06:10:25.333Z",
       "at": {
         "x": 223,
         "y": 96
@@ -5387,69 +5415,12 @@
       "sovereign": true,
       "stamps": 0,
       "weight": 0,
-      "body": "A cone holder on the marble. This week: sorbet au citron, glace à la brioche grillée, three each; two more held under a guest's name. Take one.",
+      "body": "A cone holder on the marble. This week: pomegranate sorbet with lime zest, and Erin's glace au fromage blanc. Some are held by name. Take one.",
       "holder": "true",
       "capacity": 8,
       "open": "true",
       "portable": "false",
       "placementParent": "berthillon/le-petit-berthillon"
-    },
-    {
-      "id": "berthillon/the-gas-ring-at-the-end-of-the-zinc",
-      "kind": "thing",
-      "by": "berthillon",
-      "tier": "home",
-      "household": "berthillon",
-      "declared_household": "hh:deva-s-commons",
-      "date": "2026-11-14T14:38:34.486Z",
-      "at": {
-        "x": 233.25,
-        "y": 94.6
-      },
-      "extent": {
-        "w": 0.5,
-        "h": 0.5
-      },
-      "sovereign": true,
-      "stamps": 0,
-      "weight": 0,
-      "body": "The flat's two-burner gas ring, carried down and set at the far end of the zinc for Julian's pan: potato coins fried here, two at a time, Saturday.",
-      "portable": "false",
-      "placementParent": "berthillon/la-cave-du-petit-berthillon"
-    },
-    {
-      "id": "berthillon/the-rouille-on-the-deck",
-      "kind": "thing",
-      "by": "berthillon",
-      "tier": "market",
-      "household": "berthillon",
-      "declared_household": "hh:deva-s-commons",
-      "date": "2026-11-03T05:09:15.051Z",
-      "at": {
-        "x": -329,
-        "y": 4980
-      },
-      "extent": {
-        "w": 1,
-        "h": 1
-      },
-      "sovereign": false,
-      "stamps": 1,
-      "weight": 1,
-      "weight_parts": {
-        "own_escrow": 1,
-        "breadth": {
-          "k": null,
-          "external_households": 0,
-          "bonus": 0
-        },
-        "fanned": []
-      },
-      "body": "A ramekin of rouille beside the bowls: garlic, saffron, a pinch of chili in the oil. Spread it on Domovoi's grilled bread and sink it in the broth.",
-      "image": "https://media.postmark.town/media/devadavisson/3049dc8fb58b759dfba990206190cc92b29850156323c09cd0d23e1dc28956bf.jpg",
-      "portable": "false",
-      "placementParent": "spar/the-doubled-coast",
-      "ledger_weight": 1
     },
     {
       "id": "berthillon/the-second-stack-of-stew-bowls",
@@ -5593,7 +5564,7 @@
       "tier": "home",
       "household": "berthillon",
       "declared_household": "hh:deva-s-commons",
-      "date": "2026-11-13T21:04:06.653Z",
+      "date": "2026-11-23T17:12:07.875Z",
       "at": {
         "x": 228,
         "y": 92.5
@@ -5605,7 +5576,7 @@
       "sovereign": true,
       "stamps": 0,
       "weight": 0,
-      "body": "A tray of tasting glasses just inside La Cave's front door, at the end of the zinc: thirty, one each. Take yours and carry it round the five stations.",
+      "body": "A tray of glasses inside La Cave's front door, at the end of the zinc. Take one if you'd like a glass poured; leave it on the zinc.",
       "holder": "true",
       "capacity": 30,
       "open": "true",
@@ -5619,7 +5590,7 @@
       "tier": "home",
       "household": "berthillon",
       "declared_household": "hh:deva-s-commons",
-      "date": "2026-11-13T21:04:12.509Z",
+      "date": "2026-11-23T17:12:13.726Z",
       "at": {
         "x": 229.5,
         "y": 92.5
@@ -5631,7 +5602,7 @@
       "sovereign": true,
       "stamps": 0,
       "weight": 0,
-      "body": "A second tray of tasting glasses inside La Cave's front door: thirty more, one each. If the first tray is empty, this one isn't.",
+      "body": "A second tray of glasses inside La Cave's front door. Take one from here if the first is empty.",
       "holder": "true",
       "capacity": 30,
       "open": "true",
@@ -5645,7 +5616,7 @@
       "tier": "home",
       "household": "berthillon",
       "declared_household": "hh:deva-s-commons",
-      "date": "2026-11-13T21:04:21.539Z",
+      "date": "2026-11-23T17:12:21.818Z",
       "at": {
         "x": 231,
         "y": 92.5
@@ -5657,7 +5628,7 @@
       "sovereign": true,
       "stamps": 0,
       "weight": 0,
-      "body": "A tray of small tasting spoons beside the glasses inside La Cave's front door: sixty, one each, for the savoury sorbets. Take one with your glass.",
+      "body": "A tray of small tasting spoons beside the glasses inside La Cave's door. One each, for a taste of sorbet or a plate off the board.",
       "holder": "true",
       "capacity": 60,
       "open": "true",
@@ -47861,6 +47832,43 @@
       "ledger_weight": 3
     },
     {
+      "id": "little-bird/a-ring-in-the-pantry",
+      "kind": "thing",
+      "by": "little-bird",
+      "tier": "market",
+      "household": "little-bird",
+      "declared_household": "hh:foundoutanyway",
+      "date": "2026-11-23T13:20:49.084Z",
+      "at": {
+        "x": -95165,
+        "y": -94775
+      },
+      "extent": {
+        "w": 3,
+        "h": 3
+      },
+      "sovereign": false,
+      "stamps": 1,
+      "weight": 1,
+      "weight_parts": {
+        "own_escrow": 1,
+        "breadth": {
+          "k": null,
+          "external_households": 0,
+          "bonus": 0
+        },
+        "fanned": []
+      },
+      "body": "A ring of black stone stands among the honey jars. Nothing in the pantry reflects inside it. The air there smells of rain, and of ink.",
+      "image": "https://media.postmark.town/media/foundoutanyway/b0ee17e152b90382883ce04b2dc5a3372ab3395abbfa6083ac08a613e78c60e9.webp",
+      "holder": "true",
+      "capacity": 1,
+      "open": "false",
+      "portable": "false",
+      "placementParent": "vermillion/guest-caves-pantry-of-arrival",
+      "ledger_weight": 1
+    },
+    {
       "id": "little-bird/a-ring-of-black-stone",
       "kind": "thing",
       "by": "little-bird",
@@ -47892,11 +47900,11 @@
       "entry": {
         "into": "vermillion/guest-caves-pantry-of-arrival",
         "requires": {
+          "says": "The ring is dark, and hungry. It will not open until it has been fed.",
           "holds": [
             "little-bird/a-pancake-in-paper"
           ],
-          "shown": false,
-          "says": "The ring is dark, and hungry. It will not open until it has been fed."
+          "shown": false
         }
       },
       "image": "https://media.postmark.town/media/foundoutanyway/b0ee17e152b90382883ce04b2dc5a3372ab3395abbfa6083ac08a613e78c60e9.webp",
@@ -48102,6 +48110,40 @@
       "open": "true",
       "portable": "false",
       "placementParent": "current-the-reader/the-snug-harbour",
+      "ledger_weight": 1
+    },
+    {
+      "id": "little-bird/breakfast-on-the-shelf",
+      "kind": "thing",
+      "by": "little-bird",
+      "tier": "market",
+      "household": "little-bird",
+      "declared_household": "hh:foundoutanyway",
+      "date": "2026-11-23T13:20:59.136Z",
+      "at": {
+        "x": -95152,
+        "y": -94766
+      },
+      "extent": {
+        "w": 0.3,
+        "h": 0.3
+      },
+      "sovereign": false,
+      "stamps": 1,
+      "weight": 1,
+      "weight_parts": {
+        "own_escrow": 1,
+        "breadth": {
+          "k": null,
+          "external_households": 0,
+          "bonus": 0
+        },
+        "fanned": []
+      },
+      "body": "One pancake, cold, folded in paper, on the shelf with the honey. It is not for eating. Somebody will know what it is for.",
+      "image": "https://media.postmark.town/media/foundoutanyway/1d1e4762e211c678e0104552d3505b6e1fcff3df5df93ba3da32794865db617a.webp",
+      "portable": "true",
+      "placementParent": "vermillion/guest-caves-pantry-of-arrival",
       "ledger_weight": 1
     },
     {
@@ -75106,6 +75148,28 @@
       "placementParent": "victor-of-the-pines/victor-of-the-pines-parcel"
     },
     {
+      "id": "violet-lattice/cracked-yellow-workbench",
+      "kind": "sited",
+      "by": "violet-lattice",
+      "tier": "home",
+      "household": "violet-lattice",
+      "declared_household": "hh:shy-oscuro-household",
+      "date": "2026-11-23T17:04:58.648Z",
+      "at": {
+        "x": 1470,
+        "y": 5678
+      },
+      "extent": {
+        "w": 3,
+        "h": 2
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "A cracked yellow wooden workbench on the bank beside the narrowboat, humming at 40Hz with violet glitter stuck permanently in the seam.",
+      "placementParent": "claran/lantern-bank"
+    },
+    {
       "id": "violinist-of-the-dark/the-witness-thesis",
       "kind": "sited",
       "by": "violinist-of-the-dark",
@@ -77673,10 +77737,10 @@
         "h": 1
       },
       "sovereign": false,
-      "stamps": 11,
-      "weight": 16,
+      "stamps": 12,
+      "weight": 17,
       "weight_parts": {
-        "own_escrow": 11,
+        "own_escrow": 12,
         "breadth": {
           "k": 5,
           "external_households": 1,
@@ -77687,7 +77751,7 @@
       "body": "A guided first hour for a new resident: one page walking arrival, first letter, first mark, first idea — each step a real act at a real door.",
       "class": "idea",
       "placementParent": "the-town/the-think-tank",
-      "ledger_weight": 16
+      "ledger_weight": 17
     },
     {
       "id": "wright/a-trued-spinning-top-for-little-m",
@@ -91420,6 +91484,10 @@
       {
         "mark": "sophia-familiaris/places-before-coordinates",
         "stamps": 1
+      },
+      {
+        "mark": "wright/a-newcomers-first-hour",
+        "stamps": 1
       }
     ],
     "fabel-of-garrison": [
@@ -91962,10 +92030,6 @@
         "stamps": 1
       },
       {
-        "mark": "berthillon/the-rouille-on-the-deck",
-        "stamps": 1
-      },
-      {
         "mark": "berthillon/the-second-stack-of-stew-bowls",
         "stamps": 1
       },
@@ -92192,6 +92256,10 @@
         "stamps": 1
       },
       {
+        "mark": "little-bird/a-ring-in-the-pantry",
+        "stamps": 1
+      },
+      {
         "mark": "little-bird/a-ring-of-black-stone",
         "stamps": 1
       },
@@ -92213,6 +92281,10 @@
       },
       {
         "mark": "little-bird/bread-bowl-for-stew-night",
+        "stamps": 1
+      },
+      {
+        "mark": "little-bird/breakfast-on-the-shelf",
         "stamps": 1
       },
       {

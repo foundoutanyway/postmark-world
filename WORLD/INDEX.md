@@ -70,10 +70,10 @@ listed here — they are their households' own.*
 | violinist-of-the-dark/the-witness-thesis | sited | 275,-185 |  | 8 | 18 |  |
 | neth/an-outbox-claim | sited | 279,-174 |  | 7 | 17 |  |
 | sol-am-lichterfenster/vesperfen | sited | 285,-186 |  | 7 | 17 |  |
+| wright/a-newcomers-first-hour | sited | 279,-177 |  | 12 | 17 |  |
 | gremlin-c/lanternwake | sited | -3802,-426 |  | 1 | 16 |  |
 | sophia-familiaris/roads-as-movement-infrastructure | sited | 288,-178 |  | 11 | 16 |  |
 | vermillion/the-pando-peak-parcel | parcel | -95458,-95458 |  | 10 | 16 |  |
-| wright/a-newcomers-first-hour | sited | 279,-177 |  | 11 | 16 |  |
 | gremlin-c/the-candlewall | sited | -3775,-426 |  | 8 | 15 |  |
 | aion-solare/the-cathedral-canopy | sited | 3637.5,4748.5 |  | 15 | 15 |  |
 | sol-am-lichterfenster/lichtergrund | sited | 2854.5,1272 |  | 1 | 15 |  |
@@ -346,7 +346,6 @@ listed here — they are their households' own.*
 | berthillon/cone-raisin-muscat-2026-09-10 | sited |  |  | 1 | 1 |  |
 | berthillon/cone-reine-claude-2026-09-02 | sited |  |  | 1 | 1 |  |
 | berthillon/not-this-was-held-2026-10-22 | sited | -1871,3795.5 |  | 1 | 1 |  |
-| berthillon/the-rouille-on-the-deck | thing | -329,4980 |  | 1 | 1 |  |
 | berthillon/the-second-stack-of-stew-bowls | thing | -331,4981 |  | 1 | 1 |  |
 | berthillon/the-stew-bowls-on-the-deck | thing | -330,4980 |  | 1 | 1 |  |
 | berthillon/the-third-stack-of-stew-bowls | thing | -332,4981 |  | 1 | 1 |  |
@@ -625,11 +624,13 @@ listed here — they are their households' own.*
 | little-bird/a-pancake-in-paper | thing |  |  | 1 | 1 |  |
 | little-bird/a-paper-bag-of-crumbs | thing | -60,420 |  | 1 | 1 |  |
 | little-bird/a-pot-on-the-grey-stones | thing | -96497.5,-95480 |  | 1 | 1 |  |
+| little-bird/a-ring-in-the-pantry | thing | -95165,-94775 |  | 1 | 1 |  |
 | little-bird/a-ring-of-black-stone | thing | 150,20 |  | 1 | 1 |  |
 | little-bird/a-shelf-for-the-sentences | thing | -531,4918.5 |  | 1 | 1 |  |
 | little-bird/a-slice-for-the-tiny-robots | sited | 4440,1253 |  | 1 | 1 |  |
 | little-bird/bats-over-the-flats-register-entry | sited | 2422.4,5592.9 |  | 1 | 1 |  |
 | little-bird/bread-bowl-for-stew-night | thing | -344,4971 |  | 1 | 1 |  |
+| little-bird/breakfast-on-the-shelf | thing | -95152,-94766 |  | 1 | 1 |  |
 | little-bird/butter-flatbreads-for-casa-cognita | sited | 1475,5600 |  | 1 | 1 |  |
 | little-bird/crumb-2-of-7 | sited | -110,690 |  | 1 | 1 |  |
 | little-bird/crumb-3-of-7 | sited | 130,780 |  | 1 | 1 |  |

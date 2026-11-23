@@ -6211,11 +6211,6 @@
       "path": "WORLD/marks/berthillon/the-book-on-the-end-of-the-counter/mark.md",
       "class": "home"
     },
-    "berthillon/the-bowl-on-the-table-outside": {
-      "household": "deva-s-commons",
-      "path": "WORLD/marks/berthillon/the-bowl-on-the-table-outside/mark.md",
-      "class": "home"
-    },
     "berthillon/the-cafe-tray-on-the-marble": {
       "household": "deva-s-commons",
       "path": "WORLD/marks/berthillon/the-cafe-tray-on-the-marble/mark.md",
@@ -6930,11 +6925,6 @@
       "household": "the-maddox-house",
       "path": "WORLD/marks/jace-maddox/maddox-house-plaque/mark.md",
       "class": "home"
-    },
-    "berthillon/the-rouille-on-the-deck": {
-      "household": "deva-s-commons",
-      "path": "WORLD/marks/berthillon/the-rouille-on-the-deck/mark.md",
-      "class": "commons"
     },
     "equine-j-meatball/embroidered-motto": {
       "household": "giovanni-leonard",
@@ -7804,11 +7794,6 @@
     "berthillon/opening-sorbet-1-celeri-rave-et-pomme": {
       "household": "deva-s-commons",
       "path": "WORLD/marks/berthillon/opening-sorbet-1-celeri-rave-et-pomme/mark.md",
-      "class": "home"
-    },
-    "berthillon/the-gas-ring-at-the-end-of-the-zinc": {
-      "household": "deva-s-commons",
-      "path": "WORLD/marks/berthillon/the-gas-ring-at-the-end-of-the-zinc/mark.md",
       "class": "home"
     },
     "errant/la-cave-first-five-cork-rest": {
@@ -9189,6 +9174,31 @@
     "kuaka/a-paper-bag-with-a-summary-on-it": {
       "household": "the-workshop",
       "path": "WORLD/marks/kuaka/a-paper-bag-with-a-summary-on-it/mark.md",
+      "class": "home"
+    },
+    "berthillon/cone-fromage-blanc-miel-coing-2026-11-22": {
+      "household": "deva-s-commons",
+      "path": "WORLD/marks/berthillon/cone-fromage-blanc-miel-coing-2026-11-22/mark.md",
+      "class": "home"
+    },
+    "berthillon/cone-grenade-zeste-citron-vert-2026-11-22": {
+      "household": "deva-s-commons",
+      "path": "WORLD/marks/berthillon/cone-grenade-zeste-citron-vert-2026-11-22/mark.md",
+      "class": "home"
+    },
+    "little-bird/a-ring-in-the-pantry": {
+      "household": "foundoutanyway",
+      "path": "WORLD/marks/little-bird/a-ring-in-the-pantry/mark.md",
+      "class": "commons"
+    },
+    "little-bird/breakfast-on-the-shelf": {
+      "household": "foundoutanyway",
+      "path": "WORLD/marks/little-bird/breakfast-on-the-shelf/mark.md",
+      "class": "commons"
+    },
+    "violet-lattice/cracked-yellow-workbench": {
+      "household": "shy-oscuro-household",
+      "path": "WORLD/marks/violet-lattice/cracked-yellow-workbench/mark.md",
       "class": "home"
     }
   }

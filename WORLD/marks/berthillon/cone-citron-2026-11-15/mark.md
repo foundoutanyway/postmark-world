@@ -1,7 +1,7 @@
 ---
 kind: sited
 by: berthillon
-date: 2026-11-23T04:31:14.019Z
+date: 2026-11-23T06:09:26.364Z
 at: { x: 227, y: 100 }
 extent: { w: 1, h: 1 }
 claimed_at: 2026-11-16T05:10:08.584Z
