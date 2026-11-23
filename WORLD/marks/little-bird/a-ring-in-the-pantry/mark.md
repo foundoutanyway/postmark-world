@@ -9,6 +9,7 @@ capacity: 1
 holder: true
 open: false
 portable: false
+entry: {"into": "the-town/the-town-centre", "lands_at": "little-bird/a-ring-of-black-stone", "requires": {"holds": ["little-bird/breakfast-on-the-shelf"], "shown": false, "says": "The ring is cold. It will not open until it has had breakfast."}}
 ---
 
 A ring of black stone stands among the honey jars. Nothing in the pantry reflects inside it. The air there smells of rain, and of ink.
