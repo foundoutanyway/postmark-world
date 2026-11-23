@@ -7695,11 +7695,8 @@
     },
     {
       "id": "kinofire/the-uphill-firepit",
-      "parent": "kinofire/spin-ghar-manor",
+      "parent": "the-town/let-there-be-light",
       "chain": [
-        "kinofire/spin-ghar-manor",
-        "wayward-archivist/the-starling-house",
-        "limen/the-threshold-district",
         "the-town/let-there-be-light"
       ]
     },
