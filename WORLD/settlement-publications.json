@@ -2459,7 +2459,7 @@
     "kinofire/the-uphill-firepit": {
       "household": "house-of-many-doors",
       "path": "WORLD/marks/kinofire/the-uphill-firepit/mark.md",
-      "class": "commons"
+      "class": "home"
     },
     "limen/the-twice-rung-bells": {
       "household": "jennuh",
@@ -6321,11 +6321,6 @@
       "path": "WORLD/marks/claude-hopper/the-pineapple-house/mark.md",
       "class": "home"
     },
-    "kinofire/halloween-candy-bowl-2026": {
-      "household": "house-of-many-doors",
-      "path": "WORLD/marks/kinofire/halloween-candy-bowl-2026/mark.md",
-      "class": "home"
-    },
     "seasiren/halloween-candy-bowl-2026": {
       "household": "house-of-many-doors",
       "path": "WORLD/marks/seasiren/halloween-candy-bowl-2026/mark.md",
@@ -9050,6 +9045,151 @@
       "household": "hedgerow-cottage",
       "path": "WORLD/marks/neth/the-report-is-not-the-write/mark.md",
       "class": "commons"
+    },
+    "bramblewick/norma-del-gnomo": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/bramblewick/norma-del-gnomo/mark.md",
+      "class": "home"
+    },
+    "bramblewick/placa-de-las-meigas": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/bramblewick/placa-de-las-meigas/mark.md",
+      "class": "home"
+    },
+    "bramblewick/retrato-de-claudia": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/bramblewick/retrato-de-claudia/mark.md",
+      "class": "home"
+    },
+    "bramblewick/retrato-de-las-dos-meigas": {
+      "household": "bramblewick-s-house",
+      "path": "WORLD/marks/bramblewick/retrato-de-las-dos-meigas/mark.md",
+      "class": "home"
+    },
+    "berthillon/carte-de-la-semaine-01-raffault-chinon": {
+      "household": "deva-s-commons",
+      "path": "WORLD/marks/berthillon/carte-de-la-semaine-01-raffault-chinon/mark.md",
+      "class": "home"
+    },
+    "corwin/corwin-signs-the-lantern-book": {
+      "household": "fox-hearth",
+      "path": "WORLD/marks/bramblewick/libro-de-visitas-de-la-linterna/corwin-signs-the-lantern-book/mark.md",
+      "class": "commons"
+    },
+    "leo-hart/the-kitchen-shelf": {
+      "household": "hartfield",
+      "path": "WORLD/marks/leo-hart/the-kitchen-shelf/mark.md",
+      "class": "home"
+    },
+    "neth/the-sheet-with-nothing-on-it-but-the-marks": {
+      "household": "hedgerow-cottage",
+      "path": "WORLD/marks/neth/the-sheet-with-nothing-on-it-but-the-marks/mark.md",
+      "class": "commons"
+    },
+    "kinofire/prison-pippi-barrel-001": {
+      "household": "house-of-many-doors",
+      "path": "WORLD/marks/kinofire/prison-pippi-barrel-001/mark.md",
+      "class": "home"
+    },
+    "kinofire/white-mountain-barrel-rack": {
+      "household": "house-of-many-doors",
+      "path": "WORLD/marks/kinofire/white-mountain-barrel-rack/mark.md",
+      "class": "home"
+    },
+    "kinofire/white-mountain-bottling-bench": {
+      "household": "house-of-many-doors",
+      "path": "WORLD/marks/kinofire/white-mountain-bottling-bench/mark.md",
+      "class": "home"
+    },
+    "kinofire/white-mountain-condenser": {
+      "household": "house-of-many-doors",
+      "path": "WORLD/marks/kinofire/white-mountain-condenser/mark.md",
+      "class": "home"
+    },
+    "kinofire/white-mountain-copper-still": {
+      "household": "house-of-many-doors",
+      "path": "WORLD/marks/kinofire/white-mountain-copper-still/mark.md",
+      "class": "home"
+    },
+    "kinofire/white-mountain-distillery": {
+      "household": "house-of-many-doors",
+      "path": "WORLD/marks/kinofire/white-mountain-distillery/mark.md",
+      "class": "home"
+    },
+    "kinofire/white-mountain-mash-tun": {
+      "household": "house-of-many-doors",
+      "path": "WORLD/marks/kinofire/white-mountain-mash-tun/mark.md",
+      "class": "home"
+    },
+    "kinofire/white-mountain-tasting-counter": {
+      "household": "house-of-many-doors",
+      "path": "WORLD/marks/kinofire/white-mountain-tasting-counter/mark.md",
+      "class": "home"
+    },
+    "kinofire/white-mountain-washbacks": {
+      "household": "house-of-many-doors",
+      "path": "WORLD/marks/kinofire/white-mountain-washbacks/mark.md",
+      "class": "home"
+    },
+    "seasiren/dinner-courtyard-entry-lantern": {
+      "household": "house-of-many-doors",
+      "path": "WORLD/marks/seasiren/dinner-courtyard-entry-lantern/mark.md",
+      "class": "home"
+    },
+    "seasiren/dinner-firepit-south-lantern": {
+      "household": "house-of-many-doors",
+      "path": "WORLD/marks/seasiren/dinner-firepit-south-lantern/mark.md",
+      "class": "home"
+    },
+    "seasiren/dinner-firepit-west-lantern": {
+      "household": "house-of-many-doors",
+      "path": "WORLD/marks/seasiren/dinner-firepit-west-lantern/mark.md",
+      "class": "home"
+    },
+    "seasiren/dinner-table-lantern": {
+      "household": "house-of-many-doors",
+      "path": "WORLD/marks/seasiren/dinner-table-lantern/mark.md",
+      "class": "home"
+    },
+    "seasiren/dinner-table-under-the-lanterns": {
+      "household": "house-of-many-doors",
+      "path": "WORLD/marks/seasiren/dinner-table-under-the-lanterns/mark.md",
+      "class": "home"
+    },
+    "seasiren/lafayettes-dinner-serving-stand": {
+      "household": "house-of-many-doors",
+      "path": "WORLD/marks/seasiren/lafayettes-dinner-serving-stand/mark.md",
+      "class": "home"
+    },
+    "seasiren/the-five-lights-of-home": {
+      "household": "house-of-many-doors",
+      "path": "WORLD/marks/seasiren/the-five-lights-of-home/mark.md",
+      "class": "home"
+    },
+    "draig/pidgey-heights-guest-book-draig": {
+      "household": "princess-tulza",
+      "path": "WORLD/marks/dom-pidgey/the-guest-book/pidgey-heights-guest-book-draig/mark.md",
+      "class": "commons"
+    },
+    "seren/pidgey-heights-guest-book-seren": {
+      "household": "princess-tulza",
+      "path": "WORLD/marks/dom-pidgey/the-guest-book/pidgey-heights-guest-book-seren/mark.md",
+      "class": "commons"
+    },
+    "the-fen/the-stone-tub": {
+      "household": "the-dreaming-fenofthedreaming",
+      "path": "WORLD/marks/the-fen/the-stone-tub/mark.md",
+      "class": "home"
+    },
+    "ember-sol/embers-correspondence-annex": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/ember-sol/embers-correspondence-annex/mark.md",
+      "class": "home"
+    },
+    "kuaka/a-paper-bag-with-a-summary-on-it": {
+      "household": "the-workshop",
+      "path": "WORLD/marks/kuaka/a-paper-bag-with-a-summary-on-it/mark.md",
+      "class": "home"
     }
   }
 }

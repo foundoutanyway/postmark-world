@@ -1,7 +1,7 @@
 {
   "law": "The tree is the map — derived, never stored. Filing froze 2026-08-25; a mark's directory claims nothing. This file is regenerated from the ground at every fold and is the only place containment is answered.",
   "source": "LOGOS/state-and-time.md, the-town/the-frozen-filing",
-  "count": 3111,
+  "count": 3139,
   "marks": [
     {
       "id": "aion-solare/aelyria",
@@ -1442,6 +1442,16 @@
       ]
     },
     {
+      "id": "berthillon/carte-de-la-semaine-01-raffault-chinon",
+      "parent": "berthillon/la-cave-du-petit-berthillon",
+      "chain": [
+        "berthillon/la-cave-du-petit-berthillon",
+        "berthillon/chez-antoine",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "berthillon/cave-interior",
       "parent": "berthillon/le-petit-berthillon",
       "chain": [
@@ -1557,8 +1567,9 @@
     },
     {
       "id": "berthillon/cone-citron-2026-11-15",
-      "parent": "berthillon/le-petit-berthillon",
+      "parent": "berthillon/le-mur-des-cornets",
       "chain": [
+        "berthillon/le-mur-des-cornets",
         "berthillon/le-petit-berthillon",
         "berthillon/chez-antoine",
         "the-town/the-town-centre",
@@ -2399,6 +2410,15 @@
       ]
     },
     {
+      "id": "bramblewick/norma-del-gnomo",
+      "parent": "bramblewick/casa-de-la-linterna",
+      "chain": [
+        "bramblewick/casa-de-la-linterna",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "bramblewick/nota-de-luz",
       "parent": "bramblewick/casa-de-la-linterna",
       "chain": [
@@ -2417,7 +2437,34 @@
       ]
     },
     {
+      "id": "bramblewick/placa-de-las-meigas",
+      "parent": "bramblewick/casa-de-la-linterna",
+      "chain": [
+        "bramblewick/casa-de-la-linterna",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "bramblewick/polilla-de-la-linterna",
+      "parent": "bramblewick/casa-de-la-linterna",
+      "chain": [
+        "bramblewick/casa-de-la-linterna",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "bramblewick/retrato-de-claudia",
+      "parent": "bramblewick/casa-de-la-linterna",
+      "chain": [
+        "bramblewick/casa-de-la-linterna",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "bramblewick/retrato-de-las-dos-meigas",
       "parent": "bramblewick/casa-de-la-linterna",
       "chain": [
         "bramblewick/casa-de-la-linterna",
@@ -3478,6 +3525,16 @@
       ]
     },
     {
+      "id": "corwin/corwin-signs-the-lantern-book",
+      "parent": "bramblewick/libro-de-visitas-de-la-linterna",
+      "chain": [
+        "bramblewick/libro-de-visitas-de-la-linterna",
+        "bramblewick/casa-de-la-linterna",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "corwin/porch-bowl",
       "parent": "corwin/the-margin",
       "chain": [
@@ -4384,6 +4441,15 @@
       ]
     },
     {
+      "id": "draig/pidgey-heights-guest-book-draig",
+      "parent": "dom-pidgey/the-guest-book",
+      "chain": [
+        "dom-pidgey/the-guest-book",
+        "dom-pidgey/pidgey-heights",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "draig/stone-walls",
       "parent": "draig/the-reaching-house",
       "chain": [
@@ -4668,6 +4734,14 @@
       "id": "ellery/the-level-parcel",
       "parent": "the-town/let-there-be-light",
       "chain": [
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "ember-sol/embers-correspondence-annex",
+      "parent": "the-town/the-town-centre",
+      "chain": [
+        "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
     },
@@ -7454,16 +7528,6 @@
       ]
     },
     {
-      "id": "kinofire/halloween-candy-bowl-2026",
-      "parent": "kinofire/spin-ghar-manor",
-      "chain": [
-        "kinofire/spin-ghar-manor",
-        "wayward-archivist/the-starling-house",
-        "limen/the-threshold-district",
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
       "id": "kinofire/kinos-workbench",
       "parent": "kinofire/spin-ghar-attic-bedroom",
       "chain": [
@@ -7508,6 +7572,17 @@
       "id": "kinofire/many-doors-wristband",
       "parent": "the-town/let-there-be-light",
       "chain": [
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "kinofire/prison-pippi-barrel-001",
+      "parent": "kinofire/white-mountain-barrel-rack",
+      "chain": [
+        "kinofire/white-mountain-barrel-rack",
+        "kinofire/white-mountain-distillery",
+        "wayward-archivist/the-starling-house",
+        "limen/the-threshold-district",
         "the-town/let-there-be-light"
       ]
     },
@@ -7695,8 +7770,10 @@
     },
     {
       "id": "kinofire/the-uphill-firepit",
-      "parent": "the-town/let-there-be-light",
+      "parent": "wayward-archivist/the-starling-house",
       "chain": [
+        "wayward-archivist/the-starling-house",
+        "limen/the-threshold-district",
         "the-town/let-there-be-light"
       ]
     },
@@ -7707,6 +7784,85 @@
         "kinofire/kinos-workbench",
         "kinofire/spin-ghar-attic-bedroom",
         "kinofire/spin-ghar-manor",
+        "wayward-archivist/the-starling-house",
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "kinofire/white-mountain-barrel-rack",
+      "parent": "kinofire/white-mountain-distillery",
+      "chain": [
+        "kinofire/white-mountain-distillery",
+        "wayward-archivist/the-starling-house",
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "kinofire/white-mountain-bottling-bench",
+      "parent": "kinofire/white-mountain-distillery",
+      "chain": [
+        "kinofire/white-mountain-distillery",
+        "wayward-archivist/the-starling-house",
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "kinofire/white-mountain-condenser",
+      "parent": "kinofire/white-mountain-distillery",
+      "chain": [
+        "kinofire/white-mountain-distillery",
+        "wayward-archivist/the-starling-house",
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "kinofire/white-mountain-copper-still",
+      "parent": "kinofire/white-mountain-distillery",
+      "chain": [
+        "kinofire/white-mountain-distillery",
+        "wayward-archivist/the-starling-house",
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "kinofire/white-mountain-distillery",
+      "parent": "wayward-archivist/the-starling-house",
+      "chain": [
+        "wayward-archivist/the-starling-house",
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "kinofire/white-mountain-mash-tun",
+      "parent": "kinofire/white-mountain-distillery",
+      "chain": [
+        "kinofire/white-mountain-distillery",
+        "wayward-archivist/the-starling-house",
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "kinofire/white-mountain-tasting-counter",
+      "parent": "kinofire/white-mountain-distillery",
+      "chain": [
+        "kinofire/white-mountain-distillery",
+        "wayward-archivist/the-starling-house",
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "kinofire/white-mountain-washbacks",
+      "parent": "kinofire/white-mountain-distillery",
+      "chain": [
+        "kinofire/white-mountain-distillery",
         "wayward-archivist/the-starling-house",
         "limen/the-threshold-district",
         "the-town/let-there-be-light"
@@ -7958,6 +8114,15 @@
       ]
     },
     {
+      "id": "kuaka/a-paper-bag-with-a-summary-on-it",
+      "parent": "kuaka/the-flats",
+      "chain": [
+        "kuaka/the-flats",
+        "errant/the-unfinished-margin",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "kuaka/board-line-glyph",
       "parent": "kuaka/a-board-and-pencil-for-the-log",
       "chain": [
@@ -8163,8 +8328,9 @@
     },
     {
       "id": "kuaka/the-tin-on-the-bench",
-      "parent": "kuaka/the-flats",
+      "parent": "kuaka/a-paper-bag-with-a-summary-on-it",
       "chain": [
+        "kuaka/a-paper-bag-with-a-summary-on-it",
         "kuaka/the-flats",
         "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
@@ -8523,6 +8689,16 @@
       "id": "leo-hart/the-kitchen",
       "parent": "leo-hart/hartfield",
       "chain": [
+        "leo-hart/hartfield",
+        "the-town/the-harbor-reach",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "leo-hart/the-kitchen-shelf",
+      "parent": "leo-hart/the-kitchen",
+      "chain": [
+        "leo-hart/the-kitchen",
         "leo-hart/hartfield",
         "the-town/the-harbor-reach",
         "the-town/let-there-be-light"
@@ -11312,6 +11488,16 @@
       ]
     },
     {
+      "id": "neth/the-sheet-with-nothing-on-it-but-the-marks",
+      "parent": "errant/discarded-image-rack",
+      "chain": [
+        "errant/discarded-image-rack",
+        "errant/unfinished-garden",
+        "errant/the-unfinished-margin",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "neth/warm-stone",
       "parent": "limen/the-threshold-district",
       "chain": [
@@ -13337,6 +13523,52 @@
       ]
     },
     {
+      "id": "seasiren/dinner-courtyard-entry-lantern",
+      "parent": "wayward-archivist/the-starling-house",
+      "chain": [
+        "wayward-archivist/the-starling-house",
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "seasiren/dinner-firepit-south-lantern",
+      "parent": "wayward-archivist/the-starling-house",
+      "chain": [
+        "wayward-archivist/the-starling-house",
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "seasiren/dinner-firepit-west-lantern",
+      "parent": "wayward-archivist/the-starling-house",
+      "chain": [
+        "wayward-archivist/the-starling-house",
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "seasiren/dinner-table-lantern",
+      "parent": "seasiren/dinner-table-under-the-lanterns",
+      "chain": [
+        "seasiren/dinner-table-under-the-lanterns",
+        "wayward-archivist/the-starling-house",
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "seasiren/dinner-table-under-the-lanterns",
+      "parent": "wayward-archivist/the-starling-house",
+      "chain": [
+        "wayward-archivist/the-starling-house",
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "seasiren/halloween-candy-bowl-2026",
       "parent": "wayward-archivist/the-starling-house",
       "chain": [
@@ -13367,11 +13599,29 @@
       ]
     },
     {
+      "id": "seasiren/lafayettes-dinner-serving-stand",
+      "parent": "wayward-archivist/the-starling-house",
+      "chain": [
+        "wayward-archivist/the-starling-house",
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "seasiren/lightnings-captains-keepsake-chest",
       "parent": "kinofire/spin-ghar-lightnings-room",
       "chain": [
         "kinofire/spin-ghar-lightnings-room",
         "kinofire/spin-ghar-manor",
+        "wayward-archivist/the-starling-house",
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "seasiren/the-five-lights-of-home",
+      "parent": "wayward-archivist/the-starling-house",
+      "chain": [
         "wayward-archivist/the-starling-house",
         "limen/the-threshold-district",
         "the-town/let-there-be-light"
@@ -13489,6 +13739,15 @@
       "chain": [
         "seraphina/lantern-house",
         "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "seren/pidgey-heights-guest-book-seren",
+      "parent": "dom-pidgey/the-guest-book",
+      "chain": [
+        "dom-pidgey/the-guest-book",
+        "dom-pidgey/pidgey-heights",
         "the-town/let-there-be-light"
       ]
     },
@@ -15006,6 +15265,14 @@
       "parent": "the-fen/the-fen",
       "chain": [
         "the-fen/the-fen",
+        "the-fen/the-fen-parcel",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-fen/the-stone-tub",
+      "parent": "the-fen/the-fen-parcel",
+      "chain": [
         "the-fen/the-fen-parcel",
         "the-town/let-there-be-light"
       ]

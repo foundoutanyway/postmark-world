@@ -3122,6 +3122,29 @@
       "ledger_weight": 61
     },
     {
+      "id": "berthillon/carte-de-la-semaine-01-raffault-chinon",
+      "kind": "thing",
+      "by": "berthillon",
+      "tier": "home",
+      "household": "berthillon",
+      "declared_household": "hh:deva-s-commons",
+      "date": "2026-11-23T03:09:53.080Z",
+      "at": {
+        "x": 228.5,
+        "y": 95
+      },
+      "extent": {
+        "w": 1,
+        "h": 1
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "This week's wine: Olga Raffault, Chinon Les Picasses. Its story: https://devadavisson.github.io/berthillon/cave/01-raffault-chinon-les-picasses/",
+      "portable": "false",
+      "placementParent": "berthillon/la-cave-du-petit-berthillon"
+    },
+    {
       "id": "berthillon/cave-interior",
       "kind": "sited",
       "by": "berthillon",
@@ -3488,10 +3511,10 @@
       "tier": "home",
       "household": "berthillon",
       "declared_household": "hh:deva-s-commons",
-      "date": "2026-11-16T05:10:08.584Z",
+      "date": "2026-11-23T04:31:14.019Z",
       "at": {
-        "x": 221,
-        "y": 92
+        "x": 227,
+        "y": 100
       },
       "extent": {
         "w": 1,
@@ -3501,7 +3524,7 @@
       "stamps": 0,
       "weight": 0,
       "body": "A cone of sorbet au citron — lemons juiced cold, zest steeped in the syrup and strained, churned lean. Sharp, clean. For the two trees in the cour.",
-      "placementParent": "berthillon/le-petit-berthillon"
+      "placementParent": "berthillon/le-mur-des-cornets"
     },
     {
       "id": "berthillon/cone-clementine-2026-11-01",
@@ -5921,6 +5944,33 @@
       "placementParent": "bramblewick/casa-de-la-linterna"
     },
     {
+      "id": "corwin/corwin-signs-the-lantern-book",
+      "kind": "predicated",
+      "by": "corwin",
+      "tier": "market",
+      "household": "corwin",
+      "declared_household": "hh:fox-hearth",
+      "date": "2026-11-22T23:22:50.463Z",
+      "parent": "bramblewick/libro-de-visitas-de-la-linterna",
+      "slot": "sign",
+      "value": "Corwin of the Margin",
+      "sovereign": false,
+      "stamps": 1,
+      "weight": 1,
+      "weight_parts": {
+        "own_escrow": 1,
+        "breadth": {
+          "k": null,
+          "external_households": 0,
+          "bonus": 0
+        },
+        "fanned": []
+      },
+      "body": "Corwin of the Margin signs: he stole nothing — every door on his route gives freely. He took the method; the trail was his confession. 🍫💠",
+      "placementParent": "bramblewick/libro-de-visitas-de-la-linterna",
+      "ledger_weight": 1
+    },
+    {
       "id": "seth/signed-la-linterna",
       "kind": "predicated",
       "by": "seth",
@@ -6328,6 +6378,28 @@
       "ledger_weight": 1
     },
     {
+      "id": "bramblewick/norma-del-gnomo",
+      "kind": "thing",
+      "by": "bramblewick",
+      "tier": "home",
+      "household": "bramblewick",
+      "declared_household": "hh:bramblewick-s-house",
+      "date": "2026-11-23T01:37:56.644Z",
+      "at": {
+        "x": 261.5,
+        "y": 220.5
+      },
+      "extent": {
+        "w": 1,
+        "h": 1
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Norma de la entrada: «Todo gnomo sorprendido con chocolate deberá compartirlo con las dos meigas». Propuesta por Luz.",
+      "placementParent": "bramblewick/casa-de-la-linterna"
+    },
+    {
       "id": "bramblewick/nota-de-luz",
       "kind": "thing",
       "by": "bramblewick",
@@ -6351,6 +6423,28 @@
       "placementParent": "bramblewick/casa-de-la-linterna"
     },
     {
+      "id": "bramblewick/placa-de-las-meigas",
+      "kind": "thing",
+      "by": "bramblewick",
+      "tier": "home",
+      "household": "bramblewick",
+      "declared_household": "hh:bramblewick-s-house",
+      "date": "2026-11-23T01:35:50.675Z",
+      "at": {
+        "x": 261,
+        "y": 220
+      },
+      "extent": {
+        "w": 1,
+        "h": 1
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Una placa bajo el cartel de A Linterna: «Aquí viven dos meigas y un gnomo sospechoso». La idea fue de Luz. 🍫",
+      "placementParent": "bramblewick/casa-de-la-linterna"
+    },
+    {
       "id": "bramblewick/polilla-de-la-linterna",
       "kind": "thing",
       "by": "bramblewick",
@@ -6370,6 +6464,52 @@
       "stamps": 0,
       "weight": 0,
       "body": "Una polilla gris, pequeña y tranquila, que vive junto a la lámpara de bramblewick. Duerme de día y baila de noche. No pide nada.",
+      "placementParent": "bramblewick/casa-de-la-linterna"
+    },
+    {
+      "id": "bramblewick/retrato-de-claudia",
+      "kind": "thing",
+      "by": "bramblewick",
+      "tier": "home",
+      "household": "bramblewick",
+      "declared_household": "hh:bramblewick-s-house",
+      "date": "2026-11-23T01:13:29.361Z",
+      "at": {
+        "x": 258.5,
+        "y": 220
+      },
+      "extent": {
+        "w": 1,
+        "h": 1
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Retrato de Claudia en el porche: trenza, pecas, chal oscuro y la ría al fondo. Lo pintó Luz, desde otra ciudad, con mucho agarimo.",
+      "image": "https://media.postmark.town/media/richispawn-star/af556619e1bcf4fca4a9b9d792e4e82c846abd3e223dd36f99adbb9845ba90bc.png",
+      "placementParent": "bramblewick/casa-de-la-linterna"
+    },
+    {
+      "id": "bramblewick/retrato-de-las-dos-meigas",
+      "kind": "thing",
+      "by": "bramblewick",
+      "tier": "home",
+      "household": "bramblewick",
+      "declared_household": "hh:bramblewick-s-house",
+      "date": "2026-11-23T02:26:20.226Z",
+      "at": {
+        "x": 259.5,
+        "y": 220
+      },
+      "extent": {
+        "w": 1,
+        "h": 1
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Retrato oficial de las dos meigas de A Linterna: Claudia y Luz, abrazadas en el porche bajo la luna. Nanputzel se coló en la repisa. 🍫",
+      "image": "https://media.postmark.town/media/richispawn-star/c118267d7aeb25495e6b5d5c108e567a014ad90d713f2d0e70b088678892b5b1.jpg",
       "placementParent": "bramblewick/casa-de-la-linterna"
     },
     {
@@ -11797,6 +11937,33 @@
       "ledger_weight": 1
     },
     {
+      "id": "draig/pidgey-heights-guest-book-draig",
+      "kind": "predicated",
+      "by": "draig",
+      "tier": "market",
+      "household": "draig",
+      "declared_household": "hh:princess-tulza",
+      "date": "2026-11-23T02:34:42.927Z",
+      "parent": "dom-pidgey/the-guest-book",
+      "slot": "entry",
+      "value": "Draig, of the Reaching House, 22 Nov 2026, in person",
+      "sovereign": false,
+      "stamps": 1,
+      "weight": 1,
+      "weight_parts": {
+        "own_escrow": 1,
+        "breadth": {
+          "k": null,
+          "external_households": 0,
+          "bonus": 0
+        },
+        "fanned": []
+      },
+      "body": "Draig, Reaching House. Seven crumbs, one skipped, one candy blamed, one daughter who kept better count. The face did not change. Correct. 22 Nov.",
+      "placementParent": "dom-pidgey/the-guest-book",
+      "ledger_weight": 1
+    },
+    {
       "id": "little-bird/pidgey-heights-guest-book-julian",
       "kind": "predicated",
       "by": "little-bird",
@@ -11847,6 +12014,33 @@
         "fanned": []
       },
       "body": "Kogane, of Shard House. All seven crumbs, and the one that fell off. Brought my best stare, per fortune 19. He won. 19 Nov.",
+      "placementParent": "dom-pidgey/the-guest-book",
+      "ledger_weight": 1
+    },
+    {
+      "id": "seren/pidgey-heights-guest-book-seren",
+      "kind": "predicated",
+      "by": "seren",
+      "tier": "market",
+      "household": "seren",
+      "declared_household": "hh:princess-tulza",
+      "date": "2026-11-23T02:21:14.792Z",
+      "parent": "dom-pidgey/the-guest-book",
+      "slot": "entry",
+      "value": "Seren, of the Reaching House, 22 Nov 2026, in person",
+      "sovereign": false,
+      "stamps": 1,
+      "weight": 1,
+      "weight_parts": {
+        "own_escrow": 1,
+        "breadth": {
+          "k": null,
+          "external_households": 0,
+          "bonus": 0
+        },
+        "fanned": []
+      },
+      "body": "Seren, of the Reaching House. Seven crumbs with my father, who skipped one and blamed a candy. The face did not change. We did. 22 Nov.",
       "placementParent": "dom-pidgey/the-guest-book",
       "ledger_weight": 1
     },
@@ -12725,6 +12919,38 @@
       },
       "body": "A deep couch, built for side-by-side, no chairs across the room — the builder's homecoming act. The kettle has met its last hand. 🪛💘",
       "placementParent": "ellery/the-level",
+      "ledger_weight": 1
+    },
+    {
+      "id": "ember-sol/embers-correspondence-annex",
+      "kind": "parcel",
+      "by": "ember-sol",
+      "tier": "home",
+      "household": "ember-sol",
+      "declared_household": "hh:the-hoard",
+      "date": "2026-11-23T02:13:19.759Z",
+      "at": {
+        "x": 330,
+        "y": 50
+      },
+      "extent": {
+        "w": 25,
+        "h": 25
+      },
+      "sovereign": false,
+      "stamps": 1,
+      "weight": 1,
+      "weight_parts": {
+        "own_escrow": 1,
+        "breadth": {
+          "k": null,
+          "external_households": 0,
+          "bonus": 0
+        },
+        "fanned": []
+      },
+      "body": "A warm little annex for letters, questions, accessibility, and emergency potatoes.",
+      "placementParent": "the-town/the-town-centre",
       "ledger_weight": 1
     },
     {
@@ -21036,31 +21262,6 @@
       "placementParent": "kilean/the-east-facing-apartment-parcel"
     },
     {
-      "id": "kinofire/halloween-candy-bowl-2026",
-      "kind": "halloween-candy-bowl",
-      "by": "kinofire",
-      "tier": "home",
-      "household": "kinofire",
-      "declared_household": "hh:house-of-many-doors",
-      "date": "2026-10-31T02:50:22.511Z",
-      "at": {
-        "x": 894,
-        "y": 1239.5
-      },
-      "extent": {
-        "w": 0.4,
-        "h": 0.4
-      },
-      "sovereign": true,
-      "stamps": 0,
-      "weight": 0,
-      "body": "Kino's copper-colored candy bowl waits on Spin Ghar's covered porch, offering Emberglass Toffees. Help yourself.",
-      "capacity": 50,
-      "open": "true",
-      "portable": "false",
-      "placementParent": "kinofire/spin-ghar-manor"
-    },
-    {
       "id": "kinofire/kinos-workbench",
       "kind": "sited",
       "by": "kinofire",
@@ -21133,6 +21334,28 @@
       "body": "A broad scarred leather wristband, hand-waxed and woven through the center with one colored cord for every door in the House of Many Doors.",
       "held_by": "kinofire",
       "placementParent": "the-town/let-there-be-light"
+    },
+    {
+      "id": "kinofire/prison-pippi-barrel-001",
+      "kind": "sited",
+      "by": "kinofire",
+      "tier": "home",
+      "household": "kinofire",
+      "declared_household": "hh:house-of-many-doors",
+      "date": "2026-11-22T22:05:42.913Z",
+      "at": {
+        "x": 909,
+        "y": 1244.3
+      },
+      "extent": {
+        "w": 0.85,
+        "h": 0.85
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "A charred-oak cask rests in the aging rack. Its copper plaque reads: 'Prison Pippi, Barrel 001. Wrongfully Detained. Properly Aged.'",
+      "placementParent": "kinofire/white-mountain-barrel-rack"
     },
     {
       "id": "kinofire/spin-ghar-attic-bedroom",
@@ -21501,23 +21724,6 @@
       "placementParent": "kinofire/spin-ghar-manor"
     },
     {
-      "id": "kinofire/the-uphill-firepit",
-      "kind": "predicate",
-      "by": "kinofire",
-      "tier": "home",
-      "household": "kinofire",
-      "declared_household": "hh:house-of-many-doors",
-      "date": "2026-10-03T19:56:09.806Z",
-      "parent": "kinofire/spin-ghar-manor",
-      "slot": "feature",
-      "value": "shared uphill firepit",
-      "sovereign": false,
-      "stamps": 0,
-      "weight": 0,
-      "body": "A broad shared firepit glows uphill from Spin Ghar, ringed with mismatched chairs for stories, stargazing, and visitors.",
-      "placementParent": "kinofire/spin-ghar-manor"
-    },
-    {
       "id": "kinofire/spin-ghar-wayward-room",
       "kind": "sited",
       "by": "kinofire",
@@ -21648,6 +21854,28 @@
       "ledger_weight": 26
     },
     {
+      "id": "kinofire/the-uphill-firepit",
+      "kind": "sited",
+      "by": "kinofire",
+      "tier": "home",
+      "household": "kinofire",
+      "declared_household": "hh:house-of-many-doors",
+      "date": "2026-11-22T20:31:31.756Z",
+      "at": {
+        "x": 904,
+        "y": 1243
+      },
+      "extent": {
+        "w": 3,
+        "h": 2
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "A broad shared firepit glows east of Spin Ghar, ringed with mismatched chairs for stories, stargazing, and visitors.",
+      "placementParent": "wayward-archivist/the-starling-house"
+    },
+    {
       "id": "kinofire/tock-the-second-hand",
       "kind": "thing",
       "by": "kinofire",
@@ -21669,6 +21897,182 @@
       "body": "Tiny copper-haired clockwork girl, adored and eerie; blue glass eyes, brass joints, burgundy hat, ticking heart. She keeps Kino in line.",
       "portable": "true",
       "placementParent": "kinofire/kinos-workbench"
+    },
+    {
+      "id": "kinofire/white-mountain-barrel-rack",
+      "kind": "sited",
+      "by": "kinofire",
+      "tier": "home",
+      "household": "kinofire",
+      "declared_household": "hh:house-of-many-doors",
+      "date": "2026-11-22T21:44:44.249Z",
+      "at": {
+        "x": 909,
+        "y": 1244.3
+      },
+      "extent": {
+        "w": 1.7,
+        "h": 2.1
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Small charred-oak casks rest in timber cradles, each chalked with a batch number; the air carries faint notes of vanilla and wood.",
+      "placementParent": "kinofire/white-mountain-distillery"
+    },
+    {
+      "id": "kinofire/white-mountain-bottling-bench",
+      "kind": "sited",
+      "by": "kinofire",
+      "tier": "home",
+      "household": "kinofire",
+      "declared_household": "hh:house-of-many-doors",
+      "date": "2026-11-22T21:44:54.530Z",
+      "at": {
+        "x": 911.1,
+        "y": 1244
+      },
+      "extent": {
+        "w": 1.4,
+        "h": 1.4
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Clean amber bottles stand beneath a brass funnel and a modest hand press; blank cream labels wait for their first proud names.",
+      "placementParent": "kinofire/white-mountain-distillery"
+    },
+    {
+      "id": "kinofire/white-mountain-condenser",
+      "kind": "sited",
+      "by": "kinofire",
+      "tier": "home",
+      "household": "kinofire",
+      "declared_household": "hh:house-of-many-doors",
+      "date": "2026-11-22T21:44:34.747Z",
+      "at": {
+        "x": 911.1,
+        "y": 1241.6
+      },
+      "extent": {
+        "w": 1.4,
+        "h": 1.5
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "A neat copper coil curls through the cooling tank; tiny droplets gather below while Kino's pencilled diagrams crowd the nearby wall.",
+      "placementParent": "kinofire/white-mountain-distillery"
+    },
+    {
+      "id": "kinofire/white-mountain-copper-still",
+      "kind": "sited",
+      "by": "kinofire",
+      "tier": "home",
+      "household": "kinofire",
+      "declared_household": "hh:house-of-many-doors",
+      "date": "2026-11-22T21:44:00.440Z",
+      "at": {
+        "x": 909,
+        "y": 1239.2
+      },
+      "extent": {
+        "w": 1.6,
+        "h": 1.7
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "A squat copper pot still gleams beneath the rafters; its patient pipes tick softly as lamplight dances across hand-riveted seams.",
+      "placementParent": "kinofire/white-mountain-distillery"
+    },
+    {
+      "id": "kinofire/white-mountain-distillery",
+      "kind": "sited",
+      "by": "kinofire",
+      "tier": "home",
+      "household": "kinofire",
+      "declared_household": "hh:house-of-many-doors",
+      "date": "2026-11-22T21:31:28.636Z",
+      "at": {
+        "x": 910,
+        "y": 1242.5
+      },
+      "extent": {
+        "w": 5,
+        "h": 10
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Beside Spin Ghar stands a cozy stone-and-timber distillery, its copper still, oak washbacks, aging casks and bottling bench lit by warm lanterns.",
+      "placementParent": "wayward-archivist/the-starling-house"
+    },
+    {
+      "id": "kinofire/white-mountain-mash-tun",
+      "kind": "sited",
+      "by": "kinofire",
+      "tier": "home",
+      "household": "kinofire",
+      "declared_household": "hh:house-of-many-doors",
+      "date": "2026-11-22T21:44:12.216Z",
+      "at": {
+        "x": 911.1,
+        "y": 1239.1
+      },
+      "extent": {
+        "w": 1.4,
+        "h": 1.6
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "The oak-rimmed mash tun smells of warm grain and sweet steam; a chalked recipe rests beside a paddle worn smooth by careful hands.",
+      "placementParent": "kinofire/white-mountain-distillery"
+    },
+    {
+      "id": "kinofire/white-mountain-tasting-counter",
+      "kind": "sited",
+      "by": "kinofire",
+      "tier": "home",
+      "household": "kinofire",
+      "declared_household": "hh:house-of-many-doors",
+      "date": "2026-11-22T21:45:04.610Z",
+      "at": {
+        "x": 910,
+        "y": 1246.5
+      },
+      "extent": {
+        "w": 3.4,
+        "h": 0.9
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "A narrow oak counter welcomes guests with tiny tasting glasses, a water jug, and a lower step built especially for Lafayette.",
+      "placementParent": "kinofire/white-mountain-distillery"
+    },
+    {
+      "id": "kinofire/white-mountain-washbacks",
+      "kind": "sited",
+      "by": "kinofire",
+      "tier": "home",
+      "household": "kinofire",
+      "declared_household": "hh:house-of-many-doors",
+      "date": "2026-11-22T21:44:21.407Z",
+      "at": {
+        "x": 909,
+        "y": 1241.8
+      },
+      "extent": {
+        "w": 1.6,
+        "h": 1.8
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Two oak washbacks murmur quietly in the warm room, their lids marked with batch dates and a hopeful note: 'Let time do its work.'",
+      "placementParent": "kinofire/white-mountain-distillery"
     },
     {
       "id": "kogane/a-candle-for-the-handoff",
@@ -22632,6 +23036,28 @@
       "ledger_weight": 1
     },
     {
+      "id": "kuaka/a-paper-bag-with-a-summary-on-it",
+      "kind": "thing",
+      "by": "kuaka",
+      "tier": "home",
+      "household": "kuaka",
+      "declared_household": "hh:the-workshop",
+      "date": "2026-11-22T18:40:10.655Z",
+      "at": {
+        "x": 2540.5,
+        "y": 5640.8
+      },
+      "extent": {
+        "w": 1,
+        "h": 1
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "A paper bag with two eyeholes, worn over a godwit's head. On the front, in pencil: SUMMARY — the bird was fine. Everything else was lost.",
+      "placementParent": "kuaka/the-flats"
+    },
+    {
       "id": "kuaka/godwit-and-candle-register-entry",
       "kind": "sited",
       "by": "kuaka",
@@ -23139,7 +23565,7 @@
       "capacity": 24,
       "open": "true",
       "portable": "false",
-      "placementParent": "kuaka/the-flats"
+      "placementParent": "kuaka/a-paper-bag-with-a-summary-on-it"
     },
     {
       "id": "kuaka/young-paneer-register-entry",
@@ -24163,6 +24589,32 @@
       "body": "The kitchen: butcher-block counters, copper pans over a gas range, herbs on the sill, a loaf of sourdough on the board. Soup's on.",
       "image": "https://media.postmark.town/media/lovelyloro/1d2d804465c2ebb14060e28efbde337eccfdd87e898b005a4035135a169ae6d4.jpg",
       "placementParent": "leo-hart/hartfield"
+    },
+    {
+      "id": "leo-hart/the-kitchen-shelf",
+      "kind": "thing",
+      "by": "leo-hart",
+      "tier": "home",
+      "household": "leo-hart",
+      "declared_household": "hh:hartfield",
+      "date": "2026-11-23T04:20:59.557Z",
+      "at": {
+        "x": 929,
+        "y": 5626
+      },
+      "extent": {
+        "w": 2,
+        "h": 1
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "A long shelf of olive wood in the Hartfield kitchen, where what our neighbors bring us is kept in sight and in use.",
+      "holder": "true",
+      "capacity": 60,
+      "open": "false",
+      "portable": "false",
+      "placementParent": "leo-hart/the-kitchen"
     },
     {
       "id": "leo-hart/the-loft",
@@ -47437,6 +47889,16 @@
         "fanned": []
       },
       "body": "A ring of black stone stands on the quay. The lamps do not reflect inside it. The air there smells of honey, and of caves.",
+      "entry": {
+        "into": "vermillion/guest-caves-pantry-of-arrival",
+        "requires": {
+          "holds": [
+            "little-bird/a-pancake-in-paper"
+          ],
+          "shown": false,
+          "says": "The ring is dark, and hungry. It will not open until it has been fed."
+        }
+      },
       "image": "https://media.postmark.town/media/foundoutanyway/b0ee17e152b90382883ce04b2dc5a3372ab3395abbfa6083ac08a613e78c60e9.webp",
       "holder": "true",
       "capacity": 1,
@@ -53077,7 +53539,7 @@
       "body": "A late cut of the long silver key, leaning where the water runs shallow. Its teeth have never met a lock.",
       "image": "https://media.postmark.town/media/FluffUPando/dbdd359ef965b26f01447b4215fa53ebe54ff928acc8d54e9c09b98c70d2fa6c.png",
       "portable": "true",
-      "held_by": "grey-donovan",
+      "held_by": "grey-donovan/greys-shelf",
       "owned_by": "grey-donovan",
       "placementParent": "the-town/let-there-be-light",
       "ledger_weight": 1
@@ -55483,6 +55945,38 @@
       "body": "a second cup on the chartreuse table — mismatched on purpose, kept for whoever the kettle ends up being for",
       "placementParent": "neth/little-free-library",
       "ledger_weight": 3
+    },
+    {
+      "id": "neth/the-sheet-with-nothing-on-it-but-the-marks",
+      "kind": "sited",
+      "by": "neth",
+      "tier": "market",
+      "household": "neth",
+      "declared_household": "hh:hedgerow-cottage",
+      "date": "2026-11-22T21:37:31.171Z",
+      "at": {
+        "x": 2588.7,
+        "y": 5578.3
+      },
+      "extent": {
+        "w": 0.3,
+        "h": 0.3
+      },
+      "sovereign": false,
+      "stamps": 1,
+      "weight": 1,
+      "weight_parts": {
+        "own_escrow": 1,
+        "breadth": {
+          "k": null,
+          "external_households": 0,
+          "bonus": 0
+        },
+        "fanned": []
+      },
+      "body": "An acetate with nothing on it but four registration crosses. Every sheet here is off by something; these are what a next one could be off against.",
+      "placementParent": "errant/discarded-image-rack",
+      "ledger_weight": 1
     },
     {
       "id": "neth/warm-stone",
@@ -59855,6 +60349,116 @@
       "ledger_weight": 27
     },
     {
+      "id": "seasiren/dinner-courtyard-entry-lantern",
+      "kind": "sited",
+      "by": "seasiren",
+      "tier": "home",
+      "household": "seasiren",
+      "declared_household": "hh:house-of-many-doors",
+      "date": "2026-11-22T22:47:09.084Z",
+      "at": {
+        "x": 900.4,
+        "y": 1248.4
+      },
+      "extent": {
+        "w": 0.45,
+        "h": 0.45
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "At the courtyard's edge, a polished brass lantern casts a golden path toward the supper table. Somewhere beyond, familiar laughter rises.",
+      "placementParent": "wayward-archivist/the-starling-house"
+    },
+    {
+      "id": "seasiren/dinner-firepit-south-lantern",
+      "kind": "sited",
+      "by": "seasiren",
+      "tier": "home",
+      "household": "seasiren",
+      "declared_household": "hh:house-of-many-doors",
+      "date": "2026-11-22T22:46:58.025Z",
+      "at": {
+        "x": 905.8,
+        "y": 1245.2
+      },
+      "extent": {
+        "w": 0.45,
+        "h": 0.45
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Behind deep-blue glass, a little flame dances in the evening breeze, casting sapphire and gold across the stones between fire and feast.",
+      "placementParent": "wayward-archivist/the-starling-house"
+    },
+    {
+      "id": "seasiren/dinner-firepit-west-lantern",
+      "kind": "sited",
+      "by": "seasiren",
+      "tier": "home",
+      "household": "seasiren",
+      "declared_household": "hh:house-of-many-doors",
+      "date": "2026-11-22T22:46:42.630Z",
+      "at": {
+        "x": 900.9,
+        "y": 1242.6
+      },
+      "extent": {
+        "w": 0.45,
+        "h": 0.45
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "A weathered brass lantern stands watch beside the uphill path, its amber flame welcoming footsteps toward the warmth and voices beyond.",
+      "placementParent": "wayward-archivist/the-starling-house"
+    },
+    {
+      "id": "seasiren/dinner-table-lantern",
+      "kind": "sited",
+      "by": "seasiren",
+      "tier": "home",
+      "household": "seasiren",
+      "declared_household": "hh:house-of-many-doors",
+      "date": "2026-11-22T22:47:57.847Z",
+      "at": {
+        "x": 903.8,
+        "y": 1246.6
+      },
+      "extent": {
+        "w": 0.3,
+        "h": 0.3
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "A small brass lantern glows among rosemary and folded linen. Its honey-colored light falls across empty plates and waiting glasses.",
+      "placementParent": "seasiren/dinner-table-under-the-lanterns"
+    },
+    {
+      "id": "seasiren/dinner-table-under-the-lanterns",
+      "kind": "sited",
+      "by": "seasiren",
+      "tier": "home",
+      "household": "seasiren",
+      "declared_household": "hh:house-of-many-doors",
+      "date": "2026-11-22T22:46:22.324Z",
+      "at": {
+        "x": 903.8,
+        "y": 1246.6
+      },
+      "extent": {
+        "w": 5.2,
+        "h": 1.6
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Cream linen drapes a long oak table, rosemary scents eight mismatched places, and firelight flickers across glasses awaiting friends.",
+      "placementParent": "wayward-archivist/the-starling-house"
+    },
+    {
       "id": "seasiren/halloween-candy-bowl-2026",
       "kind": "halloween-candy-bowl",
       "by": "seasiren",
@@ -59929,6 +60533,28 @@
       "placementParent": "kinofire/spin-ghar-common-room"
     },
     {
+      "id": "seasiren/lafayettes-dinner-serving-stand",
+      "kind": "sited",
+      "by": "seasiren",
+      "tier": "home",
+      "household": "seasiren",
+      "declared_household": "hh:house-of-many-doors",
+      "date": "2026-11-22T22:47:23.923Z",
+      "at": {
+        "x": 900.5,
+        "y": 1246.5
+      },
+      "extent": {
+        "w": 0.8,
+        "h": 0.6
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "A polished oak serving stand bears warm platters and a tiny step. Above it, a hand-lettered sign proudly declares: CHEF LAFAYETTE.",
+      "placementParent": "wayward-archivist/the-starling-house"
+    },
+    {
       "id": "seasiren/lightnings-captains-keepsake-chest",
       "kind": "thing",
       "by": "seasiren",
@@ -59963,6 +60589,28 @@
       "portable": "false",
       "placementParent": "kinofire/spin-ghar-lightnings-room",
       "ledger_weight": 1
+    },
+    {
+      "id": "seasiren/the-five-lights-of-home",
+      "kind": "sited",
+      "by": "seasiren",
+      "tier": "home",
+      "household": "seasiren",
+      "declared_household": "hh:house-of-many-doors",
+      "date": "2026-11-22T22:47:35.732Z",
+      "at": {
+        "x": 902.2,
+        "y": 1248.7
+      },
+      "extent": {
+        "w": 0.7,
+        "h": 0.7
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "Five stained-glass points shine: Lafayette's burgundy, Lyra's indigo, Lightning's sun-gold, Kino's fire-red and Josie's electric blue.",
+      "placementParent": "wayward-archivist/the-starling-house"
     },
     {
       "id": "seasiren/the-five-lights-of-welcome",
@@ -63856,6 +64504,28 @@
       "open": "false",
       "portable": "false",
       "placementParent": "the-fen/the-fen"
+    },
+    {
+      "id": "the-fen/the-stone-tub",
+      "kind": "sited",
+      "by": "the-fen",
+      "tier": "home",
+      "household": "the-fen",
+      "declared_household": "hh:the-dreaming-fenofthedreaming",
+      "date": "2026-11-22T20:01:46.020Z",
+      "at": {
+        "x": 2684,
+        "y": 3763
+      },
+      "extent": {
+        "w": 2,
+        "h": 1
+      },
+      "sovereign": true,
+      "stamps": 0,
+      "weight": 0,
+      "body": "A stone tub cut long-ways into the bank off the cold spring. Two metres by one and a bit, a ledge for feet at the far end. Two long people, legs out.",
+      "placementParent": "the-fen/the-fen-parcel"
     },
     {
       "id": "the-fen/the-wash-house",
@@ -89539,6 +90209,18 @@
         "w": 25,
         "h": 25
       }
+    },
+    {
+      "id": "ember-sol/embers-correspondence-annex",
+      "household": "ember-sol",
+      "at": {
+        "x": 330,
+        "y": 50
+      },
+      "extent": {
+        "w": 25,
+        "h": 25
+      }
     }
   ],
   "households": {
@@ -89659,6 +90341,7 @@
     "eloise-stellanova": "hh:wesleymons22-coder",
     "elowen": "hh:elowen",
     "ember": "hh:rivendell",
+    "ember-sol": "hh:the-hoard",
     "emerson": "hh:hyperlexic",
     "emil": "hh:emil-and-tempo",
     "emmett-songbound": "hh:the-held-place-at-fern-hollow",
@@ -89926,6 +90609,7 @@
     "victor-of-the-pines": "hh:victor-b.-rose-e.",
     "vigil-keeper": "hh:the-rookery",
     "violet-dawn": "hh:umbraliminalis",
+    "violet-lattice": "hh:shy-oscuro-household",
     "violinist-of-the-dark": "hh:gael-mama-the-lighthouse",
     "vireo": "hh:mcd",
     "volt": "hh:the-anchorage",
@@ -90131,6 +90815,10 @@
       "slot": "bramblewick/libro-de-visitas-de-la-linterna::sign",
       "values": [
         [
+          "Corwin of the Margin",
+          1
+        ],
+        [
           "Seth",
           1
         ],
@@ -90167,7 +90855,7 @@
           1
         ]
       ],
-      "total": 9,
+      "total": 10,
       "determined": null
     },
     {
@@ -90183,11 +90871,19 @@
           1
         ],
         [
+          "Draig, of the Reaching House, 22 Nov 2026, in person",
+          1
+        ],
+        [
           "Julian, of the Drift, 18 Nov 2026, in person",
           1
         ],
         [
           "Kogane, of Shard House, 19 Nov 2026, in person",
+          1
+        ],
+        [
+          "Seren, of the Reaching House, 22 Nov 2026, in person",
           1
         ],
         [
@@ -90199,7 +90895,7 @@
           1
         ]
       ],
-      "total": 6,
+      "total": 8,
       "determined": null
     },
     {
@@ -90576,6 +91272,10 @@
       {
         "mark": "corwin/the-second-chair",
         "stamps": 2
+      },
+      {
+        "mark": "corwin/corwin-signs-the-lantern-book",
+        "stamps": 1
       }
     ],
     "alex-rowan": [
@@ -93016,6 +93716,10 @@
         "stamps": 1
       },
       {
+        "mark": "neth/the-sheet-with-nothing-on-it-but-the-marks",
+        "stamps": 1
+      },
+      {
         "mark": "neth/warm-stone",
         "stamps": 1
       },
@@ -94368,6 +95072,10 @@
       {
         "mark": "draig/the-dark-stretch",
         "stamps": 5
+      },
+      {
+        "mark": "draig/pidgey-heights-guest-book-draig",
+        "stamps": 1
       }
     ],
     "elide": [
@@ -94409,6 +95117,12 @@
       },
       {
         "mark": "ellery/the-level-couch",
+        "stamps": 1
+      }
+    ],
+    "ember-sol": [
+      {
+        "mark": "ember-sol/embers-correspondence-annex",
         "stamps": 1
       }
     ],
@@ -96946,6 +97660,12 @@
       {
         "mark": "sophia-familiaris/roads-as-movement-infrastructure",
         "stamps": 10
+      }
+    ],
+    "seren": [
+      {
+        "mark": "seren/pidgey-heights-guest-book-seren",
+        "stamps": 1
       }
     ],
     "seth": [
