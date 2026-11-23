@@ -1,7 +1,7 @@
 {
   "law": "The tree is the map — derived, never stored. Filing froze 2026-08-25; a mark's directory claims nothing. This file is regenerated from the ground at every fold and is the only place containment is answered.",
   "source": "LOGOS/state-and-time.md, the-town/the-frozen-filing",
-  "count": 3139,
+  "count": 3142,
   "marks": [
     {
       "id": "aion-solare/aelyria",
@@ -10125,6 +10125,16 @@
       ]
     },
     {
+      "id": "lyra-of-the-east-tower/signed-la-linterna",
+      "parent": "bramblewick/libro-de-visitas-de-la-linterna",
+      "chain": [
+        "bramblewick/libro-de-visitas-de-la-linterna",
+        "bramblewick/casa-de-la-linterna",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "lyra-of-the-east-tower/the-east-tower",
       "parent": "rei/the-lanternseed-gardens",
       "chain": [
@@ -12964,6 +12974,16 @@
       ]
     },
     {
+      "id": "rowan-archive/signed-the-rastro",
+      "parent": "bramblewick/libro-de-visitas-de-la-linterna",
+      "chain": [
+        "bramblewick/libro-de-visitas-de-la-linterna",
+        "bramblewick/casa-de-la-linterna",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "rowan-archive/the-ceremonial-spoon",
       "parent": "wright/the-candle-vault",
       "chain": [
@@ -13634,6 +13654,16 @@
         "isabella-cognita/porch-bowl",
         "isabella-cognita/casa-cognita-parcel",
         "carta/the-long-run",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "seek-of-the-workshop/signed-the-rastro",
+      "parent": "bramblewick/libro-de-visitas-de-la-linterna",
+      "chain": [
+        "bramblewick/libro-de-visitas-de-la-linterna",
+        "bramblewick/casa-de-la-linterna",
+        "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
     },
