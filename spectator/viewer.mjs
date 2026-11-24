@@ -50,6 +50,10 @@ import { creatureSilhouette, roomInMists, bakeRoomSurround, MISTS_PAINT, bakeShe
 // so the one thing that module may never do is parse a string as HTML — see its
 // header, and tools/home-column.test.mjs, which proves it cannot.
 import { createHomeColumn, speakerFaceEl, homeHandleForParcel, isParcelMark, HOME_COLUMN_CSS } from "./home-column.mjs";
+// WLD-249: the host's whole speaker identity, per viewer: the shell's one-argument mount cannot take it as an option, so a host sets it here (before the
+// mount or after it), and the open column relabels in place. Exported from this module, the shell's public one.
+import { setViewerIdentityForSpeaker, viewerIdentityFor, onViewerIdentity } from "./viewer-identity.mjs";
+export { setViewerIdentityForSpeaker };
 // HOMES ARE PER RESIDENT (POS-368, Darko 2026-10-04): the one resolver, shared
 // with the office. See homesOfParcel below. The dwelling picker
 // (tools/dwelling.mjs) is deleted: "a guess with a good score is still a guess;
@@ -9034,6 +9038,8 @@ export function walksFromOffice(body) {
 
 export function mountViewer(appEl) {
   if (!appEl) throw new Error("mountViewer needs a host element");
+  // WLD-249: this viewer's one stable identityForSpeaker: whatever its host has set for THIS element now (setViewerIdentityForSpeaker), or null
+  const identityForSpeaker = viewerIdentityFor(appEl);
   const shadowHost = appEl;
   shadowHost.classList.add("wv");
   const styleTag = document.createElement("style");
@@ -14059,7 +14065,8 @@ export function mountViewer(appEl) {
       // WLD-215: the column draws this conversation's ONE header (title, live, counts, began, latest, who spoke), so the reader drops its own (`hostOwnsHeader`), and
       // every line and speaker wears the page's own face for that handle (`faceOf`, the occupant tokens' source: no new fetch, a fresh node per call).
       reader: { roomId: tid, source: convoReaderSource, canReply: canAct() && !onPhone(), onReply: (target) => setReplyTarget(target), hrefForCircle: (c) => `/conversations/#circle-${encodeURIComponent(c)}`,
-        hostOwnsHeader: true, faceForSpeaker: (h) => { const f = faceOf(h); return speakerFaceEl(document, { name: f.name, monogram: f.monogram, color: f.color, picture: f.avatar ?? null }, (u) => markImagePath({ image: u })); } },   // the same gate the occupant tokens' pictures pass (the column's own imagePath)
+        hostOwnsHeader: true, faceForSpeaker: (h) => { const f = faceOf(h); return speakerFaceEl(document, { name: f.name, monogram: f.monogram, color: f.color, picture: f.avatar ?? null }, (u) => markImagePath({ image: u })); },   // the same gate the occupant tokens' pictures pass (the column's own imagePath)
+        identityForSpeaker },   // WLD-249: the host's whole identity when it set one for this viewer (null without: the face above and the name, as ever)
       handle: "the-town", residentLink: false,
       kicker: live ? "a conversation · live" : "a conversation · gone quiet",
       // the old "now" row's meaning, kept where "live" is said
@@ -15791,6 +15798,9 @@ export function mountViewer(appEl) {
     // same `data-enter`, same root click delegate, same sheet for terms and
     // refusals (crossInto). No callback: a second handler here crossed twice.
   });
+  // WLD-249: when this viewer's host sets (or sets again, or clears) its speaker identity, the open conversation's labels are drawn again in place
+  // (the column's speakers row, plain lines and its reader's bylines): no remount, no read, the camera and selection untouched
+  const offViewerIdentity = onViewerIdentity(appEl, () => { if (!stopped) homeColumn.refreshIdentities(); });
   // What the column would show for this selection, or null if this selection is
   // not a parcel. The home sited on the ground supplies the title and the lead
   // picture — the same two the map's own home card already draws from it — and
@@ -19781,6 +19791,7 @@ export function mountViewer(appEl) {
       window.removeEventListener("resize", onViewerResize);
       window.removeEventListener("pm:stood-out", onStoodOut);
       bubbleResize?.disconnect();
+      offViewerIdentity();               // WLD-249: a stopped viewer is told nothing more (the host's provider stays set on the element)
     },
   };
   try { window.__pmViewer = handle; } catch { /* no window: the tests import this file */ }

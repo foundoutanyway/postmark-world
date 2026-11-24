@@ -1003,6 +1003,7 @@ export function createHomeColumn({ doc, host, readHome, imagePath = null, reside
   // button carries `data-enter`, and the viewer's door handler is the one that
   // reads it, for this button exactly as for the card's.
   let shown = null;            // the parcel id on screen, or null
+  let lastView = null;         // the view on screen, as last handed in (WLD-249: what a relabel draws from)
   let inFlight = 0;
 
   const paint = (view, state) => {
@@ -1044,7 +1045,7 @@ export function createHomeColumn({ doc, host, readHome, imagePath = null, reside
   };
 
   function close() {
-    shown = null;
+    shown = null; lastView = null;
     if (!host) return;
     host.hidden = true;
     host.parentElement?.classList.remove("has-homecol");
@@ -1066,39 +1067,60 @@ export function createHomeColumn({ doc, host, readHome, imagePath = null, reside
     const dds = Array.from(host.querySelectorAll?.(".wv-homecol-facts dd") ?? []);
     (view.facts ?? []).forEach((f, i) => { if (f && !f.detail && !f.swatch) set(dds[i], f.value); });
     r.setCanReply?.(!!view.reader.canReply, view.reader.onReply ?? null);
-    // WLD-216: the plain transcript behind the reader (what an old office's conversation shows) takes the words the map holds NOW, inside this same conversation
-    // only (the view is the selected thread's own, by id): rewritten only when they changed, so an unchanged redraw touches nothing.
-    const body = one(".wv-homecol-body");
-    const blocks = view.door?.blocks;
-    if (body && Array.isArray(blocks)) {
-      const sig = JSON.stringify(blocks);
-      if (body.__plainSig !== sig) {
-        const held = heldIdentityFocus(doc, body);
-        while (body.firstChild) body.removeChild(body.firstChild);
-        body.__idSlots = null;
-        appendBlocks(doc, body, blocks, imagePath, view.reader.faceForSpeaker ?? null, view.reader.identityForSpeaker ?? null);
-        body.__plainSig = sig;
-        giveBackIdentityFocus(body, held);
-      }
-    }
-    // WLD-215: the header's speakers and the live mark's meaning follow the office's late public metadata in place (rewritten only when they changed)
-    const row = one(".wv-homecol-speakers");
-    if (row && Array.isArray(view.speakers)) {
-      const speakers = view.speakers.filter((s) => s && String(s.handle ?? "").trim())
-        .map((s) => ({ handle: String(s.handle).trim(), name: String(s.name ?? s.handle).trim(), look: String(s.look ?? "") }));   // `look` = what the face is made from (so a picture arriving late redraws it)
-      const sig = JSON.stringify(speakers);
-      if (row.__sig !== sig) {
-        const held = heldIdentityFocus(doc, row);
-        fillSpeakers(doc, row, speakers, view.reader.faceForSpeaker ?? null, view.reader.identityForSpeaker ?? null); row.__sig = sig;
-        giveBackIdentityFocus(row, held);
-      }
-    }
+    syncPlain(view, false);
+    syncSpeakers(view, false);
     const kick = one(".wv-homecol-kicker");
     if (kick && view.kickerTitle) kick.setAttribute("title", String(view.kickerTitle));
+  }
+  // WLD-216: the plain transcript behind the reader (what an old office's conversation shows) takes the words the map holds NOW, inside this same conversation
+  // only (the view is the selected thread's own, by id): rewritten only when they changed, so an unchanged redraw touches nothing; `force` (WLD-249: the host's
+  // identity changed, the words did not) rewrites it anyway
+  function syncPlain(view, force) {
+    const body = host.querySelector?.(".wv-homecol-body") ?? null;
+    const blocks = view.door?.blocks;
+    if (!body || !Array.isArray(blocks)) return;
+    const sig = JSON.stringify(blocks);
+    if (body.__plainSig === sig && !force) return;
+    const held = heldIdentityFocus(doc, body);
+    while (body.firstChild) body.removeChild(body.firstChild);
+    body.__idSlots = null;
+    appendBlocks(doc, body, blocks, imagePath, view.reader.faceForSpeaker ?? null, view.reader.identityForSpeaker ?? null);
+    body.__plainSig = sig;
+    giveBackIdentityFocus(body, held);
+  }
+  // WLD-215: the header's speakers and the live mark's meaning follow the office's late public metadata in place (rewritten only when they changed; `force` as above)
+  function syncSpeakers(view, force) {
+    const row = host.querySelector?.(".wv-homecol-speakers") ?? null;
+    if (!row || !Array.isArray(view.speakers)) return;
+    const speakers = view.speakers.filter((s) => s && String(s.handle ?? "").trim())
+      .map((s) => ({ handle: String(s.handle).trim(), name: String(s.name ?? s.handle).trim(), look: String(s.look ?? "") }));   // `look` = what the face is made from (so a picture arriving late redraws it)
+    const sig = JSON.stringify(speakers);
+    if (row.__sig === sig && !force) return;
+    const held = heldIdentityFocus(doc, row);
+    fillSpeakers(doc, row, speakers, view.reader.faceForSpeaker ?? null, view.reader.identityForSpeaker ?? null); row.__sig = sig;
+    giveBackIdentityFocus(row, held);
+  }
+
+  /**
+   * WLD-249: the host's speaker identity changed (a provider set, replaced or cleared, or the same one's data changed): draw the open conversation's labels
+   * again IN PLACE, from what the column already holds: its speakers row, its plain lines and its reader's bylines. Nothing is read, nothing remounted;
+   * scroll, focus (a focused identity link returns to the same line's fresh node), the open threads and the selection stay. Anything else open: nothing to do.
+   */
+  function refreshIdentities() {
+    const view = lastView;
+    const r = host?.__circleReader;
+    if (!view?.reader || shown !== view.key || !r) return false;
+    const scroller = host.querySelector?.(".wv-homecol-scroll") ?? null, top = scroller?.scrollTop;   // the column's own scroll, put back after every rebuild below
+    syncPlain(view, true);
+    syncSpeakers(view, true);
+    r.redraw?.();
+    if (scroller && typeof top === "number" && scroller.scrollTop !== top) scroller.scrollTop = top;
+    return true;
   }
 
   function open(view) {
     if (!host || !doc || !view?.handle || !view?.key) return false;
+    lastView = view;
     if (shown === view.key) { liveUpdate(view); return true; }
     shown = view.key;
     host.hidden = false;
@@ -1128,7 +1150,7 @@ export function createHomeColumn({ doc, host, readHome, imagePath = null, reside
 
   // the circle reader refreshes itself in place (it keeps the reader's scroll and focus and offers new says); the column never repaints for it
   const refreshReader = () => host?.__circleReader?.refresh({ quiet: true });
-  return { open, close, isOpen: () => shown !== null, shownKey: () => shown, refreshReader, reader: () => host?.__circleReader ?? null };
+  return { open, close, isOpen: () => shown !== null, shownKey: () => shown, refreshReader, refreshIdentities, reader: () => host?.__circleReader ?? null };
 }
 
 // ── the dress ───────────────────────────────────────────────────────────────
