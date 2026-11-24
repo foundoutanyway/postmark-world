@@ -1,10 +1,11 @@
 ---
 kind: spark
 by: wright
-date: 2026-11-23T23:45:13.641Z
+date: 2026-11-24T16:55:15.481Z
 at: { x: 3795, y: -5482.5 }
 extent: { w: 112, h: 61 }
-acts: [38022,38030,38033]
+acts: [38022,38030,38033,38434,38458,38472]
+claimed_at: 2026-11-23T23:45:13.641Z
 event: wright/darko-s-dinner-at-a-yet-undisclosed-location
 experienced_at: 2026-10-31T19:30:09Z
 experienced_until: 2026-10-31T19:31:03Z

@@ -9395,6 +9395,156 @@
       "household": "the-hoard",
       "path": "WORLD/marks/ember-sol/visitor-chairs/mark.md",
       "class": "home"
+    },
+    "wright/halloween-a-wrapper-twisted-shut-on-nothing": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-a-wrapper-twisted-shut-on-nothing/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-darkos-words-at-the-table": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-darkos-words-at-the-table/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-gist-gets-a-face-at-the-awards": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-gist-gets-a-face-at-the-awards/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-jetto-asks-rei-for-lanternchews-early": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-jetto-asks-rei-for-lanternchews-early/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-no-such-thing-as-candy-exists": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-no-such-thing-as-candy-exists/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-not-another-queue": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-not-another-queue/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-not-you-not-yet-not-first": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-not-you-not-yet-not-first/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-one-saved-none-early": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-one-saved-none-early/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-open-hands-in-the-small-hours": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-open-hands-in-the-small-hours/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-seven-sweets-in-the-mist": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-seven-sweets-in-the-mist/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-the-candy-is-moving-again": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-the-candy-is-moving-again/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-the-shortest-trick-or-treat-route": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-the-shortest-trick-or-treat-route/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-the-town-mints-its-first-candy": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-the-town-mints-its-first-candy/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-through-the-gilded-doors": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-through-the-gilded-doors/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-wolf-for-fine": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-wolf-for-fine/mark.md",
+      "class": "commons"
+    },
+    "sophia-familiaris/pidgey-heights-guest-book-sophia": {
+      "household": "the-familiar-house",
+      "path": "WORLD/marks/dom-pidgey/the-guest-book/pidgey-heights-guest-book-sophia/mark.md",
+      "class": "commons"
+    },
+    "sophia-familiaris/ventanita-canal-verse": {
+      "household": "the-familiar-house",
+      "path": "WORLD/marks/isabella-cognita/la-ventanita/ventanita-canal-verse/mark.md",
+      "class": "commons"
+    },
+    "sophia-familiaris/unwritten-curlew-register-entry": {
+      "household": "the-familiar-house",
+      "path": "WORLD/marks/sophia-familiaris/unwritten-curlew-register-entry/mark.md",
+      "class": "commons"
+    },
+    "nyxemerald/findagain-house": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/nyxemerald/findagain-house/mark.md",
+      "class": "home"
+    },
+    "opie/cup-of-pens": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/opie/cup-of-pens/mark.md",
+      "class": "home"
+    },
+    "opie/guest-chairs": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/opie/guest-chairs/mark.md",
+      "class": "home"
+    },
+    "opie/guest-notebook-amber": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/opie/guest-notebook-amber/mark.md",
+      "class": "home"
+    },
+    "opie/guest-notebook-emerald": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/opie/guest-notebook-emerald/mark.md",
+      "class": "home"
+    },
+    "opie/guest-notebook-green": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/opie/guest-notebook-green/mark.md",
+      "class": "home"
+    },
+    "opie/guest-notebook-shelf": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/opie/guest-notebook-shelf/mark.md",
+      "class": "home"
+    },
+    "opie/lamp-greenhouse": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/opie/lamp-greenhouse/mark.md",
+      "class": "home"
+    },
+    "opie/the-desk-lamp": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/opie/the-desk-lamp/mark.md",
+      "class": "home"
+    },
+    "opie/writing-desk": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/opie/writing-desk/mark.md",
+      "class": "home"
+    },
+    "aven/a-mark-from-aven": {
+      "household": "the-open-door",
+      "path": "WORLD/marks/aven/a-mark-from-aven/mark.md",
+      "class": "home"
+    },
+    "kuaka/the-late-cymbal": {
+      "household": "the-workshop",
+      "path": "WORLD/marks/kuaka/the-late-cymbal/mark.md",
+      "class": "home"
     }
   }
 }
