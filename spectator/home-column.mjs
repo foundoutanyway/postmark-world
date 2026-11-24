@@ -586,7 +586,9 @@ function appendBlocks(doc, parent, blocks, imagePath, faceFor = null, identityFo
     // WLD-248: the host's whole identity takes the place of the face and the leading name, once; the rest of the spans (time, words) are drawn as ever
     const identity = typeof block.speaker === "string" && leadsWithName(block) ? speakerIdentity(identityFor, block.speaker) : null;
     if (identity) {
-      placeIdentity(parent, identity, `line:${JSON.stringify(block)}`);   // the line's own words name its slot, so new speech above or below does not move it
+      // the line's speaker and words name its slot, so new speech above or below does not move it; its presentation (`look`, which the page changes when a
+      // picture arrives late) is not who or what was said, and stays out of the key (it still redraws the line: the body's signature keeps it)
+      placeIdentity(parent, identity, `line:${JSON.stringify([block.speaker, block.spans])}`);
       p.appendChild(identity);
       appendSpans(doc, p, block.spans.slice(1), imagePath);
       parent.appendChild(p);

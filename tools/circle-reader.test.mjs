@@ -46,7 +46,7 @@ function element(tag) {
     get parentElement() { return node.parent; },
     get parentNode() { return node.parent; },
     contains(other) { for (let n = other; n; n = n.parent) if (n === node) return true; return false; },
-    focus() { doc.activeElement = node; },
+    focus(options) { doc.activeElement = node; doc.lastFocusOptions = options; },   // the options are recorded (WLD-248: an identity is refocused without scrolling)
     // just enough of a selector for the column's live update: ".cls" and ".cls tag"
     querySelectorAll(sel) {
       const [a, b] = String(sel).trim().split(/\s+/);
@@ -1508,15 +1508,34 @@ const assertRefocused = (root, old, line, why) => {
   assert.ok(root.contains(a), `${why}: connected, inside the reader as drawn now`);
   assert.equal(lineOf(a)?.attrs["data-say"], line, `${why}: on the same line, not another occurrence of the handle`);
   assert.ok(!a.attrs["data-key"] && !Object.keys(a.parent.attrs).some((k) => k === "data-key"), `${why}: nothing of World's was stamped on the host's node`);
+  assert.deepEqual(doc.lastFocusOptions, { preventScroll: true }, `${why}: refocused without scrolling`);
 };
 
 test("WLD-248 · FOCUS CONTROL · room view: a keyed control (Open) keeps focus through a quiet refresh with a link-identity host", async () => {
   const h = faceHost({ identityForSpeaker: linkIdentity });
   await h.reader.showRoom();
   const open = byAttr(h.root, "data-circle-open", 50101)[0]; open.focus();
+  doc.lastFocusOptions = "unset";
   await h.reader.refresh({ quiet: true });
   assert.equal(doc.activeElement?.attrs["data-circle-open"], "50101");
   assert.ok(h.root.contains(doc.activeElement));
+  assert.equal(doc.lastFocusOptions, undefined, "the old keyed restore is untouched: a plain focus(), as before");
+});
+
+test("WLD-248 · FOCUS · the fallback: when the fresh identity is shaped differently, focus goes to its first focusable element, still without scrolling", async () => {
+  let draws = 0;
+  const reshaping = (handle) => {
+    const n = linkIdentity(handle);
+    if (++draws > 3) { const wrap = element("span"); wrap.className = "rig-id-wrap"; const a = n.children[1]; n.removeChild(a); wrap.appendChild(a); n.appendChild(wrap); }   // later draws nest the link one deeper
+    return n;
+  };
+  const h = faceHost({ identityForSpeaker: reshaping });
+  await h.reader.showRoom();
+  const stub = byAttr(h.root, "data-circle-stub")[2]; const old = linksIn(stub)[0]; old.focus();
+  await h.reader.refresh({ quiet: true });
+  const a = doc.activeElement;
+  assert.ok(find(a.parent, (x) => x === a).length && a.parent.className === "rig-id-wrap", "the old path no longer reaches the link: the fallback found it");
+  assertRefocused(h.root, old, stub.attrs["data-say"], "fallback");
 });
 
 test("WLD-248 · FOCUS PROBE · room view: focus on an opener's identity link survives a quiet refresh", async () => {
@@ -1576,6 +1595,7 @@ test("WLD-248 · FOCUS PROBE · column: a new speaker arrives; focus stays on th
   assert.equal(rowLinks(host).length, 2, "the row was rebuilt with the new speaker");
   assert.ok(a && a !== old && rowLinks(host).includes(a), "a fresh, connected row link has focus");
   assert.equal(a.parent.attrs["data-identity"], "rig-ash", "the same speaker's, not the newcomer's");
+  assert.deepEqual(doc.lastFocusOptions, { preventScroll: true }, "without scrolling the column");
 });
 
 test("WLD-248 · FOCUS PROBE · column: new speech arrives; focus stays on the same plain line's FRESH link, not the speaker's first line", async () => {
@@ -1590,4 +1610,23 @@ test("WLD-248 · FOCUS PROBE · column: new speech arrives; focus stays on the s
   assert.ok(a && a !== old && body.contains(a), "a fresh, connected link has focus");
   let p = a; while (p && p.tagName !== "P") p = p.parent;
   assert.equal(text(p), "rig-ash: two", "the same line (the second of the repeated speaker's), not the first");
+  assert.deepEqual(doc.lastFocusOptions, { preventScroll: true }, "without scrolling the column");
+});
+
+test("WLD-248 · FOCUS · a late picture (the page's `look` changes, the words do not): the line still redraws, and focus stays on the same line's fresh link", async () => {
+  const { host, col, view } = await liveColumn();
+  // the World page's own shape (viewer.mjs § convoColumnView): `look` = the speaker's picture once it is known, else their colour
+  const line = (h, t, look) => ({ type: "paragraph", speaker: h, look, spans: [{ type: "strong", spans: [{ type: "text", text: h }] }, { type: "text", text: `: ${t}` }] });
+  const sp = [{ handle: "rig-ash", name: "rig-ash" }];
+  col.open(view(sp, [line("rig-ash", "one", "#c0ffee"), line("rig-ash", "two", "#c0ffee")])); await tick(); await tick();
+  const body = find(host, (n) => n.className === "wv-homecol-body")[0];
+  const second = find(body, (n) => n.tagName === "P" && /two/.test(text(n)))[0];
+  const old = linksIn(second)[0]; old.focus();
+  col.open(view(sp, [line("rig-ash", "one", "/shelf/rig-ash.png"), line("rig-ash", "two", "/shelf/rig-ash.png")]));
+  assert.ok(!body.contains(old), "the line was redrawn (the picture is part of the redraw signature, as before)");
+  const a = doc.activeElement;
+  assert.ok(a && a !== old && body.contains(a) && a.className === "rig-id-link", "a fresh, connected identity link has focus");
+  let p = a; while (p && p.tagName !== "P") p = p.parent;
+  assert.equal(text(p), "rig-ash: two", "the same line (the repeated speaker's second), not the first");
+  assert.deepEqual(doc.lastFocusOptions, { preventScroll: true }, "without scrolling the column");
 });

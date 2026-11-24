@@ -409,15 +409,16 @@ export function identityFocusPath(top, el) {
   }
   return path;
 }
-/** focus the element at `path` inside `top` (a fresh identity in the same slot), else its first focusable element, else nothing */
+/** focus the element at `path` inside `top` (a fresh identity in the same slot), else its first focusable element, else nothing. Without scrolling: the reader
+ *  has already put its scroll back, and the column keeps its own, so the browser's focus must not move either (`preventScroll`). */
 export function refocusIdentity(top, path) {
   if (!top) return false;
   let n = top;
   for (const i of path ?? []) { n = n?.children?.[i] ?? null; if (!n) break; }
-  if (FOCUSABLE(n)) { n.focus(); return true; }
+  if (FOCUSABLE(n)) { n.focus({ preventScroll: true }); return true; }
   const first = (x) => { if (FOCUSABLE(x)) return x; for (const c of x?.children ?? []) { const hit = c?.nodeType === 1 ? first(c) : null; if (hit) return hit; } return null; };
   const any = first(top);
-  if (any) { any.focus(); return true; }
+  if (any) { any.focus({ preventScroll: true }); return true; }
   return false;
 }
 
