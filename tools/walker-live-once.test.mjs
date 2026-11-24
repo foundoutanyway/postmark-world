@@ -24,7 +24,7 @@ import assert from "node:assert/strict";
 import vm from "node:vm";
 import { readFileSync } from "node:fs";
 
-import { liveWalkerAt, liveWalkerRows, latestCrossingMsByHandle, sceneWalkerSet } from "../spectator/viewer.mjs";
+import { liveWalkerAt, liveWalkerRows, latestCrossingMsByHandle, crossingsMemoFor, sceneWalkerSet } from "../spectator/viewer.mjs";
 import { positionAt, fractionalCrossing } from "./walk.mjs";
 
 const SOURCE = readFileSync(new URL("../spectator/viewer.mjs", import.meta.url), "utf8");
@@ -127,7 +127,8 @@ function rig({ walkers, acts = [], records, own = null, hidden = false, mPerPx =
   rig.ledger = { acts };
   const ctx = vm.createContext({
     liveWalkerRows: (rows, c) => { rig.walkerCalls += 1; rig.rowsEvaluated += rows.length; return liveWalkerRows(rows, c); },
-    latestCrossingMsByHandle: (a) => { rig.ledgerPasses += 1; return latestCrossingMsByHandle(a); },
+    // a "ledger pass" is a read of the ledger's acts: the memo makes one only for a ledger it has not seen (WLD-247)
+    crossingsMemoFor: (prev, a) => { const m = crossingsMemoFor(prev, a); if (m !== prev) rig.ledgerPasses += 1; return m; },
     walkState: { walkers }, walkRecords: records, get enterExitLedger() { return rig.ledger; },
     fractionalCrossing: (ms) => fractionalCrossing(ms === undefined ? rig.clockMs : ms),
     state: { handle: own }, canAct: () => !!own, mapCtx: { mPerPx },
@@ -135,7 +136,7 @@ function rig({ walkers, acts = [], records, own = null, hidden = false, mPerPx =
     requestAnimationFrame: (fn) => { rig.queue.push(fn); return rig.queue.length; },
     get document() { return { hidden: rig.hidden }; },
   });
-  vm.runInContext(`let walksPolledMs = ${t0 - 5000}; let walkFrame = 0, walkFrameKey = "";\n${LIVE_WALKERS}\n${ANIMATE}\nglobalThis.__animate = animateWalks;`, ctx);
+  vm.runInContext(`let walksPolledMs = ${t0 - 5000}; let walkFrame = 0, walkFrameKey = ""; let crossingsMemo = null;\n${LIVE_WALKERS}\n${ANIMATE}\nglobalThis.__animate = animateWalks;`, ctx);
   rig.start = () => ctx.__animate();
   rig.frame = (ms) => { if (ms !== undefined) rig.clockMs = ms; const fn = rig.queue.shift(); fn?.(); };
   rig.reset = () => { rig.walkerCalls = 0; rig.rowsEvaluated = 0; rig.ledgerPasses = 0; };
@@ -143,7 +144,7 @@ function rig({ walkers, acts = [], records, own = null, hidden = false, mPerPx =
 }
 const town = (n) => Array.from({ length: n }, (_, i) => (i === 0 ? still("visitor") : { handle: `walker-${i}`, x: i, y: i, moving: false }));
 
-test("(3) one evaluation of the walkers and one ledger pass per frame, and the draw is handed that very answer", () => {
+test("(3) one evaluation of the walkers per frame, no ledger re-read while the ledger stands, and the draw is handed that very answer", () => {
   const acts = Array.from({ length: 50 }, (_, i) => ({ handle: `walker-${i % 7}`, iso: iso(t0 - 100_000 + i) }));
   const r = rig({ walkers: town(40), acts, records: new Map([["visitor", { record: record("visitor"), declaredMs: t0 }]]) });
   r.start();
@@ -152,7 +153,7 @@ test("(3) one evaluation of the walkers and one ledger pass per frame, and the d
   r.frame(t0 + 1000);
   assert.equal(r.walkerCalls, 1, "the whole town evaluated once for the frame");
   assert.equal(r.rowsEvaluated, 40);
-  assert.equal(r.ledgerPasses, 1, "the ledger read once for the frame");
+  assert.equal(r.ledgerPasses, 0, "the ledger is the one the loop started with: not read again (WLD-247; it was one pass per frame before)");
   assert.equal(r.draws.length, 1, "the body moved a pixel: one draw");
   assert.equal(r.draws[0].length, 40, "the draw gets the full live set, not just the moving bodies");
   assert.equal(r.draws[0][0].moving, true);
@@ -161,7 +162,7 @@ test("(3) one evaluation of the walkers and one ledger pass per frame, and the d
   // a frame in which nothing has moved half a pixel draws nothing, and still evaluates once
   r.reset();
   r.frame(t0 + 1000);
-  assert.deepEqual([r.walkerCalls, r.ledgerPasses, r.draws.length], [1, 1, 1], "same pose: no redraw, still one evaluation");
+  assert.deepEqual([r.walkerCalls, r.ledgerPasses, r.draws.length], [1, 0, 1], "same pose: no redraw, still one evaluation of the walkers");
 });
 
 test("(3) arrival without a poll: the loop ends with the resting redraw of that frame's answer, and stops", () => {
@@ -176,7 +177,7 @@ test("(3) arrival without a poll: the loop ends with the resting redraw of that 
   const last = r.draws.at(-1);
   assert.deepEqual([last[0].moving, last[0].standing], [false, true]);
   assert.equal(r.queue.length, 0, "and the loop has stopped");
-  assert.deepEqual([r.walkerCalls, r.ledgerPasses], [1, 1]);
+  assert.deepEqual([r.walkerCalls, r.ledgerPasses], [1, 0]);
 });
 
 test("(3) a crossing that stops the walk, and a replaced ledger, are seen on the next frame", () => {
@@ -214,11 +215,11 @@ test("(4) a standalone redraw takes its own answer with one ledger pass; the dra
   // the standalone path: no frame, so liveWalkers() itself
   const r = rig({ walkers: town(30), acts: [{ handle: "walker-3", iso: iso(t0) }], records: new Map([["visitor", { record: record("visitor"), declaredMs: t0 }]]) });
   const ctx2 = vm.createContext({
-    liveWalkerRows: (rows, c) => { r.walkerCalls += 1; return liveWalkerRows(rows, c); }, latestCrossingMsByHandle: (a) => { r.ledgerPasses += 1; return latestCrossingMsByHandle(a); },
+    liveWalkerRows: (rows, c) => { r.walkerCalls += 1; return liveWalkerRows(rows, c); }, crossingsMemoFor: (prev, a) => { const m = crossingsMemoFor(prev, a); if (m !== prev) r.ledgerPasses += 1; return m; },
     walkState: { walkers: town(30) }, walkRecords: new Map([["visitor", { record: record("visitor"), declaredMs: t0 }]]), enterExitLedger: { acts: [{ handle: "walker-3", iso: iso(t0) }] },
     fractionalCrossing: (ms) => fractionalCrossing(ms === undefined ? t0 + 3000 : ms), state: { handle: null }, canAct: () => false,
   });
-  vm.runInContext(`let walksPolledMs = ${t0 - 5000};\n${LIVE_WALKERS}\nglobalThis.__live = liveWalkers;`, ctx2);
+  vm.runInContext(`let walksPolledMs = ${t0 - 5000}; let crossingsMemo = null;\n${LIVE_WALKERS}\nglobalThis.__live = liveWalkers;`, ctx2);
   r.reset();
   const live = ctx2.__live();
   assert.deepEqual([r.walkerCalls, r.ledgerPasses, live.length], [1, 1, 30]);
@@ -237,4 +238,74 @@ test("(4) a standalone redraw takes its own answer with one ledger pass; the dra
   assert.equal((ANIMATE.match(/drawWalkers\(live\)/g) ?? []).length, 2, "the resting redraw and the half-pixel redraw both get the frame's answer");
   assert.equal((ANIMATE.match(/liveWalkers\(\)/g) ?? []).length, 2, "one evaluation to start the loop, one per frame in the tick");
   assert.equal((SOURCE.match(/drawWalkers\(\)/g) ?? []).length >= 10, true, "the standalone redraws (poll, ledger, switches) are untouched");
+});
+
+// ── WLD-247: the ledger's crossings are parsed once per ledger, not once per frame ───────────────────────────────────────────────────────────
+// The idle trace on #437's viewer (Town Centre, 4x CPU, 8.2 s untouched): `latestCrossingMsByHandle` 1.5 s = 19 % of the window, a pass over the ~10,400 acts on every
+// animation frame. The ledger is replaced whole when it lands and an act's time never changes, so the answer for the same array at the same length is the same
+// answer. Everything else the frame computes (every row, the clock, the walks) is still evaluated every frame.
+
+test("(5) crossingsMemoFor: the same ledger is read once; another array, even of the same length, and a longer one are read again", () => {
+  let iterations = 0;
+  const acts = new Proxy([{ handle: "a", iso: iso(t0) }, { handle: "b", iso: iso(t0 + 1000) }], { get(t, k, r) { if (k === Symbol.iterator) iterations += 1; return Reflect.get(t, k, r); } });
+  let memo = crossingsMemoFor(null, acts);
+  const first = memo;
+  for (let frame = 0; frame < 60; frame++) memo = crossingsMemoFor(memo, acts);
+  assert.equal(memo, first, "sixty frames, one memo");
+  assert.equal(iterations, 1, "the ledger was iterated once");
+  assert.deepEqual([...memo.map], [["a", t0], ["b", t0 + 1000]]);
+  // a ledger replaced by another array of the SAME length (the landing of a newer read) is read again, and answers differently
+  const replaced = [{ handle: "a", iso: iso(t0 + 9000) }, { handle: "b", iso: iso(t0 + 1000) }];
+  const next = crossingsMemoFor(memo, replaced);
+  assert.notEqual(next, memo);
+  assert.equal(next.map.get("a"), t0 + 9000);
+  // the same array grown in place is read again too
+  const grow = [{ handle: "a", iso: iso(t0) }];
+  const g1 = crossingsMemoFor(null, grow);
+  grow.push({ handle: "a", iso: iso(t0 + 4000) });
+  const g2 = crossingsMemoFor(g1, grow);
+  assert.notEqual(g2, g1);
+  assert.equal(g2.map.get("a"), t0 + 4000);
+  // no ledger at all
+  assert.equal(crossingsMemoFor(null, undefined).map.size, 0);
+  assert.equal(crossingsMemoFor(crossingsMemoFor(null, undefined), undefined).n, 0);
+  // its answer is exactly the one-pass answer
+  const fixture = [{ handle: "x", iso: iso(t0 + 5) }, { handle: "y", iso: "no time" }, { handle: "x", iso: iso(t0 + 2) }];
+  assert.deepEqual([...crossingsMemoFor(null, fixture).map], [...latestCrossingMsByHandle(fixture)]);
+});
+
+test("(5) in the running loop: an unchanged ledger is read once over many frames; a crossing that lands (a replaced ledger, or an act added in place) still stops the walk on the next frame", () => {
+  const records = new Map([["visitor", { record: record("visitor"), declaredMs: t0 }]]);
+  const acts = [{ handle: "walker-3", iso: iso(t0 - 60_000) }];
+  const r = rig({ walkers: town(8), acts, records });
+  r.start();
+  r.reset();
+  for (let n = 1; n <= 12; n++) r.frame(t0 + n * 400);   // 4.8 s of frames; the body moves, the half-pixel test redraws
+  assert.equal(r.ledgerPasses, 0, "twelve frames on the ledger the loop started with: the ledger was not read again");
+  assert.ok(r.walkerCalls === 12 && r.draws.length >= 5, "while every frame still evaluated every walker and drew the moving body");
+  assert.equal(r.queue.length, 1);
+  // an act added IN PLACE after the walk was declared: the next frame sees it and stops the walk
+  acts.push({ handle: "visitor", iso: iso(t0 + 4900) });
+  r.reset();
+  const before = r.draws.length;
+  r.frame(t0 + 5200);
+  assert.equal(r.ledgerPasses, 1, "the grown ledger was read again, once");
+  assert.equal(r.draws.length, before + 1, "and the walk's stop is the resting redraw");
+  assert.equal(r.draws.at(-1)[0].moving, false);
+  assert.equal(r.queue.length, 0);
+  // a ledger replaced by another array: the new crossings are read once, and the walk is live again
+  r.ledger = { acts: [{ handle: "walker-3", iso: iso(t0 - 60_000) }] };
+  r.start();
+  r.reset();
+  r.frame(t0 + 6000);
+  r.frame(t0 + 6400);
+  assert.equal(r.ledgerPasses, 0, "(the start already read it) and the frames after it do not read it again");
+  assert.equal(r.draws.at(-1)[0].moving, true);
+});
+
+test("(5) the page asks the memo, not the ledger, once a frame; the single-body reader keeps its own scan", () => {
+  assert.match(LIVE_WALKERS, /crossedBy: \(crossingsMemo = crossingsMemoFor\(crossingsMemo, enterExitLedger\.acts\)\)\.map,/);
+  assert.doesNotMatch(LIVE_WALKERS, /latestCrossingMsByHandle\(/, "the per-frame answer no longer scans the ledger itself");
+  assert.match(SOURCE, /let crossingsMemo = null;\n  const liveWalkers = /);
+  assert.match(SOURCE, /const crossedMsOf = \(handle\) => \{/, "liveBody keeps its per-handle scan");
 });
