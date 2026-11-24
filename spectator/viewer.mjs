@@ -8926,6 +8926,31 @@ export function liveWalkerAt(row, { record = null, declaredMs = 0, polledMs = 0,
     ...(p.arrived ? { standing: true } : {}) };
 }
 
+// ── ONE LIVE ANSWER PER FRAME (WLD-243, Wright 2026-11-24 05:03Z) ───────────────────────────────────────────────────────────────────────────
+// The animation tick asked "who is moving?" by evaluating liveWalkerAt for EVERY walker (the whole town, ~400 rows), and drawWalkers then evaluated every
+// walker again for the same frame, and each evaluation scanned the whole crossing ledger for that one handle (`crossedMsOf`): measured at 35-43 % of a
+// Town Centre idle/pan window after the placement cost was gone. These two pure helpers are the frame's answer: the newest crossing of every handle from ONE
+// pass over the ledger, and every row through `liveWalkerAt` once. The tick hands its answer to the draw it triggers; nothing is kept between frames, so an
+// arrival, a crossing that stops a walk, a replaced ledger or a new clock reading is seen on the next frame exactly as before.
+/** The newest crossing each handle made, in ms, from one pass over the ledger: what `crossedMsOf(handle)` answers for any one handle (0 when it made none). */
+export function latestCrossingMsByHandle(acts = []) {
+  const latest = new Map();
+  for (const a of acts ?? []) {
+    if (!a?.handle) continue;
+    const t = Date.parse(a.iso) || 0;
+    if (t > (latest.get(a.handle) ?? 0)) latest.set(a.handle, t);
+  }
+  return latest;
+}
+/** Every row where its declared walk puts it now: `liveWalkerAt` over `rows`, the clock, the poll's moment, whose walk is the reader's own and the crossings all
+ *  read once by the caller. A row with no record is the poll's word, the very same object. Pure. */
+export function liveWalkerRows(rows = [], { records = new Map(), polledMs = 0, nowCrossing, polledCrossing = NaN, ownHandle = null, crossedBy = new Map() } = {}) {
+  return (rows ?? []).map((w) => {
+    const r = w?.handle ? records.get(w.handle) : null;
+    return r ? liveWalkerAt(w, { record: r.record, declaredMs: r.declaredMs, polledMs, nowCrossing, polledCrossing, own: !!ownHandle && w.handle === ownHandle, crossedMs: crossedBy.get(w.handle) ?? 0 }) : w;
+  });
+}
+
 /** WHAT A MOUNTED ROOM WAS DRAWN FROM (play row 80, Darko 19:45: "Entering the
  *  Starforge spire from outside brought me to a blank interior until I reloaded
  *  the page … it had all of the marks, just not the actual background image").
@@ -14130,7 +14155,9 @@ export function mountViewer(appEl) {
     return s;
   }
 
-  function drawWalkers() {
+  // `live`: the animation tick's answer for this frame (every walker where its walk puts it now); a standalone redraw (a poll, the ledger, a switch) passes
+  // nothing and takes its own, with one ledger pass (WLD-243).
+  function drawWalkers(live = null) {
     if (!mapCtx?.walkLayer) return;
     // NO CAMERA IN THIS PASS (#2912 (3)). The bodies, the destination rings and
     // the vessel are authored in painting units and sized through the CSS
@@ -14178,7 +14205,7 @@ export function mountViewer(appEl) {
     // each body where its declared walk puts it now (row 69)
     // THE RESIDENTS' SWITCH (CORE-147): off, no body is drawn, no walking line, no housemate chevron (those read the bodies drawn) and no click or hover
     // reaches one (screenWalkerCandidates). The acting resident's own marker (the standpoint dot) is the viewer's selection feedback and stays.
-    const inView = sceneWalkerSet({ walkers: (walkState.walkers ?? []).map(liveBody), manifest, roomId: sceneRoomId, marks: draw.marks });
+    const inView = sceneWalkerSet({ walkers: live ? [...live] : liveWalkers(), manifest, roomId: sceneRoomId, marks: draw.marks });   // a copy: the residents' switch empties it below, and the tick's answer is not this draw's to empty
     if (residentsOff()) inView.length = 0;   // a fresh array every draw (map / flatMap): emptied, so no body, edge chevron or dot-judging list remains
     const drawnWalkers = inView.filter((w) => pointInDrawnBounds(w, bounds));
     // ONE BODY, ONE MARKER (POS-93), ASKED OF THE BODIES DRAWN (#2848 (a),
@@ -14646,6 +14673,13 @@ export function mountViewer(appEl) {
     return r ? liveWalkerAt(w, { record: r.record, declaredMs: r.declaredMs, polledMs: walksPolledMs, nowCrossing: fractionalCrossing(),
       polledCrossing: fractionalCrossing(walksPolledMs), own: !!state.handle && w.handle === state.handle && canAct(), crossedMs: crossedMsOf(w.handle) }) : w;
   };
+  // WLD-243: THE FRAME'S ONE LIVE ANSWER. Every walker through liveWalkerAt once, the crossings read in one pass over the ledger and the clock read once.
+  // The tick and the draw it triggers share it; nothing is kept from one frame to the next (liveWalkerRows, latestCrossingMsByHandle). A single-body
+  // reader (the hover, the click, the highlight) still asks liveBody for its one row.
+  const liveWalkers = () => liveWalkerRows(walkState.walkers ?? [], {
+    records: walkRecords, polledMs: walksPolledMs, nowCrossing: fractionalCrossing(), polledCrossing: fractionalCrossing(walksPolledMs),
+    ownHandle: state.handle && canAct() ? state.handle : null, crossedBy: latestCrossingMsByHandle(enterExitLedger.acts),
+  });
   // a walk the poll shows that the page holds no record of: ask the record once
   // never a new read and never a millisecond since (Darko 19:18; row 60): the
   // page's own hour-floored walks read again, which the cache answers
@@ -14660,17 +14694,18 @@ export function mountViewer(appEl) {
   let walkFrame = 0, walkFrameKey = "";
   function animateWalks() {
     if (walkFrame || (typeof document !== "undefined" && document.hidden)) return;
-    const moving = () => (walkState.walkers ?? []).map(liveBody).filter((w) => w?.moving && walkRecords.has(w.handle));
-    if (!moving().length) return;
+    const movingOf = (live) => live.filter((w) => w?.moving && walkRecords.has(w.handle));
+    if (!movingOf(liveWalkers()).length) return;
     const tick = () => {
       walkFrame = 0;
       if (typeof document !== "undefined" && document.hidden) return;
-      const now = moving();
-      if (!now.length) { drawWalkers(); return; }   // the last frame sets them down
+      const live = liveWalkers();   // the frame's one answer: the moving test below and the draw it triggers both read it (WLD-243)
+      const now = movingOf(live);
+      if (!now.length) { drawWalkers(live); return; }   // the last frame sets them down
       // redraw only when a moving body has moved by half a pixel on screen
       const k = mapCtx?.mPerPx || 1;
       const key = now.map((w) => w.handle + ":" + Math.round(w.x / k * 2) + "," + Math.round(w.y / k * 2)).join("|");
-      if (key !== walkFrameKey) { walkFrameKey = key; drawWalkers(); }
+      if (key !== walkFrameKey) { walkFrameKey = key; drawWalkers(live); }
       walkFrame = requestAnimationFrame(tick);
     };
     walkFrame = requestAnimationFrame(tick);

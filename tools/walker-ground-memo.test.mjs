@@ -236,7 +236,7 @@ test("(5) walkerPlace reads the clock once per draw, not once per body; without 
 });
 
 test("(5) drawWalkers evaluates the clock once, carries it on the draw, and attaches the ground memo to the draw's index", () => {
-  const text = lift(/^  function drawWalkers\(\) \{[\s\S]*?^  \}/m, "drawWalkers");
+  const text = lift(/^  function drawWalkers\((?:live = null)?\) \{[\s\S]*?^  \}/m, "drawWalkers");
   assert.equal((text.match(/occupancyClock\(\)/g) ?? []).length, 1, "one clock read in the whole pass");
   assert.match(text, /const draw = \{ marks, index: containmentIndex\(marks, \{ thingClasses: learnedThingClasses\(marks\) \}\), at: occupancyClock\(\) \};/);
   assert.match(text, /walkGroundMemo = groundMemoFor\(walkGroundMemo, draw\.index\);\s*draw\.index\.groundMemo = walkGroundMemo;/);
