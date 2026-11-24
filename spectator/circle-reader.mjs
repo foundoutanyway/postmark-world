@@ -1150,6 +1150,9 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
   return {
     root,
     showRoom, showCircle, refresh, setReplyTarget, setCanReply, destroy,
+    // WLD-249: draw the view on screen again from what the reader already holds, reading nothing (a host's identityForSpeaker changed what a byline is);
+    // scroll, focus (a focused identity link returns to the same line's fresh node) and the open threads stay. Nothing on screen yet: nothing to do.
+    redraw: () => { redraw(); },
     getState: () => ({ view: state.view, roomId: state.roomId, circleId: state.circleId, pages: state.pages.length, pending: state.pending ? state.pending.count : 0, replyTarget: state.replyTarget }),
   };
 }

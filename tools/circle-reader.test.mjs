@@ -1630,3 +1630,156 @@ test("WLD-248 · FOCUS · a late picture (the page's `look` changes, the words d
   assert.equal(text(p), "rig-ash: two", "the same line (the repeated speaker's second), not the first");
   assert.deepEqual(doc.lastFocusOptions, { preventScroll: true }, "without scrolling the column");
 });
+
+// ── WLD-249 · the REAL shell's entry: setViewerIdentityForSpeaker(appEl, provider|null) ──────────────────────────────────────────────
+//
+// The verbatim shell calls `mountViewer(app)` with one argument, so the host sets its identity provider per app element through the viewer module's
+// public setter, before the mount or after it; the mounted viewer reads it through one stable function at every draw and, on every setter call,
+// relabels its open conversation in place (column speakers row, plain lines, the reader's bylines). FALSIFIER: the shell cannot reach the provider; arrival
+// order changes the result; an open label stays stale (even when only the provider's data changed); another viewer picks the provider up; a relabel
+// remounts, re-reads, or loses scroll, focus, threads or selection; null does not return the default exactly.
+//
+// mountViewer needs a whole browser page (tools/room-fit.test.mjs says why there is no DOM to mount it here), so its WLD-249 wiring is pinned in its source,
+// and the path past it is driven for real: the viewer's own adapter functions, the real column and reader, and a conversation view in convoColumnView's shape.
+const VIEWER_SRC = async () => (await import("node:fs")).readFileSync(new URL("../spectator/viewer.mjs", import.meta.url), "utf8");
+
+test("WLD-249 · the shell's path: the viewer module exports the setter, the one-argument shell boot is untouched, and mountViewer wires the provider through to the conversation and its relabel", async () => {
+  const viewer = await import("../spectator/viewer.mjs");
+  const adapter = await import("../spectator/viewer-identity.mjs");
+  assert.equal(viewer.setViewerIdentityForSpeaker, adapter.setViewerIdentityForSpeaker, "the shell's own module exports the one entry");
+  const shell = (await import("node:fs")).readFileSync(new URL("../spectator/index.html", import.meta.url), "utf8");
+  assert.match(shell, /mountViewer\(document\.getElementById\("app"\)\);/, "the verbatim one-argument boot is unchanged");
+  const SRC = await VIEWER_SRC();
+  const mount = SRC.slice(SRC.indexOf("export function mountViewer(appEl)"), SRC.indexOf("const shadowHost = appEl;"));
+  assert.match(mount, /const identityForSpeaker = viewerIdentityFor\(appEl\);/, "the viewer takes ITS element's stable provider function at mount");
+  const cv = SRC.slice(SRC.indexOf("function convoColumnView"), SRC.indexOf("// What a plain click or hover on the map means for a thread"));
+  assert.match(cv, /faceForSpeaker: \(h\) => \{[^\n]*\n\s*identityForSpeaker \},/, "the conversation's reader option carries it, beside the page's own face");
+  assert.match(SRC, /const offViewerIdentity = onViewerIdentity\(appEl, \(\) => \{ if \(!stopped\) homeColumn\.refreshIdentities\(\); \}\);/, "a setter call relabels the open column, and only that");
+  const stop = SRC.slice(SRC.indexOf("    stop: () => {"), SRC.indexOf("try { window.__pmViewer = handle; }"));
+  assert.match(stop, /offViewerIdentity\(\);/, "a stopped viewer unsubscribes");
+  assert.throws(() => viewer.setViewerIdentityForSpeaker(null, () => null), /host element/, "no element, no entry");
+});
+
+/** what mountViewer does with WLD-249, on the real column (its two lines, pinned above), and convoColumnView's view of a conversation */
+const mountLike = async (app, { working = true } = {}) => {
+  const { viewerIdentityFor, onViewerIdentity } = await import("../spectator/viewer-identity.mjs");
+  const { createHomeColumn } = await import("../spectator/home-column.mjs");
+  const identityForSpeaker = viewerIdentityFor(app);
+  const host = element("div"); host.collapses = true; const col = createHomeColumn({ doc, host });
+  let stopped = false;
+  const off = onViewerIdentity(app, () => { if (!stopped) col.refreshIdentities(); });
+  const calls = [];
+  const source = working
+    ? { async room(id) { calls.push(["room", id]); return roomFind(); }, async circle(id, after) { calls.push(["circle", id, after]); return id === 50101 ? circle50101() : { error: "bounce" }; } }
+    : { async room(id) { calls.push(["room", id]); return { error: "down" }; }, async circle(id) { calls.push(["circle", id]); return { error: "down" }; } };
+  const line = (h, t) => ({ type: "paragraph", speaker: h, look: "#c0ffee", spans: [{ type: "strong", spans: [{ type: "text", text: h }] }, { type: "text", text: ` (2026-11-14 20:0${t}Z): line ${t}` }] });
+  const view = () => ({ key: "convo:t1|circles", handle: "the-town", residentLink: false, kicker: "a conversation · live", title: "Cave Interior", region: "3 statements · 2 speakers", byline: false,
+    speakers: [{ handle: "pica", name: "pica", look: "#c0ffee" }, { handle: "seth", name: "seth", look: "#c0ffee" }],
+    door: { blocks: [line("pica", 1), line("seth", 2), line("pica", 3)] },
+    reader: { roomId: "t1", source, canReply: false, hostOwnsHeader: true, faceForSpeaker: faceHook(), identityForSpeaker } });
+  return { host, col, calls, view, open: async () => { col.open(view()); await tick(); await tick(); }, stop: () => { stopped = true; off(); } };
+};
+const labelsOf = (host) => {
+  const row = find(host, (n) => n.className === "wv-homecol-speakers")[0];
+  const reader = find(host, (n) => n.className === "wv-homecol-reader")[0];
+  const body = find(host, (n) => n.className === "wv-homecol-body")[0];
+  return { row: idsOf248(row).length, reader: idsOf248(reader).length, plain: idsOf248(body).length, faces: facesOf(host).length };
+};
+
+test("WLD-249 · both arrival orders: a provider set BEFORE the mount and one set AFTER it (the column already open) end in the same labels", async () => {
+  const { setViewerIdentityForSpeaker } = await import("../spectator/viewer.mjs");
+  const before = element("div");
+  setViewerIdentityForSpeaker(before, identityNode);
+  const a = await mountLike(before); await a.open();
+  assert.deepEqual(labelsOf(a.host), { row: 2, reader: 3, plain: 3, faces: 0 }, "provider first: every label is the host's identity, no extra face");
+
+  const after = element("div");
+  const b = await mountLike(after); await b.open();
+  assert.deepEqual(labelsOf(b.host), { row: 0, reader: 0, plain: 0, faces: 2 + 3 + 3 }, "no provider yet: the page's own faces and names, as ever");
+  const reader = b.host.__circleReader, callsBefore = b.calls.length;
+  setViewerIdentityForSpeaker(after, identityNode);
+  assert.deepEqual(labelsOf(b.host), { row: 2, reader: 3, plain: 3, faces: 0 }, "provider second: the open labels were relabelled in place");
+  assert.equal(b.host.__circleReader, reader, "the same reader: no remount");
+  assert.equal(b.calls.length, callsBefore, "and no read of the office");
+  assert.equal(shapeOf(b.host), shapeOf(a.host), "the arrival order makes no difference to what is drawn");
+});
+
+test("WLD-249 · the same function again: its data changed, and every open label takes the CURRENT data in fresh nodes", async () => {
+  const { setViewerIdentityForSpeaker } = await import("../spectator/viewer.mjs");
+  const names = { pica: "Pica", seth: "Seth" };
+  const provider = (h) => { const n = identityNode(h); n.children[1].textContent = names[h] ?? h; return n; };
+  const app = element("div"); setViewerIdentityForSpeaker(app, provider);
+  const v = await mountLike(app); await v.open();
+  const current = (n) => text(n) === (names[n.attrs["data-identity"]] ?? n.attrs["data-identity"]);
+  const old = idsOf248(v.host);
+  assert.ok(old.length === 8 && old.every(current), "drawn with the first data");
+  assert.ok(old.some((n) => text(n) === "Pica"), "the fixture shows pica");
+  names.pica = "Pica of the Cave"; names.seth = "Seth (away)";
+  setViewerIdentityForSpeaker(app, provider);   // the same function: only its data moved
+  const now = idsOf248(v.host);
+  assert.equal(now.length, 8);
+  assert.ok(now.every((n) => !old.includes(n)), "fresh nodes everywhere");
+  assert.ok(now.every(current), "every label shows the CURRENT data");
+  assert.ok(!now.some((n) => text(n) === "Pica" || text(n) === "Seth"), "no label still shows an old name");
+});
+
+test("WLD-249 · state survives a relabel: the reader's scroll and open thread, the column's scroll, and a focused identity link on a repeated speaker's later line", async () => {
+  const { setViewerIdentityForSpeaker } = await import("../spectator/viewer.mjs");
+  const app = element("div"); setViewerIdentityForSpeaker(app, linkIdentity);
+  const v = await mountLike(app); await v.open();
+  const mount = find(v.host, (n) => n.className === "wv-homecol-reader")[0]; mount.collapses = true;
+  byAttr(v.host, "data-circle-open", 50101)[0].click(); await tick(); await tick();
+  openAll(v.host);
+  const openThreads = byAttr(v.host, "data-thread").filter((t) => t.attrs["data-open"] === "true").map((t) => t.attrs["data-thread"]);
+  assert.ok(openThreads.length >= 2, "threads opened by the visitor");
+  const picas = byAttr(v.host, "data-say").filter((li) => linksIn(li)[0]?.parent.attrs["data-identity"] === "pica");
+  assert.ok(picas.length >= 2, "pica speaks more than once on screen");
+  const target = picas[picas.length - 1]; const old = linksIn(target)[0]; old.focus();
+  const colScroll = find(v.host, (n) => n.className === "wv-homecol-scroll")[0]; colScroll.collapses = true;   // the column's own scroller forgets on teardown, as a browser's may
+  mount.scrollTop = 140; colScroll.scrollTop = 60;
+  const callsBefore = v.calls.length;
+  setViewerIdentityForSpeaker(app, linkIdentity);
+  assert.equal(mount.scrollTop, 140, "the reader's scroll is put back");
+  assert.equal(colScroll.scrollTop, 60, "the column's scroll is put back");
+  assert.deepEqual(byAttr(v.host, "data-thread").filter((t) => t.attrs["data-open"] === "true").map((t) => t.attrs["data-thread"]), openThreads, "the open threads stay open");
+  assert.equal(v.host.__circleReader.getState().view, "circle", "the reader is still on the conversation it was showing");
+  assertRefocused(v.host, old, target.attrs["data-say"], "relabel");
+  assert.equal(v.calls.length, callsBefore, "nothing was read");
+});
+
+test("WLD-249 · null (and a non-function) returns the default EXACTLY; two viewers never share a provider; a stopped viewer is told nothing", async () => {
+  const { setViewerIdentityForSpeaker } = await import("../spectator/viewer.mjs");
+  const plain = element("div"); const ref = await mountLike(plain); await ref.open();
+  const app = element("div"); setViewerIdentityForSpeaker(app, identityNode);
+  const v = await mountLike(app); await v.open();
+  setViewerIdentityForSpeaker(app, null);
+  assert.equal(shapeOf(v.host), shapeOf(ref.host), "null: the never-provided viewer's DOM, exactly");
+  setViewerIdentityForSpeaker(app, identityNode); setViewerIdentityForSpeaker(app, "not a function");
+  assert.equal(shapeOf(v.host), shapeOf(ref.host), "a non-function is null");
+
+  const a = element("div"), b = element("div");
+  const va = await mountLike(a), vb = await mountLike(b); await va.open(); await vb.open();
+  const bNodes = find(vb.host, () => true);
+  setViewerIdentityForSpeaker(a, identityNode);
+  assert.equal(labelsOf(va.host).row, 2, "viewer A took its provider");
+  assert.deepEqual(labelsOf(vb.host), { row: 0, reader: 0, plain: 0, faces: 8 }, "viewer B did not");
+  assert.deepEqual(find(vb.host, () => true), bNodes, "and B was not even redrawn");
+
+  const s = element("div"); const vs = await mountLike(s); await vs.open();
+  vs.stop();
+  setViewerIdentityForSpeaker(s, identityNode);
+  assert.equal(labelsOf(vs.host).row, 0, "a stopped viewer is not relabelled");
+});
+
+test("WLD-249 · the plain fallback a failed read shows is relabelled too, and a column showing no conversation has nothing to relabel", async () => {
+  const { setViewerIdentityForSpeaker } = await import("../spectator/viewer.mjs");
+  const app = element("div");
+  const v = await mountLike(app, { working: false }); await v.open();
+  const body = find(v.host, (n) => n.className === "wv-homecol-body")[0];
+  assert.equal(body.hidden, false, "the reader could not read the room: the plain lines are what is shown");
+  setViewerIdentityForSpeaker(app, identityNode);
+  assert.deepEqual(text(body).match(/line \d/g), ["line 1", "line 2", "line 3"], "no words lost");
+  assert.equal(idsOf248(body).length, 3, "every shown plain line wears the identity now");
+  v.col.close();
+  assert.equal(v.col.refreshIdentities(), false, "closed: nothing to do");
+});
