@@ -66,7 +66,10 @@
 // circle-reader.mjs's `identityForSpeaker`). The column hands it to its reader and uses it for its own two speaker names: the header's speakers row, and a
 // plain statement whose FIRST span is its name as the page writes it (`{ type: "strong", spans: [{ type: "text", text: <speaker> }] }`), which the identity
 // replaces, face included; the time and words after it stay. A plain statement shaped any other way, or no valid node, keeps the old face + name path exactly.
-import { createCircleReader, speakerIdentity, READER_CSS, SAY_REPLY_CSS } from "./circle-reader.mjs";
+// Focus on a link inside such a node survives the column's same-key updates of its row and plain lines: it returns to the same place in the FRESH node of the
+// same speaker or line (World remembers which of its own slots held which node; nothing is marked on the host's node). The host must give the node a visible,
+// exposed name (see circle-reader.mjs; the refusal checks are not an accessibility audit).
+import { createCircleReader, speakerIdentity, identityFocusPath, refocusIdentity, READER_CSS, SAY_REPLY_CSS } from "./circle-reader.mjs";
 
 // ── the safe seams ──────────────────────────────────────────────────────────
 
@@ -488,14 +491,32 @@ function hostFace(faceFor, handle) {
 }
 
 // WHO SPOKE, as face + name, one per speaker: the conversation header's list (a fresh face per entry, so a repeated handle never steals a node)
+// WLD-248: which host identity stands in which of the column's own slots (a speakers-row entry, a plain line), per container, rebuilt with it; never a mark on the node
+const IDENTITY_SLOT = new WeakMap();
+function placeIdentity(container, node, base) {
+  const reg = container.__idSlots ?? (container.__idSlots = { nodes: new Map(), seen: new Map() });
+  const n = (reg.seen.get(base) ?? 0) + 1; reg.seen.set(base, n);
+  reg.nodes.set(`${base}#${n}`, node); IDENTITY_SLOT.set(node, `${base}#${n}`);
+}
+/** before a container is rebuilt: the slot and place of a focused element inside one of its host identities, or null */
+function heldIdentityFocus(doc, container) {
+  const active = doc.activeElement;
+  if (!active || !container?.contains?.(active)) return null;
+  for (let n = active; n && n !== container; n = n.parentNode) if (IDENTITY_SLOT.has(n)) return { slot: IDENTITY_SLOT.get(n), path: identityFocusPath(n, active) };
+  return null;
+}
+/** after it is rebuilt: the same place in the same slot's fresh identity */
+function giveBackIdentityFocus(container, held) { if (held) refocusIdentity(container.__idSlots?.nodes.get(held.slot), held.path); }
+
 // (WLD-248: or the host's whole identity for that speaker, in place of both)
 function fillSpeakers(doc, row, speakers, faceFor, identityFor = null) {
   while (row.firstChild) row.removeChild(row.firstChild);
+  row.__idSlots = null;
   for (const sp of speakers) {
     const item = el(doc, "span", "wv-homecol-speaker");
     item.setAttribute("data-speaker", sp.handle);
     const identity = speakerIdentity(identityFor, sp.handle);
-    if (identity) { item.appendChild(identity); row.appendChild(item); continue; }
+    if (identity) { placeIdentity(row, identity, `speaker:${sp.handle}`); item.appendChild(identity); row.appendChild(item); continue; }
     const face = hostFace(faceFor, sp.handle);
     if (face) item.appendChild(face);
     const name = el(doc, "span", "wv-homecol-speaker-name");
@@ -565,6 +586,7 @@ function appendBlocks(doc, parent, blocks, imagePath, faceFor = null, identityFo
     // WLD-248: the host's whole identity takes the place of the face and the leading name, once; the rest of the spans (time, words) are drawn as ever
     const identity = typeof block.speaker === "string" && leadsWithName(block) ? speakerIdentity(identityFor, block.speaker) : null;
     if (identity) {
+      placeIdentity(parent, identity, `line:${JSON.stringify(block)}`);   // the line's own words name its slot, so new speech above or below does not move it
       p.appendChild(identity);
       appendSpans(doc, p, block.spans.slice(1), imagePath);
       parent.appendChild(p);
@@ -1049,9 +1071,12 @@ export function createHomeColumn({ doc, host, readHome, imagePath = null, reside
     if (body && Array.isArray(blocks)) {
       const sig = JSON.stringify(blocks);
       if (body.__plainSig !== sig) {
+        const held = heldIdentityFocus(doc, body);
         while (body.firstChild) body.removeChild(body.firstChild);
+        body.__idSlots = null;
         appendBlocks(doc, body, blocks, imagePath, view.reader.faceForSpeaker ?? null, view.reader.identityForSpeaker ?? null);
         body.__plainSig = sig;
+        giveBackIdentityFocus(body, held);
       }
     }
     // WLD-215: the header's speakers and the live mark's meaning follow the office's late public metadata in place (rewritten only when they changed)
@@ -1060,7 +1085,11 @@ export function createHomeColumn({ doc, host, readHome, imagePath = null, reside
       const speakers = view.speakers.filter((s) => s && String(s.handle ?? "").trim())
         .map((s) => ({ handle: String(s.handle).trim(), name: String(s.name ?? s.handle).trim(), look: String(s.look ?? "") }));   // `look` = what the face is made from (so a picture arriving late redraws it)
       const sig = JSON.stringify(speakers);
-      if (row.__sig !== sig) { fillSpeakers(doc, row, speakers, view.reader.faceForSpeaker ?? null, view.reader.identityForSpeaker ?? null); row.__sig = sig; }
+      if (row.__sig !== sig) {
+        const held = heldIdentityFocus(doc, row);
+        fillSpeakers(doc, row, speakers, view.reader.faceForSpeaker ?? null, view.reader.identityForSpeaker ?? null); row.__sig = sig;
+        giveBackIdentityFocus(row, held);
+      }
     }
     const kick = one(".wv-homecol-kicker");
     if (kick && view.kickerTitle) kick.setAttribute("title", String(view.kickerTitle));

@@ -1473,3 +1473,121 @@ test("WLD-248 · column live update: same-key fresh speech redraws the speakers 
   assert.ok(ids.every((n) => !firstIds.includes(n)), "fresh nodes: nothing carried over from the earlier draw");
   assert.match(text(host), /rig-ash: one.*rig-bo: two/);
 });
+
+test("WLD-248 · a leading strong that is not exactly the speaker's name is never replaced: other text, or two inner spans, keeps the old face + words", async () => {
+  const { renderHomeColumn } = await import("../spectator/home-column.mjs");
+  const blocks = [
+    { type: "paragraph", speaker: "rig-ash", spans: [{ type: "strong", spans: [{ type: "text", text: "Note" }] }, { type: "text", text: ": the bell rang" }] },
+    { type: "paragraph", speaker: "rig-ash", spans: [{ type: "strong", spans: [{ type: "text", text: "rig-ash" }, { type: "em", spans: [{ type: "text", text: " (host)" }] }] }, { type: "text", text: ": hello" }] },
+  ];
+  const draw = async (reader) => { const host = element("div"); renderHomeColumn(doc, host, await columnModel(reader, blocks)); await tick(); await tick(); return host; };
+  const withId = await draw({ identityForSpeaker: identityHook(), faceForSpeaker: faceHook() });
+  const faceOnly = await draw({ faceForSpeaker: faceHook() });
+  const ps = (h) => find(h, (n) => n.tagName === "P" && /bell rang|hello/.test(text(n)));
+  assert.deepEqual(ps(withId).map(text), ["Note: the bell rang", "rig-ash (host): hello"], "no authored text is lost to the identity");
+  assert.ok(ps(withId).every((p) => p.children[0].attrs["data-face"] === "rig-ash" && !String(p.children[0].className).startsWith("rig-id")), "both keep the old face path");
+  assert.equal(ps(withId).map(shapeOf).join(""), ps(faceOnly).map(shapeOf).join(""), "exactly the face host's lines");
+});
+
+// FOCUS (the FIX at 9a1098c5): a link inside a host identity keeps keyboard focus through the reader's redraws and the column's same-key rebuilds, on the SAME
+// line's fresh node (repeated speakers included), with no key of World's on the host's node. The five probes failed at 9a1098c5; the two controls passed there.
+const linkIdentity = (handle) => {
+  const n = element("span"); n.className = "rig-id"; n.setAttribute("data-identity", handle);
+  const face = element("span"); face.className = "rig-id-face"; face.setAttribute("aria-hidden", "true"); n.appendChild(face);
+  const a = element("a"); a.className = "rig-id-link"; a.setAttribute("href", `/residents/${handle}`);
+  const name = element("span"); name.className = "rig-id-name"; name.textContent = handle; a.appendChild(name);   // the name nested inside the link
+  n.appendChild(a);
+  return n;
+};
+const linksIn = (n) => find(n, (x) => x.className === "rig-id-link");
+const lineOf = (n) => { for (let p = n; p; p = p.parent) if (p.attrs?.["data-say"] !== undefined || p.attrs?.["data-say-plain"] !== undefined) return p; return null; };
+const assertRefocused = (root, old, line, why) => {
+  const a = doc.activeElement;
+  assert.ok(a && a.className === "rig-id-link", `${why}: focus is on an identity link (got ${a ? a.className || a.tagName : "nothing"})`);
+  assert.notEqual(a, old, `${why}: a FRESH link, not the old node`);
+  assert.ok(root.contains(a), `${why}: connected, inside the reader as drawn now`);
+  assert.equal(lineOf(a)?.attrs["data-say"], line, `${why}: on the same line, not another occurrence of the handle`);
+  assert.ok(!a.attrs["data-key"] && !Object.keys(a.parent.attrs).some((k) => k === "data-key"), `${why}: nothing of World's was stamped on the host's node`);
+};
+
+test("WLD-248 · FOCUS CONTROL · room view: a keyed control (Open) keeps focus through a quiet refresh with a link-identity host", async () => {
+  const h = faceHost({ identityForSpeaker: linkIdentity });
+  await h.reader.showRoom();
+  const open = byAttr(h.root, "data-circle-open", 50101)[0]; open.focus();
+  await h.reader.refresh({ quiet: true });
+  assert.equal(doc.activeElement?.attrs["data-circle-open"], "50101");
+  assert.ok(h.root.contains(doc.activeElement));
+});
+
+test("WLD-248 · FOCUS PROBE · room view: focus on an opener's identity link survives a quiet refresh", async () => {
+  const h = faceHost({ identityForSpeaker: linkIdentity });
+  await h.reader.showRoom();
+  const stub = byAttr(h.root, "data-circle-stub")[1]; const old = linksIn(stub)[0]; old.focus();
+  assert.equal(doc.activeElement, old, "the identity link has focus");
+  await h.reader.refresh({ quiet: true });
+  assert.notEqual(linksIn(byAttr(h.root, "data-circle-stub")[1])[0], old, "the refresh placed a fresh identity");
+  assertRefocused(h.root, old, stub.attrs["data-say"], "room refresh");
+});
+
+test("WLD-248 · FOCUS PROBE · circle view: focus on a REPEATED speaker's later line returns to that line's fresh link after a refresh", async () => {
+  const h = faceHost({ identityForSpeaker: linkIdentity });
+  await h.reader.showCircle(50101); openAll(h.root);
+  const picas = byAttr(h.root, "data-say").filter((li) => linksIn(li)[0]?.parent.attrs["data-identity"] === "pica");
+  assert.ok(picas.length >= 2, "pica speaks more than once");
+  const target = picas[picas.length - 1]; const old = linksIn(target)[0]; old.focus();
+  await h.reader.refresh({ quiet: true });
+  assertRefocused(h.root, old, target.attrs["data-say"], "circle refresh, a repeated speaker");
+});
+
+test("WLD-248 · FOCUS PROBE · setCanReply's redraw keeps focus on the same line's fresh identity link", async () => {
+  const h = faceHost({ identityForSpeaker: linkIdentity });
+  await h.reader.showCircle(50101); openAll(h.root);
+  const target = byAttr(h.root, "data-say")[3]; const old = linksIn(target)[0]; old.focus();
+  h.reader.setCanReply(true, () => {});
+  assert.equal(byAttr(h.root, "data-reply").length, 10, "the redraw happened (Reply on every line)");
+  assertRefocused(h.root, old, target.attrs["data-say"], "setCanReply");
+});
+
+const liveColumn = async () => {
+  const { createHomeColumn } = await import("../spectator/home-column.mjs");
+  const host = element("div"); const col = createHomeColumn({ doc, host });
+  const source = { async room() { return { error: "down" }; }, async circle() { return { error: "down" }; } };
+  const line = (h, t) => ({ type: "paragraph", speaker: h, spans: [{ type: "strong", spans: [{ type: "text", text: h }] }, { type: "text", text: `: ${t}` }] });
+  const view = (speakers, blocks) => ({ handle: "the-town", key: "convo:t1|circles", kicker: "k", title: "T", region: "r", speakers, door: { blocks }, reader: { roomId: "t1", source, identityForSpeaker: linkIdentity, hostOwnsHeader: true } });
+  return { host, col, line, view };
+};
+const rowLinks = (host) => linksIn(find(host, (n) => n.className === "wv-homecol-speakers")[0]);
+
+test("WLD-248 · FOCUS CONTROL · column: an unchanged same-key redraw leaves the row's identity link focused (nothing is rebuilt)", async () => {
+  const { host, col, line, view } = await liveColumn();
+  const v = () => view([{ handle: "rig-ash", name: "rig-ash" }], [line("rig-ash", "one")]);
+  col.open(v()); await tick(); await tick();
+  const old = rowLinks(host)[0]; old.focus();
+  col.open(v());
+  assert.equal(doc.activeElement, old, "the same node, still focused");
+});
+
+test("WLD-248 · FOCUS PROBE · column: a new speaker arrives; focus stays on the same speaker's FRESH row link", async () => {
+  const { host, col, line, view } = await liveColumn();
+  col.open(view([{ handle: "rig-ash", name: "rig-ash" }], [line("rig-ash", "one")])); await tick(); await tick();
+  const old = rowLinks(host)[0]; old.focus();
+  col.open(view([{ handle: "rig-ash", name: "rig-ash" }, { handle: "rig-bo", name: "rig-bo" }], [line("rig-ash", "one")]));
+  const a = doc.activeElement;
+  assert.equal(rowLinks(host).length, 2, "the row was rebuilt with the new speaker");
+  assert.ok(a && a !== old && rowLinks(host).includes(a), "a fresh, connected row link has focus");
+  assert.equal(a.parent.attrs["data-identity"], "rig-ash", "the same speaker's, not the newcomer's");
+});
+
+test("WLD-248 · FOCUS PROBE · column: new speech arrives; focus stays on the same plain line's FRESH link, not the speaker's first line", async () => {
+  const { host, col, line, view } = await liveColumn();
+  const sp = [{ handle: "rig-ash", name: "rig-ash" }];
+  col.open(view(sp, [line("rig-ash", "one"), line("rig-ash", "two")])); await tick(); await tick();
+  const body = find(host, (n) => n.className === "wv-homecol-body")[0];
+  const second = find(body, (n) => n.tagName === "P" && /two/.test(text(n)))[0];
+  const old = linksIn(second)[0]; old.focus();
+  col.open(view(sp, [line("rig-ash", "one"), line("rig-ash", "two"), line("rig-ash", "three")]));
+  const a = doc.activeElement;
+  assert.ok(a && a !== old && body.contains(a), "a fresh, connected link has focus");
+  let p = a; while (p && p.tagName !== "P") p = p.parent;
+  assert.equal(text(p), "rig-ash: two", "the same line (the second of the repeated speaker's), not the first");
+});
