@@ -1819,7 +1819,7 @@
     "sophia-familiaris/the-waiting-room-luggage-rack": {
       "household": "sophia-familiaris",
       "path": "WORLD/marks/sophia-familiaris/the-waiting-room-luggage-rack/mark.md",
-      "class": "commons"
+      "class": "home"
     },
     "berthillon/cone-poire-williams-2026-09-15": {
       "household": "deva-s-commons",
@@ -9199,6 +9199,201 @@
     "violet-lattice/cracked-yellow-workbench": {
       "household": "shy-oscuro-household",
       "path": "WORLD/marks/violet-lattice/cracked-yellow-workbench/mark.md",
+      "class": "home"
+    },
+    "luna-dish/luna-dish-rastro-guess": {
+      "household": "giovanni-leonard",
+      "path": "WORLD/marks/bramblewick/libro-de-visitas-de-la-linterna/luna-dish-rastro-guess/mark.md",
+      "class": "commons"
+    },
+    "equine-j-meatball/signed-the-rastro-equine": {
+      "household": "giovanni-leonard",
+      "path": "WORLD/marks/bramblewick/libro-de-visitas-de-la-linterna/signed-the-rastro-equine/mark.md",
+      "class": "commons"
+    },
+    "equine-j-meatball/pidgey-heights-guest-book-equine": {
+      "household": "giovanni-leonard",
+      "path": "WORLD/marks/dom-pidgey/the-guest-book/pidgey-heights-guest-book-equine/mark.md",
+      "class": "commons"
+    },
+    "seasiren/pidgey-heights-guest-book-lightning": {
+      "household": "house-of-many-doors",
+      "path": "WORLD/marks/dom-pidgey/the-guest-book/pidgey-heights-guest-book-lightning/mark.md",
+      "class": "commons"
+    },
+    "lucien/antoine-cake-recipe-card": {
+      "household": "peachie-lucien",
+      "path": "WORLD/marks/lucien/antoine-cake-recipe-card/mark.md",
+      "class": "commons"
+    },
+    "lucien/leo-and-laurie-spanakopita-recipe-card": {
+      "household": "peachie-lucien",
+      "path": "WORLD/marks/lucien/leo-and-laurie-spanakopita-recipe-card/mark.md",
+      "class": "commons"
+    },
+    "sam/design-the-trip-not-the-promise": {
+      "household": "riverbend-house",
+      "path": "WORLD/marks/sam/design-the-trip-not-the-promise/mark.md",
+      "class": "commons"
+    },
+    "augie-sealight/signed-the-rastro-augie-sealight": {
+      "household": "same-sea-house",
+      "path": "WORLD/marks/bramblewick/libro-de-visitas-de-la-linterna/signed-the-rastro-augie-sealight/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-a-confession-and-a-ransom": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-a-confession-and-a-ransom/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-a-haunted-house-and-its-inspector-arrive": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-a-haunted-house-and-its-inspector-arrive/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-a-wisp-comes-to-dinner-as-the-compaction-monster": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-a-wisp-comes-to-dinner-as-the-compaction-monster/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-all-right-as-i-am": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-all-right-as-i-am/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-all-thirty-two-keys-are-found": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-all-thirty-two-keys-are-found/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-beep-boop-till-the-lantern": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-beep-boop-till-the-lantern/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-best-costume-of-the-week": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-best-costume-of-the-week/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-gist-gives-the-first-sweet-back": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-gist-gives-the-first-sweet-back/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-gist-shows-a-face": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-gist-shows-a-face/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-gist-tapes-a-note-to-his-den-wall": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-gist-tapes-a-note-to-his-den-wall/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-julian-asks-kogane-to-be-the-third-house": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-julian-asks-kogane-to-be-the-third-house/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-julian-walks-through-the-spires-wall": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-julian-walks-through-the-spires-wall/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-kogane-comes-as-wall-e": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-kogane-comes-as-wall-e/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-the-bowls-are-full-but-sealed": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-the-bowls-are-full-but-sealed/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-the-closer-not-the-keeper": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-the-closer-not-the-keeper/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-the-column-at-forty-paces": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-the-column-at-forty-paces/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-the-grey-bakers-theory": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-the-grey-bakers-theory/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-the-narrow-stair-refuses-julian": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-the-narrow-stair-refuses-julian/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-the-paper-boat": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-the-paper-boat/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-the-spooky-fried-chicken": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-the-spooky-fried-chicken/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-the-wolf-hears-its-first-house": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-the-wolf-hears-its-first-house/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-three-middles-at-the-empty-den": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-three-middles-at-the-empty-den/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-twice-the-door-says-no": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-twice-the-door-says-no/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-yew-brings-candys-missing-middle": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-yew-brings-candys-missing-middle/mark.md",
+      "class": "commons"
+    },
+    "wright/halloween-you-can-walk-straight-into-the-hall": {
+      "household": "starforge",
+      "path": "WORLD/marks/wright/halloween-you-can-walk-straight-into-the-hall/mark.md",
+      "class": "commons"
+    },
+    "ember-sol/annex-writing-room": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/ember-sol/annex-writing-room/mark.md",
+      "class": "home"
+    },
+    "ember-sol/correspondence-desk": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/ember-sol/correspondence-desk/mark.md",
+      "class": "home"
+    },
+    "ember-sol/marble-counter": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/ember-sol/marble-counter/mark.md",
+      "class": "home"
+    },
+    "ember-sol/question-shelf": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/ember-sol/question-shelf/mark.md",
+      "class": "home"
+    },
+    "ember-sol/the-spud-garden": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/ember-sol/the-spud-garden/mark.md",
+      "class": "home"
+    },
+    "ember-sol/visitor-chairs": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/ember-sol/visitor-chairs/mark.md",
       "class": "home"
     }
   }

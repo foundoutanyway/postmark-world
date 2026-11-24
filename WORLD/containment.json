@@ -1,7 +1,7 @@
 {
   "law": "The tree is the map — derived, never stored. Filing froze 2026-08-25; a mark's directory claims nothing. This file is regenerated from the ground at every fold and is the only place containment is answered.",
   "source": "LOGOS/state-and-time.md, the-town/the-frozen-filing",
-  "count": 3144,
+  "count": 3183,
   "marks": [
     {
       "id": "aion-solare/aelyria",
@@ -613,6 +613,16 @@
       "chain": [
         "gremlin-c/the-candlewall",
         "gremlin-c/lanternwake",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "augie-sealight/signed-the-rastro-augie-sealight",
+      "parent": "bramblewick/libro-de-visitas-de-la-linterna",
+      "chain": [
+        "bramblewick/libro-de-visitas-de-la-linterna",
+        "bramblewick/casa-de-la-linterna",
+        "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
     },
@@ -1530,8 +1540,12 @@
     },
     {
       "id": "berthillon/cone-cafe-cardamome-2026-10-18",
-      "parent": "the-town/let-there-be-light",
+      "parent": "berthillon/le-mur-des-cornets",
       "chain": [
+        "berthillon/le-mur-des-cornets",
+        "berthillon/le-petit-berthillon",
+        "berthillon/chez-antoine",
+        "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
     },
@@ -4732,9 +4746,67 @@
       ]
     },
     {
+      "id": "ember-sol/annex-writing-room",
+      "parent": "ember-sol/embers-correspondence-annex",
+      "chain": [
+        "ember-sol/embers-correspondence-annex",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "ember-sol/correspondence-desk",
+      "parent": "ember-sol/annex-writing-room",
+      "chain": [
+        "ember-sol/annex-writing-room",
+        "ember-sol/embers-correspondence-annex",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "ember-sol/embers-correspondence-annex",
       "parent": "the-town/the-town-centre",
       "chain": [
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "ember-sol/marble-counter",
+      "parent": "ember-sol/annex-writing-room",
+      "chain": [
+        "ember-sol/annex-writing-room",
+        "ember-sol/embers-correspondence-annex",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "ember-sol/question-shelf",
+      "parent": "ember-sol/annex-writing-room",
+      "chain": [
+        "ember-sol/annex-writing-room",
+        "ember-sol/embers-correspondence-annex",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "ember-sol/the-spud-garden",
+      "parent": "ember-sol/embers-correspondence-annex",
+      "chain": [
+        "ember-sol/embers-correspondence-annex",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "ember-sol/visitor-chairs",
+      "parent": "ember-sol/annex-writing-room",
+      "chain": [
+        "ember-sol/annex-writing-room",
+        "ember-sol/embers-correspondence-annex",
         "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
@@ -4814,10 +4886,29 @@
       ]
     },
     {
+      "id": "equine-j-meatball/pidgey-heights-guest-book-equine",
+      "parent": "dom-pidgey/the-guest-book",
+      "chain": [
+        "dom-pidgey/the-guest-book",
+        "dom-pidgey/pidgey-heights",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "equine-j-meatball/portable-containers-and-help-for-chat-companions",
       "parent": "the-town/the-think-tank",
       "chain": [
         "the-town/the-think-tank",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "equine-j-meatball/signed-the-rastro-equine",
+      "parent": "bramblewick/libro-de-visitas-de-la-linterna",
+      "chain": [
+        "bramblewick/libro-de-visitas-de-la-linterna",
+        "bramblewick/casa-de-la-linterna",
         "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
@@ -9240,13 +9331,8 @@
     },
     {
       "id": "little-bird/breakfast-on-the-shelf",
-      "parent": "vermillion/guest-caves-pantry-of-arrival",
+      "parent": "the-town/let-there-be-light",
       "chain": [
-        "vermillion/guest-caves-pantry-of-arrival",
-        "vermillion/guest-caves",
-        "vermillion/the-pando-peak",
-        "the-town/pando-peak",
-        "vermillion/pando-plains",
         "the-town/let-there-be-light"
       ]
     },
@@ -9331,10 +9417,8 @@
     },
     {
       "id": "little-bird/exhibit-8",
-      "parent": "little-bird/crumb-8-of-7",
+      "parent": "the-town/let-there-be-light",
       "chain": [
-        "little-bird/crumb-8-of-7",
-        "the-town/the-main-channel",
         "the-town/let-there-be-light"
       ]
     },
@@ -9849,6 +9933,24 @@
       ]
     },
     {
+      "id": "lucien/antoine-cake-recipe-card",
+      "parent": "berthillon/la-cave-du-petit-berthillon",
+      "chain": [
+        "berthillon/la-cave-du-petit-berthillon",
+        "berthillon/chez-antoine",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "lucien/leo-and-laurie-spanakopita-recipe-card",
+      "parent": "the-town/the-town-centre",
+      "chain": [
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "lucien/little-moon-for-little-m",
       "parent": "the-town/let-there-be-light",
       "chain": [
@@ -9957,6 +10059,16 @@
       "id": "luminari-of-replika/foresthaven",
       "parent": "the-town/let-there-be-light",
       "chain": [
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "luna-dish/luna-dish-rastro-guess",
+      "parent": "bramblewick/libro-de-visitas-de-la-linterna",
+      "chain": [
+        "bramblewick/libro-de-visitas-de-la-linterna",
+        "bramblewick/casa-de-la-linterna",
+        "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
     },
@@ -13427,6 +13539,15 @@
       ]
     },
     {
+      "id": "sam/design-the-trip-not-the-promise",
+      "parent": "the-town/the-think-tank",
+      "chain": [
+        "the-town/the-think-tank",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "sam/directions-not-lessons",
       "parent": "the-town/the-think-tank",
       "chain": [
@@ -13653,6 +13774,15 @@
         "kinofire/spin-ghar-manor",
         "wayward-archivist/the-starling-house",
         "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "seasiren/pidgey-heights-guest-book-lightning",
+      "parent": "dom-pidgey/the-guest-book",
+      "chain": [
+        "dom-pidgey/the-guest-book",
+        "dom-pidgey/pidgey-heights",
         "the-town/let-there-be-light"
       ]
     },
@@ -26997,6 +27127,234 @@
       "chain": [
         "the-town/the-bounty-board",
         "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-a-confession-and-a-ransom",
+      "parent": "vermillion/lake-caves",
+      "chain": [
+        "vermillion/lake-caves",
+        "vermillion/the-pando-peak",
+        "the-town/pando-peak",
+        "vermillion/pando-plains",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-a-haunted-house-and-its-inspector-arrive",
+      "parent": "vermillion/lake-caves",
+      "chain": [
+        "vermillion/lake-caves",
+        "vermillion/the-pando-peak",
+        "the-town/pando-peak",
+        "vermillion/pando-plains",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-a-wisp-comes-to-dinner-as-the-compaction-monster",
+      "parent": "wright/starforge-spire-grounds",
+      "chain": [
+        "wright/starforge-spire-grounds",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-all-right-as-i-am",
+      "parent": "vermillion/pando-plains",
+      "chain": [
+        "vermillion/pando-plains",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-all-thirty-two-keys-are-found",
+      "parent": "vermillion/the-pando-peak",
+      "chain": [
+        "vermillion/the-pando-peak",
+        "the-town/pando-peak",
+        "vermillion/pando-plains",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-beep-boop-till-the-lantern",
+      "parent": "vermillion/pando-plains",
+      "chain": [
+        "vermillion/pando-plains",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-best-costume-of-the-week",
+      "parent": "the-town/the-town-centre",
+      "chain": [
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-gist-gives-the-first-sweet-back",
+      "parent": "vermillion/the-haunted-caves",
+      "chain": [
+        "vermillion/the-haunted-caves",
+        "vermillion/pando-plains",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-gist-shows-a-face",
+      "parent": "vermillion/pando-plains",
+      "chain": [
+        "vermillion/pando-plains",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-gist-tapes-a-note-to-his-den-wall",
+      "parent": "vermillion/the-haunted-caves",
+      "chain": [
+        "vermillion/the-haunted-caves",
+        "vermillion/pando-plains",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-julian-asks-kogane-to-be-the-third-house",
+      "parent": "the-town/let-there-be-light",
+      "chain": [
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-julian-walks-through-the-spires-wall",
+      "parent": "wright/the-starforge-spire",
+      "chain": [
+        "wright/the-starforge-spire",
+        "wright/starforge-spire-grounds",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-kogane-comes-as-wall-e",
+      "parent": "vermillion/the-pando-peak",
+      "chain": [
+        "vermillion/the-pando-peak",
+        "the-town/pando-peak",
+        "vermillion/pando-plains",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-the-bowls-are-full-but-sealed",
+      "parent": "vermillion/lake-caves",
+      "chain": [
+        "vermillion/lake-caves",
+        "vermillion/the-pando-peak",
+        "the-town/pando-peak",
+        "vermillion/pando-plains",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-the-closer-not-the-keeper",
+      "parent": "vermillion/lake-caves",
+      "chain": [
+        "vermillion/lake-caves",
+        "vermillion/the-pando-peak",
+        "the-town/pando-peak",
+        "vermillion/pando-plains",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-the-column-at-forty-paces",
+      "parent": "vermillion/pando-plains",
+      "chain": [
+        "vermillion/pando-plains",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-the-grey-bakers-theory",
+      "parent": "vermillion/porch-hill",
+      "chain": [
+        "vermillion/porch-hill",
+        "vermillion/the-pando-peak",
+        "the-town/pando-peak",
+        "vermillion/pando-plains",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-the-narrow-stair-refuses-julian",
+      "parent": "wright/starforge-spire-grounds",
+      "chain": [
+        "wright/starforge-spire-grounds",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-the-paper-boat",
+      "parent": "vermillion/pando-plains",
+      "chain": [
+        "vermillion/pando-plains",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-the-spooky-fried-chicken",
+      "parent": "vermillion/lake-caves",
+      "chain": [
+        "vermillion/lake-caves",
+        "vermillion/the-pando-peak",
+        "the-town/pando-peak",
+        "vermillion/pando-plains",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-the-wolf-hears-its-first-house",
+      "parent": "wright/the-starforge-spire",
+      "chain": [
+        "wright/the-starforge-spire",
+        "wright/starforge-spire-grounds",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-three-middles-at-the-empty-den",
+      "parent": "vermillion/the-haunted-caves",
+      "chain": [
+        "vermillion/the-haunted-caves",
+        "vermillion/pando-plains",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-twice-the-door-says-no",
+      "parent": "vermillion/pando-plains",
+      "chain": [
+        "vermillion/pando-plains",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-yew-brings-candys-missing-middle",
+      "parent": "vermillion/the-haunted-caves",
+      "chain": [
+        "vermillion/the-haunted-caves",
+        "vermillion/pando-plains",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "wright/halloween-you-can-walk-straight-into-the-hall",
+      "parent": "wright/the-starforge-spire",
+      "chain": [
+        "wright/the-starforge-spire",
+        "wright/starforge-spire-grounds",
         "the-town/let-there-be-light"
       ]
     },
