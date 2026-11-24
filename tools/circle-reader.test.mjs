@@ -1275,3 +1275,201 @@ test("WLD-215 · same-key fresh speech and late metadata: the speakers and the l
   col.open(view([{ handle: "rig-ash", name: "rig-ash" }, { handle: "rig-bo", name: "rig-bo" }], [line("rig-ash", "one"), line("rig-bo", "two")], "2 statements · 2 speakers"));
   assert.equal(find(host, (n) => n.className === "wv-homecol-speakers")[0].children[0], before, "an unchanged redraw touches nothing");
 });
+
+// ── WLD-248 · the optional host-owned WHOLE speaker identity ────────────────
+//
+// The host (the Site's one shared identity form, CORE-178) hands back ONE fresh node holding a speaker's face AND name; the reader and the column put it where
+// the face and the name went, once, and keep the time, the words, Reply, Open and the thread controls. The host owns how a human and a resident look; World
+// knows neither. FALSIFIER: a duplicated or lost name, a node moved off an earlier line, an accessible name made aria-hidden, a human drawn as a resident,
+// a bare / default / face-only host that changes, or a refusal (null, string, placed, reused, hidden, empty, throw) that is not exactly the old path.
+const HUMANS = new Set(["pica", "rig-bo"]);   // the HOST's knowledge, invented: who it draws as a human; the reader is never told
+const identityNode = (handle) => {
+  const kind = HUMANS.has(handle) ? "human" : "resident";
+  const n = element("span"); n.className = `rig-id rig-${kind}`; n.setAttribute("data-identity", handle); n.setAttribute("data-kind", kind);
+  const face = element("span"); face.className = "rig-id-face"; face.setAttribute("aria-hidden", "true"); n.appendChild(face);   // the host's own face, inside its own node
+  const name = element("span"); name.className = "rig-id-name"; name.textContent = handle; n.appendChild(name);
+  return n;
+};
+const identityHook = (calls = [], made = []) => (handle) => { calls.push(handle); const n = identityNode(handle); made.push({ node: n, shape: shapeOf(n) }); return n; };
+const idsOf248 = (root) => find(root, (n) => String(n.className).split(" ").includes("rig-id"));
+const whoOfReply = (li) => byAttr(li, "data-reply")[0]?.attrs["aria-label"].replace(/^Reply to /, "");
+
+test("WLD-248 · reader: a valid whole identity takes the place of face AND name on every line drawn (openers, full lines at every depth, context, old talk), once, with time, words and controls intact", async () => {
+  const idCalls = [], faceCalls = [];
+  const h = faceHost({ identityForSpeaker: identityHook(idCalls), faceForSpeaker: faceHook(faceCalls) });
+  await h.reader.showRoom();
+  const stubs = byAttr(h.root, "data-circle-stub");
+  assert.equal(stubs.length, 3);
+  for (const st of stubs) {
+    const head = headOf(st);
+    assert.deepEqual(head.children.map((c) => c.className.split(" ")[0]), ["rig-id", "cr-time"], "identity, then time: no face of the reader's, no name of its own");
+    const who = head.children[0].attrs["data-identity"];
+    assert.equal(text(head).split(who).length - 1, 1, "the name is said exactly once on the line's head");
+    assert.equal(head.children[0].attrs["aria-hidden"], undefined, "the whole identity is the accessible name: never aria-hidden");
+  }
+  const bare = faceHost({}); await bare.reader.showRoom();
+  for (const attrName of ["data-circle-open", "data-thread", "data-circle-stub"]) assert.equal(byAttr(h.root, attrName).length, byAttr(bare.root, attrName).length, `${attrName}: the controls are a bare host's`);
+  assert.equal(faceCalls.length, 0, "with a valid identity the face hook is not asked: no extra face");
+  assert.match(text(stubs[0]), /pica .*Welcome, everyone!/, "time and words follow the identity");
+
+  const c = faceHost({ identityForSpeaker: identityHook(), faceForSpeaker: faceHook(), canReply: true });
+  await c.reader.showCircle(50101); openAll(c.root);
+  const lines = byAttr(c.root, "data-say");
+  assert.equal(lines.length, 10);
+  const nodes = lines.map((li) => headOf(li).children[0]);
+  assert.ok(nodes.every((n) => n.className.startsWith("rig-id")), "every full line, at every depth");
+  assert.deepEqual(nodes.map((n) => n.attrs["data-identity"]), lines.map(whoOfReply), "each line's identity is its own speaker's");
+  assert.equal(new Set(nodes).size, nodes.length, "a repeated handle gets a node of its own");
+  assert.ok(new Set(nodes.map((n) => n.attrs["data-identity"])).size < nodes.length, "the fixture does repeat speakers");
+  assert.equal(find(c.root, (n) => n.className === "cr-who").length, 0, "no second name anywhere");
+  assert.equal(byAttr(c.root, "data-reply").length, 10, "Reply on every line");
+
+  const ctx = faceHost({ identityForSpeaker: identityHook() });
+  await ctx.reader.showCircle(50105);
+  const ctxLines = byAttr(byAttr(ctx.root, "data-context")[0], "data-context-say");
+  assert.ok(ctxLines.length >= 1 && ctxLines.every((li) => headOf(li).children[0].className.startsWith("rig-id")), "context lines");
+
+  const old = faceHost({ identityForSpeaker: identityHook() }, { room: legacyRoom });
+  await old.reader.showRoom();
+  const plain = byAttr(old.root, "data-say-plain");
+  assert.equal(plain.length, 2);
+  for (const li of plain) assert.deepEqual(headOf(li).children.map((x) => x.className.split(" ")[0]), ["rig-id", "cr-time"], "old talk too");
+  assert.match(text(old.root), /rei.*Claran, hello.*claran.*hi rei/, "the words are intact");
+});
+
+test("WLD-248 · reader: every refused result is exactly the old path, with a face host and with a bare one", async () => {
+  const placed = () => (h) => { const p = element("div"); const n = identityNode(h); p.appendChild(n); return n; };
+  const hidden = () => (h) => { const n = identityNode(h); n.setAttribute("aria-hidden", "true"); return n; };
+  const empty = () => () => element("span");
+  const variants = { null: () => () => null, undefined: () => () => undefined, "a string": () => () => "<b>pica</b>", "not a node": () => () => ({ nodeType: 3, textContent: "pica" }),
+    "a throw": () => () => { throw new Error("no identity"); }, "an already placed node": placed, "an aria-hidden node": hidden, "a node with no name": empty, "a non-function option": () => "pica" };
+  const draw = async (opts) => { const h = faceHost(opts); await h.reader.showCircle(50101); openAll(h.root); const r = faceHost(opts); await r.reader.showRoom(); return shapeOf(h.root) + shapeOf(r.root); };
+  const faceOnly = await draw({ faceForSpeaker: faceHook() });
+  const bare = await draw({});
+  for (const [name, make] of Object.entries(variants)) {
+    assert.equal(await draw({ faceForSpeaker: faceHook(), identityForSpeaker: make() }), faceOnly, `${name}: the face host's DOM, exactly`);
+    assert.equal(await draw({ identityForSpeaker: make() }), bare, `${name}: a bare host's DOM, exactly`);
+  }
+});
+
+test("WLD-248 · reader: a reused node is never moved — a caching host's repeat falls back to face + name, and a redraw never re-places an earlier node", async () => {
+  const cache = new Map(), first = new Map();
+  const caching = (h) => { if (!cache.has(h)) cache.set(h, identityNode(h)); return cache.get(h); };
+  const h = faceHost({ identityForSpeaker: caching, faceForSpeaker: faceHook(), canReply: true });
+  await h.reader.showCircle(50101);
+  for (const n of idsOf248(h.root)) first.set(n, n.parent);
+  assert.equal(first.size, 1, "folded: the opener took its node");
+  openAll(h.root);   // every press redraws: the cached nodes come back and must be refused
+  for (const [n, parent] of first) assert.equal(n.parent, parent, "the node stayed where it was first placed: never moved");
+  const lines = byAttr(h.root, "data-say");
+  for (const li of lines) {
+    const head = headOf(li);
+    const names = head.children.filter((x) => x.className === "cr-who" || x.className.startsWith("rig-id"));
+    assert.equal(names.length, 1, "one name on every line: none lost, none doubled");
+    if (names[0].className === "cr-who") assert.equal(head.children[0].className, "rig-face", "the fallback is the old face + name");
+  }
+  assert.equal(idsOf248(h.root).length, 0, "after the redraw no cached node is on screen");
+  // a host that takes its node back (detaches it) and hands it out again: unparented, but placed before, so it would be MOVED off the earlier line
+  const kept = new Map();
+  const takesBack = (hd) => { const n = kept.get(hd) ?? identityNode(hd); kept.set(hd, n); n.parent?.removeChild(n); return n; };
+  const t = faceHost({ identityForSpeaker: takesBack, faceForSpeaker: faceHook() });
+  await t.reader.showRoom();
+  const before = idsOf248(t.root);
+  assert.equal(before.length, 3, "three openers, three distinct speakers, three nodes");
+  const homes = before.map((n) => n.parent);
+  await t.reader.showRoom();
+  assert.equal(idsOf248(t.root).length, 0, "the second draw refuses every node it was handed before");
+  assert.equal(byAttr(t.root, "data-circle-stub").every((li) => headOf(li).children.some((x) => x.className === "cr-who")), true, "and names each opener the old way");
+  assert.deepEqual(before.map((n) => n.parent === null || homes.includes(n.parent)), before.map(() => true), "a node is only ever where it was first placed (or taken back by its host), never on a new line");
+});
+
+test("WLD-248 · human and resident: the host's own node is placed exactly as it was made — a human stays human, a resident stays a resident", async () => {
+  const made = [];
+  const h = faceHost({ identityForSpeaker: identityHook([], made) });
+  await h.reader.showCircle(50101); openAll(h.root);
+  const onScreen = idsOf248(h.root);
+  assert.ok(onScreen.some((n) => n.attrs["data-kind"] === "human") && onScreen.some((n) => n.attrs["data-kind"] === "resident"), "the fixture has both");
+  for (const n of onScreen) {
+    const m = made.find((x) => x.node === n);
+    assert.ok(m, "every identity on screen is one the host made");
+    assert.equal(shapeOf(n), m.shape, "unchanged by the reader: no class, attribute, aria-hidden or child added or taken");
+    assert.equal(n.attrs["data-kind"], HUMANS.has(n.attrs["data-identity"]) ? "human" : "resident");
+  }
+});
+
+test("WLD-248 · bare, default and face-only hosts are unchanged, and the hook reads nothing", async () => {
+  for (const base of [{}, { faceForSpeaker: faceHook() }]) {
+    const a = faceHost(base); await a.reader.showCircle(50101); openAll(a.root);
+    const b = faceHost({ ...base, identityForSpeaker: null }); await b.reader.showCircle(50101); openAll(b.root);
+    assert.equal(shapeOf(b.root), shapeOf(a.root), "identityForSpeaker: null is no option");
+  }
+  const bare = faceHost({}); await bare.reader.showRoom(); byAttr(bare.root, "data-circle-open", 50101)[0].click(); await tick(); openAll(bare.root);
+  const withId = faceHost({ identityForSpeaker: identityHook() }); await withId.reader.showRoom(); byAttr(withId.root, "data-circle-open", 50101)[0].click(); await tick(); openAll(withId.root);
+  assert.deepEqual(withId.calls, bare.calls, "the same office reads, in the same order: no identity or profile read of the reader's own");
+});
+
+// the column: its header's speakers, its plain transcript (the page's own shape: the name in a leading strong span), and the reader it hosts
+const COLUMN_BLOCKS = () => [
+  ...["rig-ash", "rig-ash", "rig-bo"].map((h, i) => ({ type: "paragraph", speaker: h, spans: [{ type: "strong", spans: [{ type: "text", text: h }] }, { type: "text", text: ` (2026-11-14 20:0${i}Z): line ${i}` }] })),
+  { type: "paragraph", speaker: "rig-bo", spans: [{ type: "text", text: "rig-bo: a line shaped otherwise" }] },
+];
+const columnModel = async (reader, blocks = COLUMN_BLOCKS()) => {
+  const { homeColumnModel } = await import("../spectator/home-column.mjs");
+  return homeColumnModel({ handle: "the-town", byline: false, kicker: "a conversation", title: "Cave Interior", speakers: [{ handle: "rig-ash", name: "rig-ash" }, { handle: "rig-bo", name: "rig-bo" }],
+    door: { blocks }, reader: { roomId: "t1", hostOwnsHeader: true, source: { async room() { return { error: "down" }; }, async circle() { return { error: "down" }; } }, ...reader } });
+};
+
+test("WLD-248 · column: the speakers row and the plain transcript take the identity once, a line shaped otherwise keeps the old path, and the column's reader gets it too", async () => {
+  const { renderHomeColumn, homeColumnModel } = await import("../spectator/home-column.mjs");
+  const faceCalls = [];
+  const host = element("div"); renderHomeColumn(doc, host, await columnModel({ identityForSpeaker: identityHook(), faceForSpeaker: faceHook(faceCalls) })); await tick(); await tick();
+  const row = find(host, (n) => n.className === "wv-homecol-speakers")[0];
+  assert.deepEqual(row.children.map((s) => [s.attrs["data-speaker"], s.children.length, s.children[0].className, text(s)]),
+    [["rig-ash", 1, "rig-id rig-resident", "rig-ash"], ["rig-bo", 1, "rig-id rig-human", "rig-bo"]], "one node per speaker, holding face and name: no extra face, no second name");
+  const ps = find(host, (n) => n.tagName === "P" && String(n.children[0]?.className ?? "").startsWith("rig-id"));
+  assert.equal(ps.length, 3, "the three page-shaped lines wear the identity");
+  assert.deepEqual(ps.map(text), ["rig-ash (2026-11-14 20:00Z): line 0", "rig-ash (2026-11-14 20:01Z): line 1", "rig-bo (2026-11-14 20:02Z): line 2"], "the name once, then time and words");
+  assert.ok(ps.every((p) => !find(p, (n) => n.tagName === "STRONG").length && !byAttr(p, "data-face").length), "the leading name and the face are not drawn as well");
+  assert.notEqual(ps[0].children[0], ps[1].children[0], "a repeated speaker gets its own node");
+  const other = find(host, (n) => n.tagName === "P" && /shaped otherwise/.test(text(n)))[0];
+  assert.equal(other.children[0].attrs["data-face"], "rig-bo", "a line not in the page's shape keeps the old face + name path");
+  assert.equal(text(other), "rig-bo: a line shaped otherwise");
+  assert.deepEqual(faceCalls, ["rig-bo"], "the face hook was asked only for that line");
+  // the reader the column hosts takes the identity on its own lines
+  const working = homeColumnModel({ handle: "the-town", kicker: "k", title: "T", door: { blocks: [] }, reader: { roomId: "t1", identityForSpeaker: identityHook(), source: { async room() { return roomFind(); }, async circle() { return circle50101(); } } } });
+  const h2 = element("div"); renderHomeColumn(doc, h2, working); await tick(); await tick();
+  assert.equal(idsOf248(h2).length, 3, "the column's reader placed an identity on each opener");
+  assert.equal(find(h2, (n) => n.className === "cr-who").length, 0);
+});
+
+test("WLD-248 · column: each refused result is exactly the face host's column, and a host with neither hook is today's", async () => {
+  const { renderHomeColumn } = await import("../spectator/home-column.mjs");
+  const draw = async (reader) => { const host = element("div"); renderHomeColumn(doc, host, await columnModel(reader)); await tick(); await tick(); return shapeOf(host); };
+  const faceOnly = await draw({ faceForSpeaker: faceHook() });
+  const bare = await draw({});
+  for (const bad of [() => null, () => "<b>x</b>", () => { throw new Error("x"); }, (h) => { const n = identityNode(h); n.setAttribute("aria-hidden", "true"); return n; }, () => element("span"),
+    (h) => { const p = element("div"); const n = identityNode(h); p.appendChild(n); return n; }]) {
+    assert.equal(await draw({ faceForSpeaker: faceHook(), identityForSpeaker: bad }), faceOnly, "a refused identity is the face host's column");
+    assert.equal(await draw({ identityForSpeaker: bad }), bare, "and with no face hook, the bare column");
+  }
+  assert.equal(await draw({ identityForSpeaker: null }), bare, "an explicit null is no option");
+});
+
+test("WLD-248 · column live update: same-key fresh speech redraws the speakers and the plain lines with fresh identities, without rebuilding the reader", async () => {
+  const { createHomeColumn } = await import("../spectator/home-column.mjs");
+  const host = element("div"); const col = createHomeColumn({ doc, host });
+  const source = { async room() { return { error: "down" }; }, async circle() { return { error: "down" }; } };
+  const line = (h, t) => ({ type: "paragraph", speaker: h, spans: [{ type: "strong", spans: [{ type: "text", text: h }] }, { type: "text", text: `: ${t}` }] });
+  const view = (speakers, blocks) => ({ handle: "the-town", key: "convo:t1|circles", kicker: "k", title: "T", region: "r", speakers, door: { blocks }, reader: { roomId: "t1", source, identityForSpeaker: identityHook(), faceForSpeaker: faceHook(), hostOwnsHeader: true } });
+  col.open(view([{ handle: "rig-ash", name: "rig-ash" }], [line("rig-ash", "one")])); await tick(); await tick();
+  const reader = host.__circleReader;
+  const firstIds = idsOf248(host);
+  assert.equal(firstIds.length, 2, "one in the row, one on the line");
+  col.open(view([{ handle: "rig-ash", name: "rig-ash" }, { handle: "rig-bo", name: "rig-bo" }], [line("rig-ash", "one"), line("rig-bo", "two")]));
+  assert.equal(host.__circleReader, reader, "same reader");
+  const ids = idsOf248(host);
+  assert.equal(ids.length, 4, "two in the row, two on the lines");
+  assert.equal(facesOf(host).length, 0, "no extra face");
+  assert.ok(ids.every((n) => !firstIds.includes(n)), "fresh nodes: nothing carried over from the earlier draw");
+  assert.match(text(host), /rig-ash: one.*rig-bo: two/);
+});

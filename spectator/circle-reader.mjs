@@ -375,6 +375,24 @@ function metaLine(parts) { return parts.filter(Boolean).join(" · "); }
 
 let READER_UID = 0;
 
+// every node a host's identityForSpeaker has had placed, by any reader or column of this module: a node handed back again is refused, never moved
+const IDENTITY_PLACED = new WeakSet();
+/**
+ * WLD-248: a host's `identityForSpeaker(handle)` result, made safe, or null for the old face + name path. Only a fresh, unplaced, never-before-placed Element
+ * that carries a name (text or `aria-label`) and is not hidden from assistive tech counts; a string, a parented or reused node, an empty or hidden one, or a
+ * throw is null. The node is returned as the host made it (it is the accessible name, so it is never made `aria-hidden`). Shared with home-column.mjs.
+ */
+export function speakerIdentity(identityForSpeaker, handle) {
+  if (typeof identityForSpeaker !== "function" || typeof handle !== "string" || handle === "") return null;
+  let node = null;
+  try { node = identityForSpeaker(handle); } catch { return null; }
+  if (!node || typeof node !== "object" || node.nodeType !== 1 || node.parentNode || IDENTITY_PLACED.has(node)) return null;
+  if (String(node.getAttribute?.("aria-hidden") ?? "").trim().toLowerCase() === "true") return null;
+  if (!String(node.getAttribute?.("aria-label") ?? "").trim() && !String(node.textContent ?? "").trim()) return null;
+  IDENTITY_PLACED.add(node);
+  return node;
+}
+
 /**
  * Mount the reader on `host`.
  *
@@ -401,8 +419,15 @@ let READER_UID = 0;
  *   nothing) places nothing. The host owns what a face is (a picture, a monogram…) and how it is made safely: the reader knows no avatar source, household, photo,
  *   URL or office field, fetches nothing and looks nothing up. A string, a node that already has a parent (a reused one would be MOVED off an earlier line) or a
  *   throw is treated as null. Absent, the DOM and layout are exactly what they were. Further options may be added beside it; none is resolved here.
+ * @param {(handle: string) => (Element|null)} [o.identityForSpeaker]   WLD-248: an OPTIONAL host hook for the speaker's WHOLE identity (face AND name, as the
+ *   host renders a resident or a human). Called with the speaker's handle each time a line is drawn (the same lines as `faceForSpeaker`); a valid node takes the
+ *   place of the face and the name, once, and the line's time, words, Reply, Open and thread controls stay the reader's. Valid means a FRESH Element: not a
+ *   string, not already placed, never one this module was handed before (a reused node would be moved off an earlier line), not `aria-hidden="true"`, and
+ *   carrying its name (non-empty text or `aria-label`). It is placed as the host made it: the reader never marks it decorative, because it IS the line's
+ *   accessible name. Absent, null, invalid or a throw: exactly the old path (`faceForSpeaker`'s face, if any, then the reader's own name). The host owns how a
+ *   human and a resident look; the reader knows neither, fetches nothing and looks nothing up.
  */
-export function createCircleReader({ doc, host, source, roomId = null, canReply = false, onReply = null, onState = null, onNavigate = null, hrefForCircle = null, labels = null, scroller = null, faceForSpeaker = null, hostHoldsPlain = false, hostOwnsHeader = false } = {}) {
+export function createCircleReader({ doc, host, source, roomId = null, canReply = false, onReply = null, onState = null, onNavigate = null, hrefForCircle = null, labels = null, scroller = null, faceForSpeaker = null, identityForSpeaker = null, hostHoldsPlain = false, hostOwnsHeader = false } = {}) {
   if (!doc || !host || !source) throw new Error("createCircleReader needs a document, a host and a source");
   const W = { ...READER_WORDS, ...(labels ?? {}) };
   const uid = ++READER_UID;
@@ -496,6 +521,15 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     if (node.getAttribute?.("aria-hidden") === null || node.getAttribute?.("aria-hidden") === undefined) attr(node, "aria-hidden", "true");   // decorative: the name beside it is the label
     return node;
   };
+  /** who said a line, into its head: the host's whole identity (WLD-248), else the face (if any) and the reader's own name, exactly as before */
+  const speakerOf = (head, handle) => {
+    const identity = speakerIdentity(identityForSpeaker, handle);
+    if (identity) { head.appendChild(identity); return; }
+    const who = build(doc, "span", "cr-who", handle);
+    const face = faceOf(handle);
+    if (face) head.appendChild(face);
+    head.appendChild(who);
+  };
 
   /** one statement: who, when, what, a Reply; its replies (the `thread` element) are appended by the caller */
   const sayLine = (l, { context = false } = {}) => {
@@ -505,11 +539,8 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     else if (isId(l.id)) attr(li, "data-say", l.id);
     else attr(li, "data-say-plain", "");
     const head = build(doc, "span", "cr-head-line");
-    const who = build(doc, "span", "cr-who", l.handle);
-    const when = build(doc, "span", "cr-time", ` ${dateTimeOf(l.at) || whenOf(l.at) || s(l.ago)}`);
-    const face = faceOf(l.handle);
-    if (face) head.appendChild(face);
-    head.appendChild(who); head.appendChild(when);
+    speakerOf(head, l.handle);
+    head.appendChild(build(doc, "span", "cr-time", ` ${dateTimeOf(l.at) || whenOf(l.at) || s(l.ago)}`));
     li.appendChild(head);
     li.appendChild(build(doc, "span", "cr-said", l.said));       // content: textContent, never markup
     if (replyOn && isId(l.id) && !context) li.appendChild(replyButton({ id: l.id, handle: s(l.handle), said: s(l.said), at_ms: l.at_ms ?? null, circle: l.circle ?? null }));
@@ -610,9 +641,7 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     attr(li, "data-circle-stub", "");
     attr(li, "data-circle", st.circle);
     const head = build(doc, "span", "cr-head-line");
-    const face = faceOf(st.handle);
-    if (face) head.appendChild(face);
-    head.appendChild(build(doc, "span", "cr-who", st.handle));
+    speakerOf(head, st.handle);
     head.appendChild(build(doc, "span", "cr-time", ` ${dateTimeOf(st.started) || whenOf(st.started)}`));
     li.appendChild(head);
     li.appendChild(build(doc, "span", "cr-said", st.opener));

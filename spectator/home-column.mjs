@@ -62,7 +62,11 @@
 // THE CIRCLE READER (CORE-82). A conversation's column hosts the one shared reader (spectator/circle-reader.mjs), which draws a room's top
 // circles and lets a visitor open one; the column keeps its host, its badge's link and its scroll. The reader is I/O-injected like this
 // module: the view hands in `reader: { roomId, source }`, and nothing here fetches.
-import { createCircleReader, READER_CSS, SAY_REPLY_CSS } from "./circle-reader.mjs";
+// WLD-248: `reader.identityForSpeaker(handle) → fresh Element|null` is the host's OPTIONAL whole speaker identity (face and name as one node; the contract is
+// circle-reader.mjs's `identityForSpeaker`). The column hands it to its reader and uses it for its own two speaker names: the header's speakers row, and a
+// plain statement whose FIRST span is its name as the page writes it (`{ type: "strong", spans: [{ type: "text", text: <speaker> }] }`), which the identity
+// replaces, face included; the time and words after it stay. A plain statement shaped any other way, or no valid node, keeps the old face + name path exactly.
+import { createCircleReader, speakerIdentity, READER_CSS, SAY_REPLY_CSS } from "./circle-reader.mjs";
 
 // ── the safe seams ──────────────────────────────────────────────────────────
 
@@ -484,11 +488,14 @@ function hostFace(faceFor, handle) {
 }
 
 // WHO SPOKE, as face + name, one per speaker: the conversation header's list (a fresh face per entry, so a repeated handle never steals a node)
-function fillSpeakers(doc, row, speakers, faceFor) {
+// (WLD-248: or the host's whole identity for that speaker, in place of both)
+function fillSpeakers(doc, row, speakers, faceFor, identityFor = null) {
   while (row.firstChild) row.removeChild(row.firstChild);
   for (const sp of speakers) {
     const item = el(doc, "span", "wv-homecol-speaker");
     item.setAttribute("data-speaker", sp.handle);
+    const identity = speakerIdentity(identityFor, sp.handle);
+    if (identity) { item.appendChild(identity); row.appendChild(item); continue; }
     const face = hostFace(faceFor, sp.handle);
     if (face) item.appendChild(face);
     const name = el(doc, "span", "wv-homecol-speaker-name");
@@ -498,7 +505,13 @@ function fillSpeakers(doc, row, speakers, faceFor) {
   }
 }
 
-function appendBlocks(doc, parent, blocks, imagePath, faceFor = null) {
+// a plain statement's leading name, as the page writes it: the first span, strong, holding exactly the speaker's handle (WLD-248 replaces it with the identity)
+const leadsWithName = (block) => {
+  const first = block.spans?.[0];
+  return first?.type === "strong" && first.spans?.length === 1 && first.spans[0]?.type === "text" && first.spans[0].text === block.speaker;
+};
+
+function appendBlocks(doc, parent, blocks, imagePath, faceFor = null, identityFor = null) {
   for (const block of blocks ?? []) {
     if (block.type === "heading") {
       const node = el(doc, `h${Math.min(6, Math.max(1, block.level))}`);
@@ -549,6 +562,14 @@ function appendBlocks(doc, parent, blocks, imagePath, faceFor = null) {
       continue;
     }
     const p = el(doc, "p");
+    // WLD-248: the host's whole identity takes the place of the face and the leading name, once; the rest of the spans (time, words) are drawn as ever
+    const identity = typeof block.speaker === "string" && leadsWithName(block) ? speakerIdentity(identityFor, block.speaker) : null;
+    if (identity) {
+      p.appendChild(identity);
+      appendSpans(doc, p, block.spans.slice(1), imagePath);
+      parent.appendChild(p);
+      continue;
+    }
     // WLD-215: a plain statement names its speaker, and wears that speaker's face before the words (the old office's transcript, which prod still shows)
     const face = typeof block.speaker === "string" ? hostFace(faceFor, block.speaker) : null;
     if (face) p.appendChild(face);
@@ -631,7 +652,7 @@ export function renderHomeColumn(doc, host, model, { imagePath = null } = {}) {
 
   if (model.speakers.length || model.reader) {   // a reader's column always holds the row (empty hides itself), so late speakers have a place
     const row = el(doc, "div", "wv-homecol-speakers");
-    fillSpeakers(doc, row, model.speakers, model.reader?.faceForSpeaker ?? null);
+    fillSpeakers(doc, row, model.speakers, model.reader?.faceForSpeaker ?? null, model.reader?.identityForSpeaker ?? null);
     row.__sig = JSON.stringify(model.speakers);
     scroll.appendChild(row);
   }
@@ -721,6 +742,7 @@ export function renderHomeColumn(doc, host, model, { imagePath = null } = {}) {
       doc, host: mount, source: model.reader.source, roomId: model.reader.roomId,
       canReply: !!model.reader.canReply, onReply: model.reader.onReply ?? null, hrefForCircle: model.reader.hrefForCircle ?? null,
       faceForSpeaker: model.reader.faceForSpeaker ?? null,    // WLD-213: only a host that hands one in; the World page's conversation view hands the page's own face source (WLD-215)
+      identityForSpeaker: model.reader.identityForSpeaker ?? null,   // WLD-248: only a host that hands one in (the Site's shared identity form)
       hostOwnsHeader: model.reader.hostOwnsHeader === true,   // WLD-215: only a view that draws the room's header itself (the conversation column) says so
       hostHoldsPlain: model.blocks.length > 0,                // WLD-216: this column holds the selected conversation's plain transcript, so an old office's plain list stands down to it
       // WLD-216: an office from before POS-1035 answers the room read with its plain list (`reason: "plain"`): that is no failure, so the plain transcript the
@@ -728,7 +750,7 @@ export function renderHomeColumn(doc, host, model, { imagePath = null } = {}) {
       onState: (st, detail) => { const flat = st === "unavailable" && model.blocks.length > 0; body.hidden = !flat; note.hidden = !flat || detail?.reason === "plain"; },
     });
     host.__circleReader = reader;
-    appendBlocks(doc, body, model.blocks, imagePath, model.reader.faceForSpeaker ?? null);
+    appendBlocks(doc, body, model.blocks, imagePath, model.reader.faceForSpeaker ?? null, model.reader.identityForSpeaker ?? null);
     scroll.appendChild(note);
     scroll.appendChild(body);
     reader.showRoom();
@@ -1028,7 +1050,7 @@ export function createHomeColumn({ doc, host, readHome, imagePath = null, reside
       const sig = JSON.stringify(blocks);
       if (body.__plainSig !== sig) {
         while (body.firstChild) body.removeChild(body.firstChild);
-        appendBlocks(doc, body, blocks, imagePath, view.reader.faceForSpeaker ?? null);
+        appendBlocks(doc, body, blocks, imagePath, view.reader.faceForSpeaker ?? null, view.reader.identityForSpeaker ?? null);
         body.__plainSig = sig;
       }
     }
@@ -1038,7 +1060,7 @@ export function createHomeColumn({ doc, host, readHome, imagePath = null, reside
       const speakers = view.speakers.filter((s) => s && String(s.handle ?? "").trim())
         .map((s) => ({ handle: String(s.handle).trim(), name: String(s.name ?? s.handle).trim(), look: String(s.look ?? "") }));   // `look` = what the face is made from (so a picture arriving late redraws it)
       const sig = JSON.stringify(speakers);
-      if (row.__sig !== sig) { fillSpeakers(doc, row, speakers, view.reader.faceForSpeaker ?? null); row.__sig = sig; }
+      if (row.__sig !== sig) { fillSpeakers(doc, row, speakers, view.reader.faceForSpeaker ?? null, view.reader.identityForSpeaker ?? null); row.__sig = sig; }
     }
     const kick = one(".wv-homecol-kicker");
     if (kick && view.kickerTitle) kick.setAttribute("title", String(view.kickerTitle));
