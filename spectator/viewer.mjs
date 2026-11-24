@@ -5379,8 +5379,59 @@ export function smallestContainingMark(point, marks = [], { insideRoomId = null,
   // in (area, id) order is the one the sort put first. A caller with no index
   // in hand builds one here and pays what it paid before, no more.
   const own = index?.insideRoomId === (insideRoomId ?? null) ? index : containmentIndex(marks, { insideRoomId, thingClasses });
-  for (const g of own.ground) if (pointInsideMark({ x, y }, g.mark)) return g.mark.id;
-  return null;
+  // WLD-243: the walker pass hands its index a GROUND MEMO (groundMemoFor), the answers already given for these exact grounds in this room. Only the
+  // ground scan is remembered; the caller's occupancy, target and names are asked fresh every time.
+  const answers = own.groundMemo?.room === own.insideRoomId ? own.groundMemo.answers : null;
+  const key = answers ? `${x},${y}` : null;
+  if (answers?.has(key)) { own.groundMemo.hits += 1; return answers.get(key); }
+  let found = null;
+  for (const g of own.ground) if (pointInsideMark({ x, y }, g.mark)) { found = g.mark.id; break; }
+  if (answers) {
+    if (answers.size >= GROUND_MEMO_CAP) answers.clear();   // bounded: a full memo starts over, it is never evicted by age
+    answers.set(key, found);
+    own.groundMemo.misses += 1;
+  }
+  return found;
+}
+
+// ── THE GROUND MEMO (WLD-243, Wright 2026-11-24 03:50Z) ─────────────────────────────────────────────────────────────────────────────────────
+// The walker pass places every STANDING drawn body on every frame a walker moves, and the placement's cost was `smallestContainingMark`'s scan of the
+// whole ground (37 % of a Town Centre pan at 4x CPU, measured in WLD-243's trace). The answer is a function of the point and of the ground alone: the
+// first ground mark, in (area, id) order, whose shape holds the point. So the answers are remembered for one version of the ground and thrown away when
+// the ground changes.
+//
+// THE VERSION IS THE GROUND, NOT A WRAPPER. Each draw builds a fresh `containmentIndex` (fresh arrays, a fresh Map), and the resident path rebuilds `byId`
+// from a read or the fold whenever it likes, so an index, an array or an epoch is not a version: keyed on those, the memo would miss every fresh draw, or
+// go stale on an in-place edit. The ground of a draw is its list of (id, at, extent, ring) in (area, id) order, plus the room the index stands aside
+// for; that is everything `pointInsideMark` reads and everything that decides who is in the list, so two draws with the same list answer every point
+// the same and a draw whose list differs (world load or reload, a resident read, a mark added, moved, resized or re-shaped) starts a new memo. Checked
+// once per draw, against numbers kept from the last: no strings, no per-body work.
+export const GROUND_MEMO_CAP = 4096;
+const ringNumbers = (mark) => {
+  const pts = mark?.points;
+  if (!Array.isArray(pts) || pts.length < 3) return null;
+  return pts.flatMap((p) => (Array.isArray(p) ? [Number(p[0]), Number(p[1])] : [Number(p?.x), Number(p?.y)]));
+};
+const sameNumbers = (a, b) => { if (a.length !== b.length) return false; for (let i = 0; i < a.length; i++) if (!Object.is(a[i], b[i])) return false; return true; };
+function groundMatches(memo, ground) {
+  if (memo.ids.length !== ground.length) return false;
+  const geo = memo.geo;
+  for (let i = 0; i < ground.length; i++) {
+    const m = ground[i].mark, j = i * 4;
+    if (m.id !== memo.ids[i]) return false;
+    if (!Object.is(Number(m.at?.x), geo[j]) || !Object.is(Number(m.at?.y), geo[j + 1]) || !Object.is(Number(m.extent?.w), geo[j + 2]) || !Object.is(Number(m.extent?.h), geo[j + 3])) return false;
+    const ring = ringNumbers(m), kept = memo.rings[i];
+    if ((ring === null) !== (kept === null) || (ring !== null && !sameNumbers(ring, kept))) return false;
+  }
+  return true;
+}
+/** The ground memo for this draw's index: the previous one when the ground and the room are the same, else a new one (`version` + 1). Pure but for `prev`'s counters. */
+export function groundMemoFor(prev, index) {
+  const ground = index?.ground ?? [], room = index?.insideRoomId ?? null;
+  if (prev && prev.room === room && groundMatches(prev, ground)) return prev;
+  const geo = new Float64Array(ground.length * 4);
+  ground.forEach((g, i) => { geo[i * 4] = Number(g.mark.at?.x); geo[i * 4 + 1] = Number(g.mark.at?.y); geo[i * 4 + 2] = Number(g.mark.extent?.w); geo[i * 4 + 3] = Number(g.mark.extent?.h); });
+  return { version: (prev?.version ?? 0) + 1, room, ids: ground.map((g) => g.mark.id), geo, rings: ground.map((g) => ringNumbers(g.mark)), answers: new Map(), hits: 0, misses: 0 };
 }
 
 /** The point-independent half of `smallestContainingMark`, computed once per
@@ -9136,6 +9187,7 @@ export function mountViewer(appEl) {
   let minimapLoading = false;
   let lastRadial = null;
   let worldEpoch = 0;       // bumped by applyWorldLayer; every prebuilt view is stale after
+  let walkGroundMemo = null; // WLD-243: the walker pass's point-in-ground answers for the last ground it drew (groundMemoFor)
   // LOGOS v2 part 2 (POS-678): the close looks, your hands and who carries what — § WHAT A HOLDER HOLDS
   const CLOSE_LOOK_MS = 30000, HANDS_MS = 30000;
   const closeLooks = new Map();      // `${who}|${param}|${id}` -> { at, read, pending? }
@@ -13453,7 +13505,7 @@ export function mountViewer(appEl) {
     const marks = draw?.marks ?? allMarks();
     const index = draw?.index ?? containmentIndex(marks, { thingClasses: learnedThingClasses(marks) });
     return placeLabel(
-      bodyPlace(w, { marks, acts: enterExitLedger.acts, at: occupancyClock(), index }),
+      bodyPlace(w, { marks, acts: enterExitLedger.acts, at: draw?.at ?? occupancyClock(), index }),
       marks, data?.worldState?.determined ?? {}, { index });
   };
   function originFor(handle) {
@@ -14091,7 +14143,12 @@ export function mountViewer(appEl) {
     // to every body's placement — the #2910 hoist made it once per CALL, which
     // at 72 drawn bodies was still 72 indexes a draw, 351 ms of a 6× crossing.
     const marks = allMarks();
-    const draw = { marks, index: containmentIndex(marks, { thingClasses: learnedThingClasses(marks) }) };
+    // THE CLOCK, READ ONCE PER DRAW, and the ground's answers kept across draws of the same ground (WLD-243): walkerPlace used to evaluate
+    // occupancyClock (a scan of the whole ledger) for every standing body, and to scan the whole ground for every one of them every frame.
+    // Occupancy, targets and names are still asked live of each body; only the point-in-ground answer is remembered (see groundMemoFor).
+    const draw = { marks, index: containmentIndex(marks, { thingClasses: learnedThingClasses(marks) }), at: occupancyClock() };
+    walkGroundMemo = groundMemoFor(walkGroundMemo, draw.index);
+    draw.index.groundMemo = walkGroundMemo;
     const vessels = vesselHandles(marks);
     const px = (m) => ({ x: mapCtx.originPx.x + m.x / mapCtx.mPerPx, y: mapCtx.originPx.y + m.y / mapCtx.mPerPx });
     // TWO PASSES, ONE LAYER. Hulls are collected separately and emitted first so
@@ -14106,7 +14163,7 @@ export function mountViewer(appEl) {
     // function of the acts and the clock, the ledger is a couple of hundred
     // lines, and a cached roof is a roof that goes stale the moment someone
     // crosses a threshold — which is exactly when a reader is looking.
-    const { manifest } = standpointOccupancy({ acts: enterExitLedger.acts, at: occupancyClock() });
+    const { manifest } = standpointOccupancy({ acts: enterExitLedger.acts, at: draw.at });
     // THE TWO CUTS (2026-09-11), on every path: since POS-373 the resident's
     // walkers are the town's too, so the cull matters to them as much.
     //
