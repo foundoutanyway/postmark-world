@@ -19791,7 +19791,8 @@ export function mountViewer(appEl) {
       window.removeEventListener("resize", onViewerResize);
       window.removeEventListener("pm:stood-out", onStoodOut);
       bubbleResize?.disconnect();
-      offViewerIdentity();               // WLD-249: a stopped viewer is told nothing more (the host's provider stays set on the element)
+      // WLD-249: a stopped viewer is told nothing more (the host's provider stays set on the element)
+      offViewerIdentity();
     },
   };
   try { window.__pmViewer = handle; } catch { /* no window: the tests import this file */ }
