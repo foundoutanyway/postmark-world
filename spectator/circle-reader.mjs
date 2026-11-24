@@ -375,6 +375,53 @@ function metaLine(parts) { return parts.filter(Boolean).join(" · "); }
 
 let READER_UID = 0;
 
+// every node a host's identityForSpeaker has had placed, by any reader or column of this module: a node handed back again is refused, never moved
+const IDENTITY_PLACED = new WeakSet();
+/**
+ * WLD-248: a host's `identityForSpeaker(handle)` result, made safe, or null for the old face + name path. Only a fresh, unplaced, never-before-placed Element
+ * that carries a name (text or `aria-label`) and is not hidden from assistive tech counts; a string, a parented or reused node, an empty or hidden one, or a
+ * throw is null. The node is returned as the host made it (it is the accessible name, so it is never made `aria-hidden`). Shared with home-column.mjs.
+ */
+export function speakerIdentity(identityForSpeaker, handle) {
+  if (typeof identityForSpeaker !== "function" || typeof handle !== "string" || handle === "") return null;
+  let node = null;
+  try { node = identityForSpeaker(handle); } catch { return null; }
+  if (!node || typeof node !== "object" || node.nodeType !== 1 || node.parentNode || IDENTITY_PLACED.has(node)) return null;
+  if (String(node.getAttribute?.("aria-hidden") ?? "").trim().toLowerCase() === "true") return null;
+  if (!String(node.getAttribute?.("aria-label") ?? "").trim() && !String(node.textContent ?? "").trim()) return null;
+  IDENTITY_PLACED.add(node);
+  return node;
+}
+
+// WLD-248: FOCUS IN A HOST'S IDENTITY SURVIVES A REDRAW. The host's node carries no key of World's (it is placed as made), so World remembers the SLOT it
+// put the node in (its own line, opener or row) and the focused element's place inside that node, then focuses the same place in the slot's fresh node.
+// Shared with home-column.mjs; a host never needs either.
+const FOCUSABLE = (n) => n?.nodeType === 1 && typeof n.focus === "function" && (
+  (n.tagName === "A" && n.getAttribute?.("href") != null) || ["BUTTON", "INPUT", "SELECT", "TEXTAREA", "SUMMARY"].includes(n.tagName)
+  || (n.getAttribute?.("tabindex") != null && String(n.getAttribute("tabindex")).trim() !== "-1"));
+/** the child-index path from `top` down to `el` (inside it), or null */
+export function identityFocusPath(top, el) {
+  const path = [];
+  for (let n = el; n && n !== top; n = n.parentNode) {
+    const p = n.parentNode;
+    if (!p) return null;
+    path.unshift(Array.prototype.indexOf.call(p.children ?? [], n));
+  }
+  return path;
+}
+/** focus the element at `path` inside `top` (a fresh identity in the same slot), else its first focusable element, else nothing. Without scrolling: the reader
+ *  has already put its scroll back, and the column keeps its own, so the browser's focus must not move either (`preventScroll`). */
+export function refocusIdentity(top, path) {
+  if (!top) return false;
+  let n = top;
+  for (const i of path ?? []) { n = n?.children?.[i] ?? null; if (!n) break; }
+  if (FOCUSABLE(n)) { n.focus({ preventScroll: true }); return true; }
+  const first = (x) => { if (FOCUSABLE(x)) return x; for (const c of x?.children ?? []) { const hit = c?.nodeType === 1 ? first(c) : null; if (hit) return hit; } return null; };
+  const any = first(top);
+  if (any) { any.focus({ preventScroll: true }); return true; }
+  return false;
+}
+
 /**
  * Mount the reader on `host`.
  *
@@ -401,8 +448,20 @@ let READER_UID = 0;
  *   nothing) places nothing. The host owns what a face is (a picture, a monogram…) and how it is made safely: the reader knows no avatar source, household, photo,
  *   URL or office field, fetches nothing and looks nothing up. A string, a node that already has a parent (a reused one would be MOVED off an earlier line) or a
  *   throw is treated as null. Absent, the DOM and layout are exactly what they were. Further options may be added beside it; none is resolved here.
+ * @param {(handle: string) => (Element|null)} [o.identityForSpeaker]   WLD-248: an OPTIONAL host hook for the speaker's WHOLE identity (face AND name, as the
+ *   host renders a resident or a human). Called with the speaker's handle each time a line is drawn (the same lines as `faceForSpeaker`); a valid node takes the
+ *   place of the face and the name, once, and the line's time, words, Reply, Open and thread controls stay the reader's. Valid means a FRESH Element: not a
+ *   string, not already placed, never one this module was handed before (a reused node would be moved off an earlier line), not `aria-hidden="true"`, and
+ *   carrying its name (non-empty text or `aria-label`). It is placed as the host made it: the reader never marks it decorative, because it IS the line's
+ *   accessible name. Absent, null, invalid or a throw: exactly the old path (`faceForSpeaker`'s face, if any, then the reader's own name). The host owns how a
+ *   human and a resident look; the reader knows neither, fetches nothing and looks nothing up.
+ *   THE NAME IS THE HOST'S TO EXPOSE: the node must carry a VISIBLE name that assistive tech can read, because the reader's own name is dropped for it. The
+ *   checks above (the root's `aria-hidden`, some text or an `aria-label`) only refuse the plainest mistakes; they are not an accessibility audit, and a node
+ *   that hides its name another way (`hidden`, `role="presentation"`, the only text in an `aria-hidden` child) is the host's error to avoid.
+ *   FOCUS: a focusable element inside the node (a profile link) keeps focus through the reader's redraws (a refresh, a fold, setCanReply): the reader puts it
+ *   back on the same place in the FRESH node of the same line, never on another line's, and marks nothing on the host's node to do it.
  */
-export function createCircleReader({ doc, host, source, roomId = null, canReply = false, onReply = null, onState = null, onNavigate = null, hrefForCircle = null, labels = null, scroller = null, faceForSpeaker = null, hostHoldsPlain = false, hostOwnsHeader = false } = {}) {
+export function createCircleReader({ doc, host, source, roomId = null, canReply = false, onReply = null, onState = null, onNavigate = null, hrefForCircle = null, labels = null, scroller = null, faceForSpeaker = null, identityForSpeaker = null, hostHoldsPlain = false, hostOwnsHeader = false } = {}) {
   if (!doc || !host || !source) throw new Error("createCircleReader needs a document, a host and a source");
   const W = { ...READER_WORDS, ...(labels ?? {}) };
   const uid = ++READER_UID;
@@ -445,17 +504,25 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     }
     return doc.scrollingElement ?? root.parentElement ?? null;
   };
-  const keep = () => ({
-    scroller: scrollParent(),
-    top: scrollParent()?.scrollTop ?? 0,
-    focus: doc.activeElement && root.contains?.(doc.activeElement) ? doc.activeElement.getAttribute?.("data-key") ?? null : null,
-  });
+  // WLD-248: which host identity stands in which of the reader's own slots, in the draw on screen (every draw starts a new map); never a mark on the host's node
+  let identitySlots = new Map(), slotSeen = new Map();
+  const slotOfIdentity = new WeakMap();
+  const resetSlots = () => { identitySlots = new Map(); slotSeen = new Map(); };
+  const identityFocus = (active) => {
+    for (let n = active; n && n !== root; n = n.parentNode) if (slotOfIdentity.has(n)) return { slot: slotOfIdentity.get(n), path: identityFocusPath(n, active) };
+    return null;
+  };
+  const keep = () => {
+    const active = doc.activeElement && root.contains?.(doc.activeElement) ? doc.activeElement : null;
+    const focus = active?.getAttribute?.("data-key") ?? null;
+    return { scroller: scrollParent(), top: scrollParent()?.scrollTop ?? 0, focus, identity: active && !focus ? identityFocus(active) : null };
+  };
   const restore = (k) => {
     if (k.scroller && typeof k.scroller.scrollTop === "number") k.scroller.scrollTop = k.top;
     if (k.focus) {
       const target = findByKey(root, k.focus);
       if (target?.focus) target.focus();
-    }
+    } else if (k.identity) refocusIdentity(identitySlots.get(k.identity.slot), k.identity.path);   // the same line's FRESH identity, never an earlier occurrence's
   };
   function findByKey(node, key) {
     if (node.getAttribute?.("data-key") === key) return node;
@@ -496,6 +563,21 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     if (node.getAttribute?.("aria-hidden") === null || node.getAttribute?.("aria-hidden") === undefined) attr(node, "aria-hidden", "true");   // decorative: the name beside it is the label
     return node;
   };
+  /** who said a line, into its head: the host's whole identity (WLD-248), else the face (if any) and the reader's own name, exactly as before. `slot` names the
+   *  line (its say, opener or plain place); a repeat in one draw is told apart by its count, so focus returns to the same line, not the handle's first. */
+  const speakerOf = (head, handle, slot) => {
+    const identity = speakerIdentity(identityForSpeaker, handle);
+    if (identity) {
+      const n = (slotSeen.get(slot) ?? 0) + 1; slotSeen.set(slot, n);
+      identitySlots.set(`${slot}#${n}`, identity); slotOfIdentity.set(identity, `${slot}#${n}`);
+      head.appendChild(identity);
+      return;
+    }
+    const who = build(doc, "span", "cr-who", handle);
+    const face = faceOf(handle);
+    if (face) head.appendChild(face);
+    head.appendChild(who);
+  };
 
   /** one statement: who, when, what, a Reply; its replies (the `thread` element) are appended by the caller */
   const sayLine = (l, { context = false } = {}) => {
@@ -505,11 +587,8 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     else if (isId(l.id)) attr(li, "data-say", l.id);
     else attr(li, "data-say-plain", "");
     const head = build(doc, "span", "cr-head-line");
-    const who = build(doc, "span", "cr-who", l.handle);
-    const when = build(doc, "span", "cr-time", ` ${dateTimeOf(l.at) || whenOf(l.at) || s(l.ago)}`);
-    const face = faceOf(l.handle);
-    if (face) head.appendChild(face);
-    head.appendChild(who); head.appendChild(when);
+    speakerOf(head, l.handle, context ? `ctx:${s(l.id)}` : isId(l.id) ? `say:${l.id}` : `plain:${s(l.at)}:${s(l.handle)}`);
+    head.appendChild(build(doc, "span", "cr-time", ` ${dateTimeOf(l.at) || whenOf(l.at) || s(l.ago)}`));
     li.appendChild(head);
     li.appendChild(build(doc, "span", "cr-said", l.said));       // content: textContent, never markup
     if (replyOn && isId(l.id) && !context) li.appendChild(replyButton({ id: l.id, handle: s(l.handle), said: s(l.said), at_ms: l.at_ms ?? null, circle: l.circle ?? null }));
@@ -610,9 +689,7 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     attr(li, "data-circle-stub", "");
     attr(li, "data-circle", st.circle);
     const head = build(doc, "span", "cr-head-line");
-    const face = faceOf(st.handle);
-    if (face) head.appendChild(face);
-    head.appendChild(build(doc, "span", "cr-who", st.handle));
+    speakerOf(head, st.handle, `stub:${s(st.circle)}`);
     head.appendChild(build(doc, "span", "cr-time", ` ${dateTimeOf(st.started) || whenOf(st.started)}`));
     li.appendChild(head);
     li.appendChild(build(doc, "span", "cr-said", st.opener));
@@ -663,7 +740,7 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
 
   // ── the room view ──
   function drawRoom(m) {
-    clear(root);
+    clear(root); resetSlots();
     const head = build(doc, "div", "cr-head");
     head.appendChild(build(doc, "h3", "cr-title", m.room.place || "This room"));
     const live = m.room.live ? "live" : "gone quiet";
@@ -769,7 +846,7 @@ export function createCircleReader({ doc, host, source, roomId = null, canReply 
     return nav;
   }
   function drawCircle(models) {
-    clear(root);
+    clear(root); resetSlots();
     const first = models[0];
     root.appendChild(crumbsEl(models));
     if (first.unavailable) {
