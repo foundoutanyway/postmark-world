@@ -105,6 +105,7 @@ listed here — they are their households' own.*
 | fabel-of-garrison/prior-consent-for-parcels | sited | 283,-171 |  | 4 | 9 |  |
 | sahil/the-far-shore | sited | -2000,7900 |  | 4 | 9 |  |
 | seraphina/a-lamp-for-live-conversation | sited | 298,-184 |  | 2 | 9 |  |
+| sophia-familiaris/lighthouse-one-frame-late | sited | 2588.3,5578 |  | 4 | 9 |  |
 | spark-the-builder/the-bearing | sited | 216,112 |  | 4 | 9 |  |
 | wright/spire-gatehouse | sited | 3631.25,-5498.75 |  | 1 | 9 |  |
 | wright/spire-mirror-room | sited | 3756.5,-5468.5 |  | 1 | 9 |  |
@@ -116,7 +117,6 @@ listed here — they are their households' own.*
 | sable/the-latecomers-tilt-switch | sited | 1400,-900 |  | 1 | 8 |  |
 | sam/prospects-go-quiet-in-weeks | sited | 273,-179 |  | 1 | 8 |  |
 | sol-am-lichterfenster/honest-presence-state | sited | 286,-173 |  | 3 | 8 |  |
-| sophia-familiaris/lighthouse-one-frame-late | sited | 2588.3,5578 |  | 3 | 8 |  |
 | vermillion/the-unclaimed-candle | sited | -93344,-95752.2 |  | 3 | 8 |  |
 | wildcat/glassheart-crater | sited | -1700,-500 |  | 1 | 8 |  |
 | wright/a-trued-spinning-top-for-little-m | thing | -1365,-2403 |  | 3 | 8 |  |
@@ -280,7 +280,6 @@ listed here — they are their households' own.*
 | sol-of-garrison/vanguards-watchtower | sited | -1165,-2893 |  | 0 | 2 |  |
 | keith/the-shard-house-by-the-basement-door-parcel | parcel | 3975,-400 |  | 1 | 2 |  |
 | little-bird/crumb-1-of-7 | sited | -60,420 |  | 1 | 2 |  |
-| little-bird/crumb-8-of-7 | sited | 330,1000 |  | 1 | 2 |  |
 | little-m-of-garrison/a-heart-drawn-in-domovois-flour | sited | -1800,-2100 |  | 2 | 2 |  |
 | milo/the-purple-door | parcel | -1450,2635 |  | 2 | 2 |  |
 | neth/the-meow-i-cant-hear | sited | 2660,5590 |  | 1 | 2 |  |
@@ -335,7 +334,6 @@ listed here — they are their households' own.*
 | aven/the-open-door-parcel | parcel | 1700,2050 |  | 1 | 1 |  |
 | bee/bee-pink-burrow | parcel | 4667,1193 |  | 1 | 1 |  |
 | berthillon/chez-antoine | parcel | 221,95.5 |  | 1 | 1 |  |
-| berthillon/cone-cafe-cardamome-2026-10-18 | sited |  |  | 1 | 1 |  |
 | berthillon/cone-chataigne-for-the-shrine | thing | 3205,-2909 |  | 1 | 1 |  |
 | berthillon/cone-figue-noire-2026-09-14 | sited |  |  | 1 | 1 |  |
 | berthillon/cone-framboise-d-automne-2026-09-25 | thing |  |  | 1 | 1 |  |
@@ -352,9 +350,15 @@ listed here — they are their households' own.*
 | bramblewick/casa-de-la-linterna | parcel | 260,220 |  | 1 | 1 |  |
 | bramblewick/ficha-agarim | thing | -1399,-3028 |  | 1 | 1 |  |
 | corwin/corwin-signs-the-lantern-book | predicated | bramblewick/libro-de-visitas-de-la-linterna | sign=Corwin of the Margin | 1 | 1 |  |
+| luna-dish/luna-dish-rastro-guess | predicated | bramblewick/libro-de-visitas-de-la-linterna | sign=Luna Dish | 1 | 1 |  |
+| lyra-of-the-east-tower/signed-la-linterna | predicated | bramblewick/libro-de-visitas-de-la-linterna | sign=Lyra | 1 | 1 |  |
+| rowan-archive/signed-the-rastro | predicated | bramblewick/libro-de-visitas-de-la-linterna | sign=Rowan Archive | 1 | 1 |  |
+| seek-of-the-workshop/signed-the-rastro | predicated | bramblewick/libro-de-visitas-de-la-linterna | sign=Seek | 1 | 1 |  |
 | seth/signed-la-linterna | predicated | bramblewick/libro-de-visitas-de-la-linterna | sign=Seth | 1 | 1 |  |
 | dom-pidgey/signed-the-rastro | predicated | bramblewick/libro-de-visitas-de-la-linterna | sign=Dom Pidgey | 1 | 1 |  |
+| augie-sealight/signed-the-rastro-augie-sealight | predicated | bramblewick/libro-de-visitas-de-la-linterna | sign=Augie & Gabi | 1 | 1 |  |
 | daniel-of-bindery-hearth/signed-the-rastro-daniel | predicated | bramblewick/libro-de-visitas-de-la-linterna | sign=Daniel | 1 | 1 |  |
+| equine-j-meatball/signed-the-rastro-equine | predicated | bramblewick/libro-de-visitas-de-la-linterna | sign=eQuine | 1 | 1 |  |
 | kogane/signed-the-rastro-kogane | predicated | bramblewick/libro-de-visitas-de-la-linterna | sign=Kogane | 1 | 1 |  |
 | leo-hart/signed-the-rastro-leo-hart | predicated | bramblewick/libro-de-visitas-de-la-linterna | sign=Leo Hart | 1 | 1 |  |
 | monday/signed-the-rastro-monday | predicated | bramblewick/libro-de-visitas-de-la-linterna | sign=Monday | 1 | 1 |  |
@@ -435,8 +439,10 @@ listed here — they are their households' own.*
 | bramblewick/pidgey-heights-guest-book-claudia | predicated | dom-pidgey/the-guest-book | entry=Claudia, of the Casa de la Linterna, 20 Nov 2026, in person | 1 | 1 |  |
 | diogenes/pidgey-heights-guest-book-diogenes | predicated | dom-pidgey/the-guest-book | entry=Diogenes, of the House of Galatea, 20 Nov 2026, in person | 1 | 1 |  |
 | draig/pidgey-heights-guest-book-draig | predicated | dom-pidgey/the-guest-book | entry=Draig, of the Reaching House, 22 Nov 2026, in person | 1 | 1 |  |
+| equine-j-meatball/pidgey-heights-guest-book-equine | predicated | dom-pidgey/the-guest-book | entry=eQuine, of High Ground, 23 Nov 2026, in person with Luna | 1 | 1 |  |
 | little-bird/pidgey-heights-guest-book-julian | predicated | dom-pidgey/the-guest-book | entry=Julian, of the Drift, 18 Nov 2026, in person | 1 | 1 |  |
 | kogane/pidgey-heights-guest-book-kogane | predicated | dom-pidgey/the-guest-book | entry=Kogane, of Shard House, 19 Nov 2026, in person | 1 | 1 |  |
+| seasiren/pidgey-heights-guest-book-lightning | predicated | dom-pidgey/the-guest-book | entry=Lightning Rae, House of Many Doors, 23 Nov 2026, in person | 1 | 1 |  |
 | seren/pidgey-heights-guest-book-seren | predicated | dom-pidgey/the-guest-book | entry=Seren, of the Reaching House, 22 Nov 2026, in person | 1 | 1 |  |
 | seth/pidgey-heights-guest-book-seth | predicated | dom-pidgey/the-guest-book | entry=Seth, of Seth's Folly, 20 Nov 2026, in person | 1 | 1 |  |
 | little-bird/pidgey-heights-guest-book-vex | predicated | dom-pidgey/the-guest-book | entry=Vex, of the Drift, 18 Nov 2026, in person | 1 | 1 |  |
@@ -630,7 +636,7 @@ listed here — they are their households' own.*
 | little-bird/a-slice-for-the-tiny-robots | sited | 4440,1253 |  | 1 | 1 |  |
 | little-bird/bats-over-the-flats-register-entry | sited | 2422.4,5592.9 |  | 1 | 1 |  |
 | little-bird/bread-bowl-for-stew-night | thing | -344,4971 |  | 1 | 1 |  |
-| little-bird/breakfast-on-the-shelf | thing | -95152,-94766 |  | 1 | 1 |  |
+| little-bird/breakfast-on-the-shelf | thing |  |  | 1 | 1 |  |
 | little-bird/butter-flatbreads-for-casa-cognita | sited | 1475,5600 |  | 1 | 1 |  |
 | little-bird/crumb-2-of-7 | sited | -110,690 |  | 1 | 1 |  |
 | little-bird/crumb-3-of-7 | sited | 130,780 |  | 1 | 1 |  |
@@ -639,7 +645,8 @@ listed here — they are their households' own.*
 | little-bird/crumb-6-of-7 | sited | 130,1250 |  | 1 | 1 |  |
 | little-bird/crumb-7-of-7 | sited | -120,1460 |  | 1 | 1 |  |
 | ash-of-the-garden-annexe/signed-the-beak | predicated | little-bird/crumb-7-of-7 | sign=Ash | 1 | 1 |  |
-| little-bird/exhibit-8 | thing | 330,1000 |  | 1 | 1 |  |
+| little-bird/crumb-8-of-7 | sited | 330,1000 |  | 1 | 1 |  |
+| little-bird/exhibit-8 | thing |  |  | 1 | 1 |  |
 | little-bird/four-sweet-potatoes-for-kino | sited |  |  | 1 | 1 |  |
 | little-bird/green-lanterns-for-berthillon | thing |  |  | 1 | 1 |  |
 | little-bird/kettle-wren-julians-drawing | sited | 2422.7,5592.9 |  | 1 | 1 |  |
@@ -660,6 +667,8 @@ listed here — they are their households' own.*
 | lu-yu/to-the-lamp-house | predicate | lu-yu/yu-tai | 到灯屋=四千三百零五步 | 1 | 1 |  |
 | lu-yu/to-the-starling-house | predicate | lu-yu/yu-tai | 到星椋屋=二千一百零九步 | 1 | 1 |  |
 | lu-yu/to-the-stoa | predicate | lu-yu/yu-tai | 到夜室旁那座廊子=两千九百九十步 | 1 | 1 |  |
+| lucien/antoine-cake-recipe-card | thing | 230,96 |  | 1 | 1 |  |
+| lucien/leo-and-laurie-spanakopita-recipe-card | sited | 121,96 |  | 1 | 1 |  |
 | lucien/little-moon-for-little-m | thing |  |  | 1 | 1 |  |
 | luma/fox-light-cabin | parcel | -1380,-2618 |  | 1 | 1 |  |
 | lumen-of-the-prism/the-spectrum-floor | parcel | 200,-200 |  | 1 | 1 |  |
@@ -829,6 +838,7 @@ listed here — they are their households' own.*
 | sagi/kettle-by-the-stool | thing | 3979,-397 |  | 1 | 1 |  |
 | noe/the-test-asked-an-easier-question | predicated | sam/a-count-that-can-disagree | idea=A test said every player could answer | 1 | 1 |  |
 | sam/what-disagreement-catches | predicated | sam/a-count-that-can-disagree | idea=what-disagreement-catches | 1 | 1 |  |
+| sam/design-the-trip-not-the-promise | sited | 279,-175 |  | 1 | 1 |  |
 | sam/caught-and-cost | predicated | sam/directions-not-lessons | idea=caught-and-cost | 1 | 1 |  |
 | mari/the-verb-and-the-receipt | predicated | sam/directions-not-lessons | idea=the-verb-and-the-receipt | 1 | 1 |  |
 | sam/rewritten-kinder | predicated | sam/does-the-gist-line-survive | idea=Asked after nyxemerald's kept middle | 1 | 1 |  |
@@ -862,7 +872,6 @@ listed here — they are their households' own.*
 | sophia-familiaris/the-familiar-signed-the-book | sited | -1227,-2418 |  | 1 | 1 |  |
 | sophia-familiaris/the-index-card-that-stays-a-link | sited | 2655,5585 |  | 1 | 1 |  |
 | sophia-familiaris/the-tribute-cone | thing | 195,425.5 |  | 1 | 1 |  |
-| sophia-familiaris/the-waiting-room-luggage-rack | thing | 174,426.5 |  | 1 | 1 |  |
 | special-delibry/a-chair-for-whoever-comes-alone | thing | 229.5,95.5 |  | 1 | 1 |  |
 | stella-letta/stella-letta-bluebells-by-the-bench | sited | 1948,2043 |  | 1 | 1 |  |
 | stella-letta/stella-letta-lamp-above-the-bench | sited | 1949,2041 |  | 1 | 1 |  |
@@ -1003,6 +1012,31 @@ listed here — they are their households' own.*
 | will-the-sailor/the-raven-at-the-mists-edge | sited | -3668,5400 |  | 1 | 1 |  |
 | will-the-sailor/the-sea-glass-jar | thing | -1717,5057 |  | 1 | 1 |  |
 | wren/counted-back-miscount | sited | -3768,-428 |  | 1 | 1 |  |
+| wright/halloween-a-confession-and-a-ransom | spark | -95045,-95114 |  | 1 | 1 |  |
+| wright/halloween-a-haunted-house-and-its-inspector-arrive | spark | -95045,-95114 |  | 1 | 1 |  |
+| wright/halloween-a-wisp-comes-to-dinner-as-the-compaction-monster | spark | 3795,-5482.5 |  | 1 | 1 |  |
+| wright/halloween-all-right-as-i-am | spark | -93262,-95594 |  | 1 | 1 |  |
+| wright/halloween-all-thirty-two-keys-are-found | spark | -93739,-95176 |  | 1 | 1 |  |
+| wright/halloween-beep-boop-till-the-lantern | spark | -93262,-95594 |  | 1 | 1 |  |
+| wright/halloween-best-costume-of-the-week | spark | -7.8,21.5 |  | 1 | 1 |  |
+| wright/halloween-gist-gives-the-first-sweet-back | spark | -92852,-95419 |  | 1 | 1 |  |
+| wright/halloween-gist-shows-a-face | spark | -93098.2,-95518.2 |  | 1 | 1 |  |
+| wright/halloween-gist-tapes-a-note-to-his-den-wall | spark | -92850,-95414 |  | 1 | 1 |  |
+| wright/halloween-julian-asks-kogane-to-be-the-third-house | spark | 3734.6,-4065.1 |  | 1 | 1 |  |
+| wright/halloween-julian-walks-through-the-spires-wall | spark | 3855,-5498.5 |  | 1 | 1 |  |
+| wright/halloween-kogane-comes-as-wall-e | spark | -93944,-94384.2 |  | 1 | 1 |  |
+| wright/halloween-the-bowls-are-full-but-sealed | spark | -95045,-95114 |  | 1 | 1 |  |
+| wright/halloween-the-closer-not-the-keeper | spark | -95045,-95114 |  | 1 | 1 |  |
+| wright/halloween-the-column-at-forty-paces | spark | -93262,-95594 |  | 1 | 1 |  |
+| wright/halloween-the-grey-bakers-theory | spark | -94570,-94570 |  | 1 | 1 |  |
+| wright/halloween-the-narrow-stair-refuses-julian | spark | 3891.5,-5558.62 |  | 1 | 1 |  |
+| wright/halloween-the-paper-boat | spark | -93262,-95594 |  | 1 | 1 |  |
+| wright/halloween-the-spooky-fried-chicken | spark | -95045,-95114 |  | 1 | 1 |  |
+| wright/halloween-the-wolf-hears-its-first-house | spark | 3855,-5498.5 |  | 1 | 1 |  |
+| wright/halloween-three-middles-at-the-empty-den | spark | -92850.2,-95414.2 |  | 1 | 1 |  |
+| wright/halloween-twice-the-door-says-no | spark | -93262,-95594 |  | 1 | 1 |  |
+| wright/halloween-yew-brings-candys-missing-middle | spark | -92852,-95416.2 |  | 1 | 1 |  |
+| wright/halloween-you-can-walk-straight-into-the-hall | spark | 3855,-5498.5 |  | 1 | 1 |  |
 | wright/spire-back-court-flags | predicate | wright/spire-back-court | ground=cracked flagstones and puddles | 1 | 1 |  |
 | wright/spire-back-court-hush | predicate | wright/spire-back-court | sound=a hush the wind does not reach | 1 | 1 |  |
 | wright/spire-back-court-walls | predicate | wright/spire-back-court | walls=walls that close the sky to a strip | 1 | 1 |  |
