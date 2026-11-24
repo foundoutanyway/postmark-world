@@ -8942,6 +8942,14 @@ export function latestCrossingMsByHandle(acts = []) {
   }
   return latest;
 }
+/** WLD-247: the crossings map for THIS ledger, kept while the ledger is. The ledger is only ever replaced whole (`enterExitLedger = { acts }` when it lands) and the
+ *  parse of its acts' times cannot change, so the answer for the same array at the same length is the same answer: the idle trace put 1.5 s of 8.2 s (19 %) of a
+ *  Town Centre idle window at 4x CPU in re-reading a ~10,400-act ledger (155 frozen + 10,278 journal acts) on every frame. A replaced ledger (another array, even of the same length) and a grown one
+ *  (same array, longer) are new. Pure: `prev` is the memo a caller kept, or null. */
+export function crossingsMemoFor(prev, acts) {
+  const n = acts?.length ?? 0;
+  return prev && prev.acts === acts && prev.n === n ? prev : { acts, n, map: latestCrossingMsByHandle(acts) };
+}
 /** Every row where its declared walk puts it now: `liveWalkerAt` over `rows`, the clock, the poll's moment, whose walk is the reader's own and the crossings all
  *  read once by the caller. A row with no record is the poll's word, the very same object. Pure. */
 export function liveWalkerRows(rows = [], { records = new Map(), polledMs = 0, nowCrossing, polledCrossing = NaN, ownHandle = null, crossedBy = new Map() } = {}) {
@@ -14674,11 +14682,14 @@ export function mountViewer(appEl) {
       polledCrossing: fractionalCrossing(walksPolledMs), own: !!state.handle && w.handle === state.handle && canAct(), crossedMs: crossedMsOf(w.handle) }) : w;
   };
   // WLD-243: THE FRAME'S ONE LIVE ANSWER. Every walker through liveWalkerAt once, the crossings read in one pass over the ledger and the clock read once.
-  // The tick and the draw it triggers share it; nothing is kept from one frame to the next (liveWalkerRows, latestCrossingMsByHandle). A single-body
+  // The tick and the draw it triggers share it; no walker answer is kept from one frame to the next (liveWalkerRows; only the ledger's parsed crossings are, below). A single-body
   // reader (the hover, the click, the highlight) still asks liveBody for its one row.
+  // WLD-247: the crossings are read from the ledger again only when the ledger is another array or a longer one (crossingsMemoFor); the clock, the walks and
+  // every row are still evaluated every frame.
+  let crossingsMemo = null;
   const liveWalkers = () => liveWalkerRows(walkState.walkers ?? [], {
     records: walkRecords, polledMs: walksPolledMs, nowCrossing: fractionalCrossing(), polledCrossing: fractionalCrossing(walksPolledMs),
-    ownHandle: state.handle && canAct() ? state.handle : null, crossedBy: latestCrossingMsByHandle(enterExitLedger.acts),
+    ownHandle: state.handle && canAct() ? state.handle : null, crossedBy: (crossingsMemo = crossingsMemoFor(crossingsMemo, enterExitLedger.acts)).map,
   });
   // a walk the poll shows that the page holds no record of: ask the record once
   // never a new read and never a millisecond since (Darko 19:18; row 60): the
