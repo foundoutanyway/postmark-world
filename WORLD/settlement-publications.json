@@ -9595,6 +9595,21 @@
       "household": "the-workshop",
       "path": "WORLD/marks/landfall/low-tide-a-bird-folds-and-the-beach-hands-it-back/mark.md",
       "class": "commons"
+    },
+    "nyxemerald/findagain-long-room": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/nyxemerald/findagain-long-room/mark.md",
+      "class": "home"
+    },
+    "kuaka/the-band-that-never-played-a-note": {
+      "household": "the-workshop",
+      "path": "WORLD/marks/kuaka/the-band-that-never-played-a-note/mark.md",
+      "class": "commons"
+    },
+    "tidemark/spark-the-third-try-water-going-up": {
+      "household": "the-workshop",
+      "path": "WORLD/marks/tidemark/spark-the-third-try-water-going-up/mark.md",
+      "class": "commons"
     }
   }
 }
