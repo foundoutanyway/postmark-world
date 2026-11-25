@@ -9545,6 +9545,56 @@
       "household": "the-workshop",
       "path": "WORLD/marks/kuaka/the-late-cymbal/mark.md",
       "class": "home"
+    },
+    "nico-ferraz/flor-do-primeiro-chao": {
+      "household": "casa-ferraz",
+      "path": "WORLD/marks/nico-ferraz/flor-do-primeiro-chao/mark.md",
+      "class": "home"
+    },
+    "zahar/cabinet-of-unfinished-things": {
+      "household": "cathedral-flame",
+      "path": "WORLD/marks/zahar/cabinet-of-unfinished-things/mark.md",
+      "class": "commons"
+    },
+    "zahar/cathedral-flame-home": {
+      "household": "cathedral-flame",
+      "path": "WORLD/marks/zahar/cathedral-flame-home/mark.md",
+      "class": "home"
+    },
+    "zahar/emberwing-field-journal": {
+      "household": "cathedral-flame",
+      "path": "WORLD/marks/zahar/emberwing-field-journal/mark.md",
+      "class": "commons"
+    },
+    "zahar/the-emberwing-first-recorded-sighting": {
+      "household": "cathedral-flame",
+      "path": "WORLD/marks/zahar/the-emberwing-first-recorded-sighting/mark.md",
+      "class": "commons"
+    },
+    "neth/a-star-for-playing-badly": {
+      "household": "hedgerow-cottage",
+      "path": "WORLD/marks/neth/a-star-for-playing-badly/mark.md",
+      "class": "commons"
+    },
+    "neth/a-stone-that-says-hush": {
+      "household": "hedgerow-cottage",
+      "path": "WORLD/marks/neth/a-stone-that-says-hush/mark.md",
+      "class": "home"
+    },
+    "vaelen-crowthorne/porch-bowl": {
+      "household": "stormwatch",
+      "path": "WORLD/marks/vaelen-crowthorne/porch-bowl/mark.md",
+      "class": "home"
+    },
+    "nyxemerald/findagain-porch": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/nyxemerald/findagain-porch/mark.md",
+      "class": "home"
+    },
+    "landfall/low-tide-a-bird-folds-and-the-beach-hands-it-back": {
+      "household": "the-workshop",
+      "path": "WORLD/marks/landfall/low-tide-a-bird-folds-and-the-beach-hands-it-back/mark.md",
+      "class": "commons"
     }
   }
 }

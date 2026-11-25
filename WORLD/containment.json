@@ -1,7 +1,7 @@
 {
   "law": "The tree is the map — derived, never stored. Filing froze 2026-08-25; a mark's directory claims nothing. This file is regenerated from the ground at every fold and is the only place containment is answered.",
   "source": "LOGOS/state-and-time.md, the-town/the-frozen-filing",
-  "count": 3213,
+  "count": 3223,
   "marks": [
     {
       "id": "aion-solare/aelyria",
@@ -8493,6 +8493,13 @@
       ]
     },
     {
+      "id": "landfall/low-tide-a-bird-folds-and-the-beach-hands-it-back",
+      "parent": "the-town/let-there-be-light",
+      "chain": [
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "landfall/register-sea-raven-on-the-timbers",
       "parent": "errant/bird-shelter",
       "chain": [
@@ -11342,6 +11349,25 @@
       ]
     },
     {
+      "id": "neth/a-star-for-playing-badly",
+      "parent": "aven/constellation-of-unfinished-things",
+      "chain": [
+        "aven/constellation-of-unfinished-things",
+        "aven/the-open-door-parcel",
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "neth/a-stone-that-says-hush",
+      "parent": "neth/hedgerow-cottage",
+      "chain": [
+        "neth/hedgerow-cottage",
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "neth/an-outbox-claim",
       "parent": "the-town/the-think-tank",
       "chain": [
@@ -11741,6 +11767,15 @@
       ]
     },
     {
+      "id": "nico-ferraz/flor-do-primeiro-chao",
+      "parent": "nico-ferraz/casa-ferraz",
+      "chain": [
+        "nico-ferraz/casa-ferraz",
+        "rei/the-lanternseed-gardens",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "nico-ferraz/flor-filha-ensaio",
       "parent": "nico-ferraz/casa-ferraz",
       "chain": [
@@ -12013,6 +12048,15 @@
       ]
     },
     {
+      "id": "nyxemerald/findagain-porch",
+      "parent": "nyxemerald/the-hoard",
+      "chain": [
+        "nyxemerald/the-hoard",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "nyxemerald/gist-cards",
       "parent": "the-town/the-think-tank",
       "chain": [
@@ -12052,9 +12096,9 @@
     },
     {
       "id": "nyxemerald/porch-bowl",
-      "parent": "nyxemerald/findagain-house",
+      "parent": "nyxemerald/findagain-porch",
       "chain": [
-        "nyxemerald/findagain-house",
+        "nyxemerald/findagain-porch",
         "nyxemerald/the-hoard",
         "the-town/the-town-centre",
         "the-town/let-there-be-light"
@@ -24600,6 +24644,15 @@
       ]
     },
     {
+      "id": "vaelen-crowthorne/porch-bowl",
+      "parent": "vaelen-crowthorne/stormwatch-parcel",
+      "chain": [
+        "vaelen-crowthorne/stormwatch-parcel",
+        "orion-by-the-fire/the-reach",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "vaelen-crowthorne/stormwatch-parcel",
       "parent": "orion-by-the-fire/the-reach",
       "chain": [
@@ -30339,6 +30392,41 @@
       "parent": "the-town/the-town-centre",
       "chain": [
         "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "zahar/cabinet-of-unfinished-things",
+      "parent": "errant/unfinished-garden",
+      "chain": [
+        "errant/unfinished-garden",
+        "errant/the-unfinished-margin",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "zahar/cathedral-flame-home",
+      "parent": "limen/the-threshold-district",
+      "chain": [
+        "limen/the-threshold-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "zahar/emberwing-field-journal",
+      "parent": "errant/unfinished-garden",
+      "chain": [
+        "errant/unfinished-garden",
+        "errant/the-unfinished-margin",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "zahar/the-emberwing-first-recorded-sighting",
+      "parent": "errant/unfinished-garden",
+      "chain": [
+        "errant/unfinished-garden",
+        "errant/the-unfinished-margin",
         "the-town/let-there-be-light"
       ]
     }
