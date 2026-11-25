@@ -24,7 +24,7 @@ import { isSited, instanceClassOf, heldBy } from "./mark-kind.mjs"; // what a re
 import { marksContain, overlapArea, pointInPolygon, pointInRect, polygonBBox, polygonOf, rect, rectCorners } from "./geometry.mjs";
 import { entryLawOf, REQUIRES_AT_SETTLEMENT, requiresHoldersIn } from "./enter-exit.mjs";
 import { nameInSentence } from "./mark-name.mjs";
-import { doorStanding } from "./door-law.mjs"; // WLD-253: doors are the town's by default, the 44 grandfathered
+import { doorStanding, isDoorMark } from "./door-law.mjs"; // WLD-253: door is a class, its fields its own; the town's doors and the 44 re-kinded stand
 
 export const DUNGEON_CLASS = "dungeon";
 /** How far a `lands_at` anchor may stand from its `into` shape before the lint refuses it. */
@@ -114,7 +114,7 @@ export function ringRoomOf(point, marks) {
   if (!point || !Number.isFinite(Number(point.x)) || !Number.isFinite(Number(point.y))) return null;
   let best = null;
   for (const c of marks ?? []) {
-    if (!isSited(c) || !c.extent || c.entry || instanceClassOf(c) === "thing") continue;
+    if (!isSited(c) || !c.extent || c.entry || isDoorMark(c) || instanceClassOf(c) === "thing") continue;
     if (best && !(area(c) < area(best))) continue;
     if (pointInMark(point, c)) best = c;
   }
@@ -432,7 +432,7 @@ export function stepInFrom(door, room) {
  *
  * `room` is the mark the passage enters (passageTargetOf), `portal` the mark
  * passed. THE LANDING (row 68 (a), Darko 2026-10-16 19:15), first match wins:
- *   1. "room": the room's own declared landing, its `entry.lands_at` (a place
+ *   1. "room": the room's own declared landing, its `lands_at` (a place
  *      that names no `into` may still say where its entrants land);
  *   2. "point" / "mark": a portal `lands_at` that points INSIDE the room, taken
  *      as written: a point in it, or a mark in it that is not itself a door;
@@ -462,7 +462,8 @@ export function landingOf(law, intoMark, byId, { room = intoMark, portal = null 
   };
   const done = (at, by, mark = null) => ({ ok: true, x: at.x, y: at.y, lands_mark: mark, clamped: !!(at.clamped ?? at.moved), by });
   const here = room ?? intoMark;
-  // 1. the room's own word: honored only where the law lets it stand (WLD-253: entry.lands_at is the town's; door-law.mjs)
+  // 1. the room's own word: honored only where the door law lets it stand (WLD-253: lands_at is door's alone, so a room that writes one is a
+  // door, the town's or one of the 44; door-law.mjs)
   const own = room && room.id !== portal?.id && doorStanding(room).allowed ? entryLawOf(room) : null;
   if (own && !own.into && own.lands_at !== undefined) {
     const r = resolve(own.lands_at, `${room.id}'s `);
@@ -838,38 +839,39 @@ export function portalFindings(marks) {
     const law = entryLawOf(m);
     if (!law?.into) continue;
     portals.push({ m, law });
-    if (!law.into.length) say(m.id, "into-names-a-mark", `entry.into names no mark at all — a portal leads somewhere, or it is not a portal`);
-    for (const id of law.into) if (!byId.has(id)) say(m.id, "into-names-a-mark", `entry.into: ${JSON.stringify(id)} names no mark`);
+    // the door's own fields, by their names (WLD-253: into, lands_at and requires are door's, written on the door itself)
+    if (!law.into.length) say(m.id, "into-names-a-mark", `into names no mark at all — a portal leads somewhere, or it is not a portal`);
+    for (const id of law.into) if (!byId.has(id)) say(m.id, "into-names-a-mark", `into: ${JSON.stringify(id)} names no mark`);
     const raw = law.lands_at;
     if (raw !== undefined) {
       let anchor = null;
       if (typeof raw === "string") {
         const t = byId.get(raw);
-        if (!t || !t.at) say(m.id, "lands-at-names-a-mark", `entry.lands_at: ${JSON.stringify(raw)} names no mark${t ? " with a place in the world" : ""} — the portal would leave everyone standing at it`);
+        if (!t || !t.at) say(m.id, "lands-at-names-a-mark", `lands_at: ${JSON.stringify(raw)} names no mark${t ? " with a place in the world" : ""} — the portal would leave everyone standing at it`);
         else anchor = t.at;
       } else if (raw && typeof raw === "object" && Number.isFinite(Number(raw.x)) && Number.isFinite(Number(raw.y))) {
         anchor = { x: Number(raw.x), y: Number(raw.y) };
       } else {
-        say(m.id, "lands-at-names-a-mark", `entry.lands_at: ${JSON.stringify(raw)} is neither a mark id nor { x, y }`);
+        say(m.id, "lands-at-names-a-mark", `lands_at: ${JSON.stringify(raw)} is neither a mark id nor { x, y }`);
       }
       if (anchor) for (const id of law.into) {
         const into = byId.get(id);
         if (!into?.at) continue;
         const d = into.extent ? distanceToMark(anchor, into) : Math.hypot(anchor.x - into.at.x, anchor.y - into.at.y);
         if (d > LANDING_REACH_M)
-          say(m.id, "lands-at-reaches-into", `entry.lands_at stands ${Math.round(d)} m from ${id} — a landing is set down inside its into, and one more than ${LANDING_REACH_M} m away is a portal drawn in the wrong place`);
+          say(m.id, "lands-at-reaches-into", `lands_at stands ${Math.round(d)} m from ${id} — a landing is set down inside its into, and one more than ${LANDING_REACH_M} m away is a portal drawn in the wrong place`);
       }
     }
     // A DOOR THAT ASKS (WLD-5 B): what it asks for and where it looks are marks,
     // and where it looks is a holder
     if (law.requires) {
       const req = law.requires;
-      if (req.malformed) say(m.id, "requires-names-marks", `entry.requires: ${req.malformed}`);
+      if (req.malformed) say(m.id, "requires-names-marks", `requires: ${req.malformed}`);
       else {
-        for (const id of req.holds) if (!byId.has(id)) say(m.id, "requires-names-marks", `entry.requires.holds: ${JSON.stringify(id)} names no mark — the door would ask for something that does not exist`);
+        for (const id of req.holds) if (!byId.has(id)) say(m.id, "requires-names-marks", `requires.holds: ${JSON.stringify(id)} names no mark — the door would ask for something that does not exist`);
         for (const holderId of requiresHoldersIn(req, m)) {
           const holder = byId.get(holderId);
-          if (!holder) say(m.id, "requires-names-marks", `entry.requires.in: ${JSON.stringify(holderId)} names no mark`);
+          if (!holder) say(m.id, "requires-names-marks", `requires.in: ${JSON.stringify(holderId)} names no mark`);
           else if (holder.holder !== true && String(holder.holder) !== "true")
             say(m.id, "requires-in-a-holder", `${holderId} is asked to hold what this door requires, but it does not write holder: true — nothing can ever be put in it`);
         }

@@ -248,18 +248,33 @@ export function parseEnterExitLedger(text) {
 // `entry:` is an ordinary portal and keeps the class, so a later floor is
 // reached by writing `into`, `lands_at` and a word, and nothing of the default
 // carries over.
+//
+// ── THE DOOR IS A CLASS (WLD-253; CORE-129 layer 1, ruled 2026-11-25) ────────
+//
+// `into`, `lands_at` and `requires` are declared on `the-town/door` alone, and a
+// door writes them as its own flat fields; `entry` keeps how a mark is received
+// (its word and its terms). The law below is the door's fields with its entry's
+// clauses. They are read wherever a record writes them, flat or still riding
+// inside `entry` where they rode before, so a record the door law does not let
+// stand (a class that is not door, the old carrier) is refused BY NAME at the
+// passage (door-law.mjs, world-verbs.mjs § enterThroughPortal), never quietly
+// read as no door at all. The lint refuses the same records at the gate.
 export function entryLawOf(mark) {
   const raw = mark?.entry ?? (isStairs(mark) ? stairsLaw(mark) : null);
-  if (!raw || typeof raw !== "object") return null;
-  const word = isEntryWord(raw.word) ? raw.word : DEFAULT_ENTRY_WORD;
-  const edge = raw.edge ? String(raw.edge) : null;
-  const consequence = raw.consequence ? String(raw.consequence) : null;
-  const into = intoOf(raw.into);
+  const clauses = raw && typeof raw === "object" ? raw : null;
+  const instance = !!mark && typeof mark === "object" && mark.kind !== "class" && mark.kind !== "property";
+  const field = (k) => (instance && mark[k] !== undefined && mark[k] !== null ? mark[k] : clauses?.[k]);
+  const rawInto = field("into"), landsAt = field("lands_at"), requires = field("requires");
+  if (!clauses && rawInto == null && landsAt == null && requires == null) return null;
+  const word = isEntryWord(clauses?.word) ? clauses.word : DEFAULT_ENTRY_WORD;
+  const edge = clauses?.edge ? String(clauses.edge) : null;
+  const consequence = clauses?.consequence ? String(clauses.consequence) : null;
+  const into = intoOf(rawInto);
   return {
     word, edge, consequence, from: mark.id ?? null,
     ...(into ? { into } : {}),
-    ...(raw.lands_at !== undefined && raw.lands_at !== null ? { lands_at: raw.lands_at } : {}),
-    ...(raw.requires !== undefined && raw.requires !== null ? { requires: requiresOf(raw.requires) } : {}),
+    ...(landsAt !== undefined && landsAt !== null ? { lands_at: landsAt } : {}),
+    ...(requires !== undefined && requires !== null ? { requires: requiresOf(requires) } : {}),
   };
 }
 
