@@ -34,6 +34,7 @@ import { fold, loadMarks } from "./marks-fold.mjs";
 import { propertyOf } from "./class-properties.mjs";
 import { instanceClassOf } from "./mark-kind.mjs";
 import { mayMake, makersRefusal } from "./admin-makers.mjs";
+import { allowedDoors, doorRefusal, doorStanding, GRANDFATHERED_DOORS } from "./door-law.mjs";
 // what a record IS, in either form (W2: `class:` folds into `kind:`); a class
 // node's own name is still its `class:`
 const classOf = (m) => (m.kind === "class" ? m.class : instanceClassOf(m));
@@ -145,6 +146,17 @@ test("a world with no notices serializes without a single new key", () => {
 // The list above is the record of how the roots stood until then; the answer
 // below is read off the tree, never kept by hand.
 const residentMay = (live, klass) => propertyOf(live, klass, "makers")?.value === true;
+
+// WLD-253 (CORE-129 layer 1, Darko 2026-11-25): entry.into and entry.lands_at are the town's to set; the doors that stood before the rule
+// are grandfathered by name (tools/door-law.mjs). The gate reads the tree for it: every door in it is the town's or one of the 44, so a new
+// resident door, or a 45th name, fails here before it can reach the passage. (A grandfathered door taken away, or a new town door, is lawful.)
+test("LIVE TREE: doors are the town's -- every explicit door is the town's or one of the 44 grandfathered by name", () => {
+  const live = loadMarks(MARKS_DIR).filter((m) => m && !m._error);
+  assert.deepEqual(live.filter((m) => doorRefusal(m)).map((m) => `${m.id}: ${doorRefusal(m).words}`), []);
+  const doors = live.filter((m) => doorStanding(m).door);
+  assert.deepEqual(allowedDoors(live), doors.map((m) => m.id).sort(), "every door in the tree stands");
+  assert.ok(doors.every((m) => m.by === "the-town" || GRANDFATHERED_DOORS.includes(m.id)));
+});
 
 test("LIVE TREE: class law -- town marks define; residents instantiate only what makers allows", () => {
   const live = loadMarks(MARKS_DIR);

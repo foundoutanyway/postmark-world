@@ -24,23 +24,25 @@ import { enter, exit } from "./world-verbs.mjs";
 
 const SPIRE = "t/spire", CHAPEL = "t/chapel", CRYPT = "t/crypt";
 const DOORS = ["t/door-n", "t/door-e", "t/door-s", "t/door-w", "t/door-apse"];
-const out = (id, at) => ({ id, kind: "sited", by: "t", at, extent: { w: 2, h: 2 }, body: `${id}, the way back out.`,
+// the doors are the town's (WLD-253: a resident's door no rule allows does not pass); where they lead is the test
+const TOWN = "the-town";
+const out = (id, at) => ({ id, kind: "sited", by: TOWN, at, extent: { w: 2, h: 2 }, body: `${id}, the way back out.`,
   entry: { word: "neutral", into: "t/grounds" } });
 
 function world() {
   return { marks: [
     { id: "t/grounds", kind: "sited", by: "t", at: { x: 0, y: 0 }, extent: { w: 1000, h: 1000 }, body: "The open Grounds." },
     // the Spire: one way in, the vestibule, landing inside the Gilded Doors
-    { id: SPIRE, kind: "sited", by: "t", class: "dungeon", at: { x: -200, y: 0 }, extent: { w: 200, h: 200 }, body: "The Spire.",
+    { id: SPIRE, kind: "sited", by: TOWN, class: "dungeon", at: { x: -200, y: 0 }, extent: { w: 200, h: 200 }, body: "The Spire.",
       entry: { into: "t/vestibule", lands_at: "t/doors-inside" } },
     { id: "t/vestibule", kind: "sited", by: "t", at: { x: -280, y: 0 }, extent: { w: 30, h: 30 }, body: "The vestibule." },
     { id: "t/hall", kind: "sited", by: "t", at: { x: -180, y: 0 }, extent: { w: 120, h: 150 }, body: "The hall." },
-    { id: "t/doors-inside", kind: "sited", by: "t", at: { x: -292, y: 0 }, extent: { w: 2, h: 2 }, body: "The Gilded Doors, from inside.",
+    { id: "t/doors-inside", kind: "sited", by: TOWN, at: { x: -292, y: 0 }, extent: { w: 2, h: 2 }, body: "The Gilded Doors, from inside.",
       entry: { word: "neutral", into: "t/grounds" } },
-    { id: "t/doors-outside", kind: "sited", by: "t", at: { x: -302, y: 0 }, extent: { w: 2, h: 2 }, body: "The Gilded Doors.",
+    { id: "t/doors-outside", kind: "sited", by: TOWN, at: { x: -302, y: 0 }, extent: { w: 2, h: 2 }, body: "The Gilded Doors.",
       entry: { word: "neutral", into: "t/vestibule", lands_at: "t/doors-inside" } },
     // the Chapel: five doors, picked from; each door is its own landing
-    { id: CHAPEL, kind: "sited", by: "t", class: "dungeon", at: { x: 200, y: 0 }, extent: { w: 200, h: 200 }, body: "The Chapel.",
+    { id: CHAPEL, kind: "sited", by: TOWN, class: "dungeon", at: { x: 200, y: 0 }, extent: { w: 200, h: 200 }, body: "The Chapel.",
       entry: { word: "welcomed", into: DOORS } },
     { id: "t/nave", kind: "sited", by: "t", at: { x: 200, y: 20 }, extent: { w: 120, h: 160 }, body: "The nave." },
     { id: "t/apse", kind: "sited", by: "t", at: { x: 200, y: -80 }, extent: { w: 60, h: 30 }, body: "The apse." },
@@ -50,9 +52,9 @@ function world() {
     // the Crypt: no into of its own, one portal leads in
     { id: CRYPT, kind: "sited", by: "t", class: "dungeon", at: { x: 0, y: 300 }, extent: { w: 60, h: 60 }, body: "The Crypt." },
     { id: "t/crypt-room", kind: "sited", by: "t", at: { x: 0, y: 300 }, extent: { w: 50, h: 50 }, body: "The crypt's one room." },
-    { id: "t/crypt-out", kind: "sited", by: "t", at: { x: 0, y: 280 }, extent: { w: 2, h: 2 }, body: "Up and out.",
+    { id: "t/crypt-out", kind: "sited", by: TOWN, at: { x: 0, y: 280 }, extent: { w: 2, h: 2 }, body: "Up and out.",
       entry: { word: "neutral", into: "t/grounds" } },
-    { id: "t/crypt-hatch", kind: "sited", by: "t", at: { x: 0, y: 260 }, extent: { w: 2, h: 2 }, body: "A hatch into the crypt.",
+    { id: "t/crypt-hatch", kind: "sited", by: TOWN, at: { x: 0, y: 260 }, extent: { w: 2, h: 2 }, body: "A hatch into the crypt.",
       entry: { word: "neutral", into: "t/crypt-room" } },
   ] };
 }

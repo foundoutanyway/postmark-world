@@ -83,7 +83,9 @@ const LEFT = "2026-11-01T23:10:00.000Z";
 
 const M = (id, x, y, w, h, extra = {}) => ({ id, by: id.split("/")[0], household: id.split("/")[0], kind: "sited", tier: "market",
   at: { x, y }, extent: { w, h }, date: "2026-10-18T12:00:00Z", body: id.split("/")[1], ...extra });
-const door = (id, x, y, into, extra = {}) => M(id, x, y, 2, 2, { entry: { word: "neutral", into, ...extra } });
+// the doors are the town's (WLD-253: a resident's door no rule allows does not pass); where they lead and what sees them is the test
+const TOWN = "the-town";
+const door = (id, x, y, into, extra = {}) => M(id, x, y, 2, 2, { by: TOWN, entry: { word: "neutral", into, ...extra } });
 
 /** The Spire in one of three shapes, everything else the same:
  *    "open"        the opening: its mark leaves the class (kind: sited), its `rooms` dropped;
@@ -102,7 +104,7 @@ function world(spire = "open", { drawnOver = false } = {}) {
     M("the-town/let-there-be-light", 0, 0, 60000, 60000),
     M(GROUNDS, 0, 0, 500, 400),
     M(FORECOURT, -170, 0, 60, 80),
-    M(SPIRE, 0, 0, 240, 180, { ...keep, entry: { into: VESTIBULE, lands_at: DOORS_INSIDE } }),
+    M(SPIRE, 0, 0, 240, 180, { ...keep, by: TOWN, entry: { into: VESTIBULE, lands_at: DOORS_INSIDE } }),
     // the first floor: four rooms tiling the keep, two of them the heist's key rooms
     M(VESTIBULE, -98, 0, 36, 36),
     M(HALL, -40, 0, 76, 80),
@@ -123,7 +125,7 @@ function world(spire = "open", { drawnOver = false } = {}) {
     M(RUG, -40, 0, 10, 6),
     M("wright/spire-star-chapel-altar", 60, 40, 6, 3),
     // the stair up, as WLD-3 would write it: a stair whose own entry carries `into`
-    M(STAIR, -60, -30, 4, 4, { kind: "stairs", entry: { word: "neutral", into: LANDING } }),
+    M(STAIR, -60, -30, 4, 4, { kind: "stairs", by: TOWN, entry: { word: "neutral", into: LANDING } }),
     // the floors above: a dungeon of their own, with an exit down to the hall
     M(UPPER, ux, 0, 200, 150, { kind: "dungeon", rooms: [LANDING, GALLERY] }),
     M(LANDING, ux - 50, 0, 80, 100),

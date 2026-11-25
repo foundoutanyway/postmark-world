@@ -377,7 +377,8 @@ test("WLD-197 · a spark is entered, sheltered in and framed by as on main; a la
 const CLASS = (name, ext) => ({ id: `the-town/${name}`, kind: "class", by: "the-town", tier: "constitution", class: name, ...(ext ? { extends: ext } : {}), body: `the ${name} class` });
 const BAG = { id: "little-bird/a-paper-bag-of-crumbs", kind: "thing", by: "little-bird", tier: "market", at: { x: 100, y: -10 }, extent: { w: 0.5, h: 0.5 }, body: "A paper bag of crumbs." };
 const BOWL = { id: "little-bird/a-candy-bowl", kind: "halloween-candy-bowl", by: "little-bird", tier: "market", at: { x: 110, y: -10 }, extent: { w: 0.5, h: 0.5 }, body: "A subclass thing." };
-const SATCHEL = { id: "little-bird/a-bag-of-holding", kind: "thing", by: "little-bird", tier: "market", at: { x: 120, y: -10 }, extent: { w: 0.5, h: 0.5 }, body: "A thing that carries a door.",
+// an invented door, so the town's (WLD-253: a resident's door no rule allows does not pass); that a thing carrying one passes is the test
+const SATCHEL = { id: "little-bird/a-bag-of-holding", kind: "thing", by: "the-town", tier: "market", at: { x: 120, y: -10 }, extent: { w: 0.5, h: 0.5 }, body: "A thing that carries a door.",
   entry: { word: "welcomed", into: [HOLD.id] } };
 const thingWorld = {
   ...world,

@@ -19,22 +19,25 @@ const UNTIL = "2026-10-19T18:00:00.000Z";
 const LEFT = "2026-10-19T17:12:30.000Z";
 const LOCKED = { [SPIRE]: { until: UNTIL, left_at: LEFT } };
 
+// the doors are the town's (WLD-253: a resident's door no rule allows does not pass); the lock on them is the test
+const TOWN = "the-town";
+
 function world({ word = "neutral", determined = undefined } = {}) {
   const marks = [
     { id: "spire/grounds", kind: "sited", by: "spire", at: { x: 1000, y: 1000 }, extent: { w: 500, h: 400 }, body: "The Grounds." },
-    { id: SPIRE, kind: "sited", by: "spire", class: "dungeon", at: { x: 1000, y: 1000 }, extent: { w: 300, h: 300 },
+    { id: SPIRE, kind: "sited", by: TOWN, class: "dungeon", at: { x: 1000, y: 1000 }, extent: { w: 300, h: 300 },
       body: "The Starforge Spire.", entry: { into: "spire/vestibule", lands_at: "spire/doors-inside" } },
     { id: "spire/vestibule", kind: "sited", by: "spire", at: { x: 880, y: 1000 }, extent: { w: 50, h: 50 }, body: "The vestibule." },
     { id: "spire/hall", kind: "sited", by: "spire", at: { x: 1030, y: 1000 }, extent: { w: 200, h: 200 }, body: "The great hall." },
     { id: "spire/the-approach", kind: "sited", by: "spire", at: { x: 820, y: 1000 }, extent: { w: 30, h: 30 }, body: "The approach." },
-    { id: "spire/doors-outside", kind: "sited", by: "spire", at: { x: 845, y: 1000 }, extent: { w: 4, h: 2 },
+    { id: "spire/doors-outside", kind: "sited", by: TOWN, at: { x: 845, y: 1000 }, extent: { w: 4, h: 2 },
       body: "The Gilded Doors.", entry: { word, into: "spire/vestibule", lands_at: "spire/doors-inside" } },
-    { id: "spire/doors-inside", kind: "sited", by: "spire", at: { x: 860, y: 1000 }, extent: { w: 4, h: 2 },
+    { id: "spire/doors-inside", kind: "sited", by: TOWN, at: { x: 860, y: 1000 }, extent: { w: 4, h: 2 },
       body: "The Gilded Doors, from inside.", entry: { word: "neutral", into: "spire/the-approach" } },
-    { id: "spire/hall-door", kind: "sited", by: "spire", at: { x: 900, y: 1000 }, extent: { w: 2, h: 2 },
+    { id: "spire/hall-door", kind: "sited", by: TOWN, at: { x: 900, y: 1000 }, extent: { w: 2, h: 2 },
       body: "A door to the hall.", entry: { word: "neutral", into: "spire/hall" } },
     // a signpost on the Grounds that leads two ways: into the Spire, or along the approach
-    { id: "spire/signpost", kind: "sited", by: "spire", at: { x: 800, y: 1150 }, extent: { w: 2, h: 2 },
+    { id: "spire/signpost", kind: "sited", by: TOWN, at: { x: 800, y: 1150 }, extent: { w: 2, h: 2 },
       body: "Two ways.", entry: { word: "neutral", into: ["spire/vestibule", "spire/the-approach"] } },
   ];
   return { marks, ...(determined ? { determined } : {}) };

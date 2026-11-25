@@ -20,7 +20,9 @@ import { enter } from "./world-verbs.mjs";
 // two rooms sharing a wall at y = 0: the hall north of it, the chamber south
 const HALL = { id: "t/hall", kind: "sited", by: "t", at: { x: 0, y: -20 }, extent: { w: 40, h: 40 }, body: "The hall." };
 const CHAMBER = { id: "t/chamber", kind: "sited", by: "t", at: { x: 0, y: 15 }, extent: { w: 30, h: 30 }, body: "The chamber." };
-const door = (id, at, entry, extent = { w: 2, h: 2 }) => ({ id, kind: "sited", by: "t", at, extent, body: id, entry });
+// the doors are the town's (WLD-253: a resident's door no rule allows does not pass); where they set you down is the test
+const TOWN = "the-town";
+const door = (id, at, entry, extent = { w: 2, h: 2 }) => ({ id, kind: "sited", by: TOWN, at, extent, body: id, entry });
 const byIdOf = (marks) => new Map(marks.map((m) => [m.id, m]));
 // the shortest distance from a point inside a rect room to any of its walls
 const wallGap = (p, r) => Math.min(p.x - (r.at.x - r.extent.w / 2), r.at.x + r.extent.w / 2 - p.x, p.y - (r.at.y - r.extent.h / 2), r.at.y + r.extent.h / 2 - p.y);
@@ -46,14 +48,14 @@ test("a door that straddles the wall: the landing steps past the half of it insi
 });
 
 test("the room's own declared landing wins over the door's", () => {
-  const throne = { ...CHAMBER, entry: { lands_at: { x: 0, y: 25 } } };
+  const throne = { ...CHAMBER, by: TOWN, entry: { lands_at: { x: 0, y: 25 } } };
   const hallSide = door("t/hall-to-chamber", { x: 5, y: -2 }, { word: "neutral", into: "t/chamber", lands_at: "t/chamber-to-hall" });
   const chamberSide = door("t/chamber-to-hall", { x: 5, y: 2 }, { word: "neutral", into: "t/hall" });
   const byId = byIdOf([HALL, throne, hallSide, chamberSide]);
   const l = landingOf(entryLawOf(hallSide), throne, byId, { room: throne, portal: hallSide });
   assert.deepEqual({ x: l.x, y: l.y, by: l.by }, { x: 0, y: 25, by: "room" });
   // a room's landing naming a mark that is not there refuses by its own field
-  const broken = { ...CHAMBER, entry: { lands_at: "t/nowhere" } };
+  const broken = { ...CHAMBER, by: TOWN, entry: { lands_at: "t/nowhere" } };
   const b = landingOf(entryLawOf(hallSide), broken, byIdOf([HALL, broken, hallSide]), { room: broken, portal: hallSide });
   assert.equal(b.ok, false);
   assert.match(b.because, /^t\/chamber's lands_at: "t\/nowhere" names no mark/);
@@ -141,7 +143,7 @@ test("the landing-inside lint fires for a ring room that holds no interior point
 // ── review-231's re-review: the corner (pointInMark counts the wall as inside) ──
 
 test("a landing off a corner never stands on the wall: a 10×10 ring room whose own lands_at is outside it falls through to its centroid", () => {
-  const ring = { id: "t/ring-room", kind: "sited", by: "t", at: { x: 5, y: 5 }, extent: { w: 10, h: 10 },
+  const ring = { id: "t/ring-room", kind: "sited", by: TOWN, at: { x: 5, y: 5 }, extent: { w: 10, h: 10 },
     points: [[0, 0], [10, 0], [10, 10], [0, 10]], entry: { lands_at: { x: -3, y: -3 } } };
   const p = door("t/to-ring", { x: 5, y: -2 }, { word: "neutral", into: "t/ring-room" });
   const l = landingOf(entryLawOf(p), ring, byIdOf([ring, p]), { room: ring, portal: p });

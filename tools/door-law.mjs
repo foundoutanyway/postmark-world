@@ -89,21 +89,28 @@ const canon = (v) => (Array.isArray(v) ? v.map(canon) : v && typeof v === "objec
 const valueOf = (child, v) => JSON.stringify(canon(child === "into" && typeof v === "string" ? [v] : v === undefined ? null : v));
 
 /**
- * What an AUTHORED `entry` writes of the door's children, by PRESENCE: `{ into?: { value, key }, lands_at?: { value, key } }`. A key present with
+ * What an AUTHORED `entry` writes of the door's children, by PRESENCE: `{ into?: { value, key, spellings }, lands_at?: … }`. A key present with
  * null, "" or [] is present (a removal written as a value is still a write); a spelling of the child other than its own (`Into`, `lands-at`,
- * `landsAt`) counts as the child, with its `key` kept so a write that re-spells one is seen. Not an object (none, or a stairs' class default the
- * caller did not hand in): nothing.
+ * `landsAt`) counts as the child. EVERY recognised spelling is kept in `spellings` (`{ key: value }`, each value canonical), so a write that adds,
+ * re-spells or changes any one of them is seen, not only the first; `key` and `value` are the first in the entry's order. Not an object (none, or
+ * a stairs' class default the caller did not hand in): nothing.
  */
 export function doorChildrenOf(entry) {
   const out = {};
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) return out;
   for (const [key, value] of Object.entries(entry))
-    for (const child of DOOR_CHILDREN)
-      if (SPELLINGS[child].test(key) && !out[child]) out[child] = { value: valueOf(child, value), key };
+    for (const child of DOOR_CHILDREN) {
+      if (!SPELLINGS[child].test(key)) continue;
+      const v = valueOf(child, value);
+      out[child] ??= { value: v, key, spellings: {} };
+      out[child].spellings[key] = v;
+    }
   return out;
 }
 
-const changedChildren = (a, b) => DOOR_CHILDREN.filter((c) => !!a[c] !== !!b[c] || (a[c] && (a[c].value !== b[c].value || a[c].key !== b[c].key)));
+// every spelling of the child and its value, in one comparable string: two entries write the child alike only if these agree
+const spellingsOf = (c) => (c ? JSON.stringify(Object.keys(c.spellings).sort().map((k) => [k, c.spellings[k]])) : null);
+const changedChildren = (a, b) => DOOR_CHILDREN.filter((c) => spellingsOf(a[c]) !== spellingsOf(b[c]));
 const isTown = (by) => by === TOWN;
 const field = (cs) => cs.map((c) => `entry.${c}`).join(" and ");
 

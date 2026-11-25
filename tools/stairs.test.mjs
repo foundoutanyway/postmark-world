@@ -21,18 +21,22 @@ import { enterSheetHTML } from "../spectator/viewer.mjs";
 
 const LINE = "Moving to higher/lower floors has not been implemented yet. Coming Soon!";
 
+// the doors are the town's, and so is a stair that writes its own way up (WLD-253: a resident's door no rule allows does not pass); a stair
+// that writes no entry is no door and stays the house's
+const TOWN = "the-town";
+
 function world({ upstairs = null } = {}) {
   const marks = [
     { id: "home/house", kind: "sited", by: "home", class: "dungeon",
       at: { x: 500, y: 500 }, extent: { w: 100, h: 100 }, body: "A tall house." },
     { id: "home/hall", kind: "sited", by: "home", at: { x: 480, y: 500 }, extent: { w: 40, h: 40 }, body: "The hall." },
     { id: "home/landing", kind: "sited", by: "home", at: { x: 530, y: 500 }, extent: { w: 20, h: 20 }, body: "A landing." },
-    { id: "home/front-door", kind: "sited", by: "home", at: { x: 445, y: 500 }, extent: { w: 2, h: 2 },
+    { id: "home/front-door", kind: "sited", by: TOWN, at: { x: 445, y: 500 }, extent: { w: 2, h: 2 },
       body: "The front door.", entry: { word: "neutral", into: "home/hall" } },
-    { id: "home/front-door-inside", kind: "sited", by: "home", at: { x: 462, y: 500 }, extent: { w: 2, h: 2 },
+    { id: "home/front-door-inside", kind: "sited", by: TOWN, at: { x: 462, y: 500 }, extent: { w: 2, h: 2 },
       body: "The way out.", entry: { word: "neutral", into: "home/porch" } },
     { id: "home/porch", kind: "sited", by: "home", at: { x: 420, y: 500 }, extent: { w: 20, h: 20 }, body: "The porch." },
-    { id: "home/the-stair", kind: "sited", by: "home", class: STAIRS_CLASS,
+    { id: "home/the-stair", kind: "sited", by: upstairs ? TOWN : "home", class: STAIRS_CLASS,
       at: { x: 490, y: 490 }, extent: { w: 6, h: 10 }, body: "A stair, up.",
       ...(upstairs ? { entry: { word: "neutral", into: "home/landing" } } : {}) },
   ];
@@ -169,12 +173,15 @@ function gateTree({ declared }) {
     mkdirSync(join(root, rel), { recursive: true });
     copyFileSync(join(REAL, rel, "mark.md"), join(root, rel, "mark.md"));
   }
-  const rid = (s) => s.replace(/^home\//, "testerhh/");
-  for (const m of world().marks) {
+  // the house's marks are testerhh's, its doors the town's; a fixture mark's id is <by>/<dir>, so the ids the laws name move with `by`
+  const marks = world().marks;
+  const byOf = new Map(marks.map((m) => [m.id, m.by === TOWN ? TOWN : "testerhh"]));
+  const rid = (s) => s.replace(/^home\//, `${byOf.get(s) ?? "testerhh"}/`);
+  for (const m of marks) {
     const d = join(root, m.id.split("/")[1]);
     mkdirSync(d, { recursive: true });
     // the kind names the class (W2: `class:` folds into `kind:`)
-    const lines = ["---", `kind: ${m.class ?? "sited"}`, "by: testerhh", "date: 2026-10-15",
+    const lines = ["---", `kind: ${m.class ?? "sited"}`, `by: ${byOf.get(m.id)}`, "date: 2026-10-15",
       `at: { x: ${m.at.x}, y: ${m.at.y} }`, `extent: { w: ${m.extent.w}, h: ${m.extent.h} }`];
     if (m.entry) lines.push(`entry: ${JSON.stringify({ ...m.entry, into: rid(m.entry.into) })}`);
     lines.push("---", "", m.body, "");

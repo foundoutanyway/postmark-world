@@ -30,6 +30,7 @@ import { enter, exit, enterPrompt, exitPrompt, containmentChain, investigate } f
 
 const HEIST = "spire/the-gilded-doo-YOULL-NEVER-CATCH-ME";
 const SPIRE = "spire/the-spire";
+const TOWN = "the-town";
 
 function world({ heist = false } = {}) {
   const marks = [
@@ -43,18 +44,19 @@ function world({ heist = false } = {}) {
     { id: "spire/chapel", kind: "sited", by: "spire", at: { x: 1090, y: 1125 }, extent: { w: 30, h: 30 }, body: "The chapel." },
     { id: "spire/candle", kind: "sited", by: "spire", at: { x: 1030, y: 1010 }, extent: { w: 1, h: 1 }, body: "A candle in the hall." },
     { id: "spire/the-approach", kind: "sited", by: "spire", at: { x: 820, y: 1000 }, extent: { w: 30, h: 30 }, body: "The approach." },
-    { id: "spire/doors-outside", kind: "sited", by: "spire", at: { x: 845, y: 1000 }, extent: { w: 4, h: 2 },
+    // the doors are the town's (WLD-253: a resident's door no rule allows does not pass); where they lead is the test
+    { id: "spire/doors-outside", kind: "sited", by: TOWN, at: { x: 845, y: 1000 }, extent: { w: 4, h: 2 },
       body: "The Gilded Doors.",
       entry: { word: "neutral", into: "spire/vestibule", lands_at: heist ? HEIST : "spire/doors-inside" } },
-    { id: "spire/doors-inside", kind: "sited", by: "spire", at: { x: 860, y: 1000 }, extent: { w: 4, h: 2 },
+    { id: "spire/doors-inside", kind: "sited", by: TOWN, at: { x: 860, y: 1000 }, extent: { w: 4, h: 2 },
       body: "The Gilded Doors, from inside.", entry: { word: "neutral", into: "spire/the-approach" } },
-    { id: "spire/hall-door", kind: "sited", by: "spire", at: { x: 900, y: 1000 }, extent: { w: 2, h: 2 },
+    { id: "spire/hall-door", kind: "sited", by: TOWN, at: { x: 900, y: 1000 }, extent: { w: 2, h: 2 },
       body: "A door to the hall.", entry: { word: "neutral", into: "spire/hall", lands_at: "spire/hall-back" } },
-    { id: "spire/hall-back", kind: "sited", by: "spire", at: { x: 935, y: 1000 }, extent: { w: 2, h: 2 },
+    { id: "spire/hall-back", kind: "sited", by: TOWN, at: { x: 935, y: 1000 }, extent: { w: 2, h: 2 },
       body: "The hall's door back.", entry: { word: "neutral", into: "spire/vestibule", lands_at: "spire/hall-door" } },
-    { id: "spire/chapel-arch", kind: "sited", by: "spire", at: { x: 1090, y: 1095 }, extent: { w: 2, h: 2 },
+    { id: "spire/chapel-arch", kind: "sited", by: TOWN, at: { x: 1090, y: 1095 }, extent: { w: 2, h: 2 },
       body: "An arch to the chapel.", entry: { word: "neutral", into: ["spire/chapel", "spire/vestibule"] } },
-    { id: "spire/chapel-back", kind: "sited", by: "spire", at: { x: 1090, y: 1115 }, extent: { w: 2, h: 2 },
+    { id: "spire/chapel-back", kind: "sited", by: TOWN, at: { x: 1090, y: 1115 }, extent: { w: 2, h: 2 },
       body: "Back to the hall.", entry: { word: "neutral", into: "spire/hall", lands_at: "spire/chapel-arch" } },
     { id: "town/green", kind: "sited", by: "town", at: { x: 0, y: 0 }, extent: { w: 100, h: 100 }, body: "A green, far off." },
   ];
@@ -471,16 +473,17 @@ function gateTree({ heist, mutate = null }) {
   }
   const w = world({ heist });
   if (mutate) mutate(w);
+  // the Spire's marks are testerhh's, its doors the town's (WLD-253); a fixture mark's id is <by>/<dir>, so the ids the laws name move with `by`
+  const byOf = new Map(w.marks.filter((m) => m.id.startsWith("spire/")).map((m) => [m.id, m.by === TOWN ? TOWN : "testerhh"]));
+  const rid = (s) => s.replace(/^spire\//, `${byOf.get(s) ?? "testerhh"}/`);
   for (const m of w.marks) {
-    if (m.by !== "spire") continue;
+    if (!byOf.has(m.id)) continue;
     const d = join(root, m.id.split("/")[1]);
     mkdirSync(d, { recursive: true });
-    const lines = ["---", "kind: sited", "by: testerhh", "date: 2026-10-13",
+    const lines = ["---", "kind: sited", `by: ${byOf.get(m.id)}`, "date: 2026-10-13",
       `at: { x: ${m.at.x}, y: ${m.at.y} }`, `extent: { w: ${m.extent.w}, h: ${m.extent.h} }`];
     if (m.class) lines.push(`class: ${m.class}`);
-    if (m.rooms) lines.push(`rooms: ${JSON.stringify(m.rooms.map((s) => s.replace("spire/", "testerhh/")))}`);
-    // a fixture mark's id is <by>/<dir>, so the ids the laws name move with `by`
-    const rid = (s) => s.replace(/^spire\//, "testerhh/");
+    if (m.rooms) lines.push(`rooms: ${JSON.stringify(m.rooms.map(rid))}`);
     if (m.entry) lines.push(`entry: ${JSON.stringify({
       ...m.entry,
       into: Array.isArray(m.entry.into) ? m.entry.into.map(rid) : rid(m.entry.into),
@@ -506,7 +509,7 @@ test("THE GATE: the ruled instance lints clean, and the heist refuses with no wa
   assert.match(red.out, /\[ERROR\] [^\n]*doors-outside: \[lands-at-names-a-mark\] entry\.lands_at: "testerhh\/the-gilded-doo-YOULL-NEVER-CATCH-ME" names no mark/);
 
   const exc = join(dir, "exceptions.json");
-  writeFileSync(exc, JSON.stringify({ exceptions: [{ mark: "testerhh/doors-outside", rule: "lands-at-names-a-mark", by: "jetto", why: "the heist (WLD-18)" }] }));
+  writeFileSync(exc, JSON.stringify({ exceptions: [{ mark: "the-town/doors-outside", rule: "lands-at-names-a-mark", by: "jetto", why: "the heist (WLD-18)" }] }));
   // until 2026-11-01 this list let the finding through by slug (code 0, "EXCEPTED"); Darko, 07:58: "if we're hardcoding
   // enumerated exceptions as slugs that's no good". The option is retired: a list handed to it changes nothing.
   const still_red = gate(dir, ["--portal-exceptions", exc]);
