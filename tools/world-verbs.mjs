@@ -18,6 +18,7 @@ import {
 } from "./world-engine.mjs";
 import { homeOf } from "./where-is.mjs"; // the ONE home resolver (declared, own parcel, household)
 import { propertyOf } from "./class-properties.mjs"; // a class's properties, up extends (LOGOS v2 part 2)
+import { doorRefusal } from "./door-law.mjs"; // WLD-253: doors are the town's by default, the 44 grandfathered
 import {
   marksContain, marksOverlapArea, overlapArea, rect,
 } from "./geometry.mjs"; // the ONE containment definition — pure, browser-safe (no node:*)
@@ -577,6 +578,10 @@ export function enter(state, targetId, world, {
  *     "settlement"`, the world as the last settlement printed it), and then
  *     everyone. Nothing is written. */
 function enterThroughPortal(state, portal, world, { held, handle, at, iso, accepted, into: pick, lockedOut = null, holdings = null }) {
+  // DOORS ARE THE TOWN'S (WLD-253): a door passes only if the law lets it stand: the town's, or one of the 44 that stood before the rule, as
+  // they stood. Asked first, by name, and nothing is written. A stairs leading where its class says authors no door, and is not asked.
+  const unlawful = doorRefusal(portal);
+  if (unlawful) return { error: unlawful.words, refused: "door-law", door: portal.id, changed: unlawful.changed };
   const marks = world.marks ?? [];
   const byId = new Map(marks.map((m) => [m.id, m]));
   const lock = lockedPassage(portal, { pick: pick == null ? null : String(pick), marks, held, lockedOut, determined: world.determined ?? {} });

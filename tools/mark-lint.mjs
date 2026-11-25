@@ -37,6 +37,7 @@ import { markStanding } from "./mark-standing.mjs";
 import { consentMap, CONSENT_WORDS, CONSENT_FIELD, townOwnedMark, cameAfter, inContact, seniorAtContact, parcelInteriorOf, parcelReaches } from "./consent.mjs";
 import { crossHouseholdRiders, householdResolver } from "./household-frames.mjs";
 import { portalFindings } from "./portals.mjs";
+import { doorRefusal } from "./door-law.mjs"; // WLD-253: doors are the town's by default, the 44 grandfathered
 import { classIndex, classChain, ownProperties, propertyAt, propertyNames, propertyValue } from "./class-properties.mjs";
 import { instanceClassOf, isSited, isPredicate, HELD_BY, heldBy, OWNED_BY, ownedBy } from "./mark-kind.mjs";
 import { regionAnchors, groundStands } from "./world-build.mjs"; // WLD-97: the ground_m rule the heightfield honors
@@ -1308,6 +1309,13 @@ const TOP_LEVEL_MD = new Set(["SCHEMA.md", "README.md"]);
     const rec = standingIndex.get(f.mark) ?? { id: f.mark };
     if (f.sev === "WARN") warn(rec, `[${f.rule}] ${f.msg}`);
     else err(rec, `[${f.rule}] ${f.msg}`);
+  }
+  // DOORS ARE THE TOWN'S (WLD-253, Darko 2026-11-25): entry.into and entry.lands_at are constitution-tier. A door stands only if it is the town's
+  // or one of the 44 that stood before the rule, exactly as it stood (door-law.mjs, the one list the passage and the office read too).
+  for (const rec of marks) {
+    if (rec._error) continue;
+    const refusal = doorRefusal(rec);
+    if (refusal) err(rec, `[door-law] ${refusal.words}`);
   }
 }
 

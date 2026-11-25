@@ -2019,6 +2019,38 @@ that already stood: a mark's `entry: {word, edge, consequence}` is its fixed ans
   side only. You enter a portal from anywhere in its extent, by the reach rule every threshold keeps, **or from
   anywhere in a mark you have entered that holds it** (Darko 2026-10-16 19:15, row 68 A1: no walk across a room to
   its door; on ground you have not entered, you still stand at the portal).
+- **Doors are the town's (ruled 2026-11-25, WLD-253; Darko: "whatever rule that we forgot to include that makes doors
+  not instantiable by default by residents, we need to build first").** A mark's `entry` stays sovereign: its word
+  and terms are its maker's. Its children `into` and `lands_at` are constitution-tier (`the-town/mark-entry-into`,
+  `the-town/mark-entry-lands-at`), so the town alone sets them, as 08-17's binding rule meant when it kept `portal`
+  and `entry` town-only. WLD-21's admin households keep exactly their three classes, dungeon, stairs and
+  portal-ground; making one is not the right to set a door's destination. A stairs that writes no `entry` leads where
+  its class says and writes no door. **The doors that stood before the rule are grandfathered, by name, as they
+  stood** (Darko, 2026-11-24 19:28 EST: *"we'll just make a special case for whatever was grandfathered because it's
+  a feels bad to create something and then have it taken away"*): Little Bird's three, `little-bird/a-paper-bag-of-crumbs`,
+  `little-bird/a-ring-in-the-pantry` and `little-bird/a-ring-of-black-stone` (world #416, #427, #434), and the
+  Starforge Spire's 41, `wright/the-starforge-spire`, `wright/spire-blue-room-to-north-walk`,
+  `wright/spire-cold-landing-to-hall-of-keepers`, `wright/spire-dining-hall-to-guests-walk`,
+  `wright/spire-dining-hall-to-mirror-room`, `wright/spire-gilded-doors`, `wright/spire-gilded-doors-inside`,
+  `wright/spire-gilded-vestibule-to-rose-hall`, `wright/spire-guests-walk-to-dining-hall`,
+  `wright/spire-guests-walk-to-little-stair`, `wright/spire-guests-walk-to-rose-hall`,
+  `wright/spire-hall-of-keepers-to-cold-landing`, `wright/spire-hall-of-keepers-to-rose-hall`,
+  `wright/spire-hall-of-keepers-to-star-chapel`, `wright/spire-little-stair-to-guests-walk`,
+  `wright/spire-lumber-room-to-register-room`, `wright/spire-mirror-room-to-dining-hall`,
+  `wright/spire-mirror-room-to-south-walk`, `wright/spire-north-arch-to-star-chapel`,
+  `wright/spire-north-turret-to-north-walk`, `wright/spire-north-walk-to-blue-room`,
+  `wright/spire-north-walk-to-north-turret`, `wright/spire-red-stair-hall-to-rose-hall`,
+  `wright/spire-register-room-to-lumber-room`, `wright/spire-rose-hall-to-gilded-vestibule`,
+  `wright/spire-rose-hall-to-guests-walk`, `wright/spire-rose-hall-to-hall-of-keepers`,
+  `wright/spire-rose-hall-to-red-stair-hall`, `wright/spire-round-court-to-south-walk`, `wright/spire-servants-door`,
+  `wright/spire-servants-door-inside`, `wright/spire-south-arch-to-star-chapel`, `wright/spire-south-arch-to-well-stair`,
+  `wright/spire-south-turret-to-south-walk`, `wright/spire-south-walk-to-mirror-room`,
+  `wright/spire-south-walk-to-round-court`, `wright/spire-south-walk-to-south-turret`,
+  `wright/spire-star-chapel-to-hall-of-keepers`, `wright/spire-star-chapel-to-north-arch`,
+  `wright/spire-star-chapel-to-south-arch` and `wright/spire-well-stair-to-south-arch`. Each keeps the `into` and
+  `lands_at` it had, and its word and terms stay its maker's to change; where it leads, and where it lands, are the
+  town's from now on. A door no rule allows does not pass. How a resident may come to make a door is CORE-129's
+  sitting, not this line. The one list the lint, the passage and the office read is `tools/door-law.mjs`.
 - **Where a passage sets you down** (Darko 2026-10-16 19:15, row 68 (a)): fully inside the room it enters, first
   match wins: the room's own `entry.lands_at` (a place may say where its entrants land without naming an `into`);
   a portal `lands_at` that points inside the room, as written (a point in it, or a mark in it that is not a door);

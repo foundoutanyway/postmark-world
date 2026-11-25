@@ -24,6 +24,7 @@ import { isSited, instanceClassOf, heldBy } from "./mark-kind.mjs"; // what a re
 import { marksContain, overlapArea, pointInPolygon, pointInRect, polygonBBox, polygonOf, rect, rectCorners } from "./geometry.mjs";
 import { entryLawOf, REQUIRES_AT_SETTLEMENT, requiresHoldersIn } from "./enter-exit.mjs";
 import { nameInSentence } from "./mark-name.mjs";
+import { doorStanding } from "./door-law.mjs"; // WLD-253: doors are the town's by default, the 44 grandfathered
 
 export const DUNGEON_CLASS = "dungeon";
 /** How far a `lands_at` anchor may stand from its `into` shape before the lint refuses it. */
@@ -461,8 +462,8 @@ export function landingOf(law, intoMark, byId, { room = intoMark, portal = null 
   };
   const done = (at, by, mark = null) => ({ ok: true, x: at.x, y: at.y, lands_mark: mark, clamped: !!(at.clamped ?? at.moved), by });
   const here = room ?? intoMark;
-  // 1. the room's own word
-  const own = room && room.id !== portal?.id ? entryLawOf(room) : null;
+  // 1. the room's own word: honored only where the law lets it stand (WLD-253: entry.lands_at is the town's; door-law.mjs)
+  const own = room && room.id !== portal?.id && doorStanding(room).allowed ? entryLawOf(room) : null;
   if (own && !own.into && own.lands_at !== undefined) {
     const r = resolve(own.lands_at, `${room.id}'s `);
     if (r.error) return r.error;
