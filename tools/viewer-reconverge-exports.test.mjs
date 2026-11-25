@@ -216,10 +216,10 @@ test("styleRules: the page's own top-level rules whose selector the test accepts
   // every rule it returns is in STYLE, and its selector passed the test
   const STYLE_NOC = STYLE.replace(/\/\*[\s\S]*?\*\//g, "");
   for (const rule of homes.split("\n")) assert.ok(STYLE_NOC.includes(rule.slice(0, rule.indexOf("{") + 1)), rule.slice(0, 40));
-  // a rule that exists only inside an @media block is not a top-level rule: the tour title's 1rem one is, the 1.12rem one is not
+  // a rule that exists only inside an @media block is not a top-level rule: the tour title's wide one is, the phone one is not (WLD-220 rebuild sizes)
   const title = styleRules((s) => s === ".wv-tour-title");
-  assert.match(title, /font-size:1\.12rem/);
-  assert.doesNotMatch(title, /font-size:1rem/, "nothing from inside @media");
+  assert.match(title, /font-size:clamp\(1\.7rem,5\.2vw,2\.5rem\)/);
+  assert.doesNotMatch(title, /font-size:clamp\(1\.55rem/, "nothing from inside @media");
   assert.equal(styleRules(() => false), "");
   assert.ok(!styleRules(() => true).split("\n").some((l) => l.startsWith("@")), "no at-rule comes back");
   // control: a selector no rule has answers nothing, so an empty answer is possible

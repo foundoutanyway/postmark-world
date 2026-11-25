@@ -62,7 +62,14 @@
 // THE CIRCLE READER (CORE-82). A conversation's column hosts the one shared reader (spectator/circle-reader.mjs), which draws a room's top
 // circles and lets a visitor open one; the column keeps its host, its badge's link and its scroll. The reader is I/O-injected like this
 // module: the view hands in `reader: { roomId, source }`, and nothing here fetches.
-import { createCircleReader, READER_CSS, SAY_REPLY_CSS } from "./circle-reader.mjs";
+// WLD-248: `reader.identityForSpeaker(handle) → fresh Element|null` is the host's OPTIONAL whole speaker identity (face and name as one node; the contract is
+// circle-reader.mjs's `identityForSpeaker`). The column hands it to its reader and uses it for its own two speaker names: the header's speakers row, and a
+// plain statement whose FIRST span is its name as the page writes it (`{ type: "strong", spans: [{ type: "text", text: <speaker> }] }`), which the identity
+// replaces, face included; the time and words after it stay. A plain statement shaped any other way, or no valid node, keeps the old face + name path exactly.
+// Focus on a link inside such a node survives the column's same-key updates of its row and plain lines: it returns to the same place in the FRESH node of the
+// same speaker or line (World remembers which of its own slots held which node; nothing is marked on the host's node). The host must give the node a visible,
+// exposed name (see circle-reader.mjs; the refusal checks are not an accessibility audit).
+import { createCircleReader, speakerIdentity, identityFocusPath, refocusIdentity, READER_CSS, SAY_REPLY_CSS } from "./circle-reader.mjs";
 
 // ── the safe seams ──────────────────────────────────────────────────────────
 
@@ -243,7 +250,7 @@ export function isParcelMark(mark) {
  * renders blank: every state below ends in either prose or one line saying why
  * there is none.
  */
-export function homeColumnModel({ handle, kicker, title, region, leadImage, door = null, error = null, loading = false, residentHref = null, titleLink = false, parcelId = null, canEnter = false, byline = null, residents = [], ownWords = null, enterId = null, facts = [], relations = [], back = null, icons = [], stamps = null, footprint = null, bars = [], tokens = [], copyId = null, pronouns = null, footerLink = null, reader = null, speakers = [], kickerTitle = null } = {}) {
+export function homeColumnModel({ handle, kicker, title, region, leadImage, door = null, error = null, loading = false, residentHref = null, titleLink = false, parcelId = null, canEnter = false, byline = null, residents = [], ownWords = null, enterId = null, facts = [], relations = [], back = null, icons = [], stamps = null, footprint = null, bars = [], tokens = [], copyId = null, pronouns = null, footerLink = null, reader = null, chooser = null, speakers = [], kickerTitle = null } = {}) {
   const who = String(handle ?? "").trim();
   // THE DOOR SPEAKS ONLY FOR ITS OWN PARCEL (POS-584, Darko 2026-10-11: "Sol's
   // parcel got yeeted"). There is one home page per handle, so a household's
@@ -286,7 +293,7 @@ export function homeColumnModel({ handle, kicker, title, region, leadImage, door
     // it always was.
     byline: byline === false ? "" : byline ? String(byline) : (who ? `in ${who}'s own words` : ""),
     blocks,
-    note: blocks.length ? ""
+    note: blocks.length || (chooser && typeof chooser.fill === "function") ? ""
       : loading ? "reading the home…"
       : error ? `the office did not answer for this home — ${error}`
       : "nothing written here yet",
@@ -339,6 +346,10 @@ export function homeColumnModel({ handle, kicker, title, region, leadImage, door
     // shared reader where the flat statements stood. The flat `door.blocks` stay, drawn only when the reader says it could not read the
     // room (an unavailable read is said, and the words the map already holds stand in; it is never drawn as an empty room).
     reader: reader && reader.source && reader.roomId !== undefined && reader.roomId !== null ? reader : null,
+    // THE CROWDED PRESS'S CHOICES (CORE-54, Wright 2026-11-20 16:57Z: on a phone a tap on crowded marks or conversation badges opens the EXISTING chooser content
+    // in the phone column). The view hands in `{ fill(host) }`: the viewer fills the column's host with the chooser it has always drawn (its own markup, its own
+    // escaping, its own rows and `data-choose` ids); this file holds no markup of its own and still parses no HTML string.
+    chooser: chooser && typeof chooser.fill === "function" ? chooser : null,
     // WLD-215, the conversation's ONE header: who spoke (face + name, the face from the reader hook's host) and what the live mark means on hover. Plain data.
     speakers: (speakers ?? []).filter((s) => s && String(s.handle ?? "").trim())
       .map((s) => ({ handle: String(s.handle).trim(), name: String(s.name ?? s.handle).trim(), look: String(s.look ?? "") })),
@@ -480,11 +491,32 @@ function hostFace(faceFor, handle) {
 }
 
 // WHO SPOKE, as face + name, one per speaker: the conversation header's list (a fresh face per entry, so a repeated handle never steals a node)
-function fillSpeakers(doc, row, speakers, faceFor) {
+// WLD-248: which host identity stands in which of the column's own slots (a speakers-row entry, a plain line), per container, rebuilt with it; never a mark on the node
+const IDENTITY_SLOT = new WeakMap();
+function placeIdentity(container, node, base) {
+  const reg = container.__idSlots ?? (container.__idSlots = { nodes: new Map(), seen: new Map() });
+  const n = (reg.seen.get(base) ?? 0) + 1; reg.seen.set(base, n);
+  reg.nodes.set(`${base}#${n}`, node); IDENTITY_SLOT.set(node, `${base}#${n}`);
+}
+/** before a container is rebuilt: the slot and place of a focused element inside one of its host identities, or null */
+function heldIdentityFocus(doc, container) {
+  const active = doc.activeElement;
+  if (!active || !container?.contains?.(active)) return null;
+  for (let n = active; n && n !== container; n = n.parentNode) if (IDENTITY_SLOT.has(n)) return { slot: IDENTITY_SLOT.get(n), path: identityFocusPath(n, active) };
+  return null;
+}
+/** after it is rebuilt: the same place in the same slot's fresh identity */
+function giveBackIdentityFocus(container, held) { if (held) refocusIdentity(container.__idSlots?.nodes.get(held.slot), held.path); }
+
+// (WLD-248: or the host's whole identity for that speaker, in place of both)
+function fillSpeakers(doc, row, speakers, faceFor, identityFor = null) {
   while (row.firstChild) row.removeChild(row.firstChild);
+  row.__idSlots = null;
   for (const sp of speakers) {
     const item = el(doc, "span", "wv-homecol-speaker");
     item.setAttribute("data-speaker", sp.handle);
+    const identity = speakerIdentity(identityFor, sp.handle);
+    if (identity) { placeIdentity(row, identity, `speaker:${sp.handle}`); item.appendChild(identity); row.appendChild(item); continue; }
     const face = hostFace(faceFor, sp.handle);
     if (face) item.appendChild(face);
     const name = el(doc, "span", "wv-homecol-speaker-name");
@@ -494,7 +526,13 @@ function fillSpeakers(doc, row, speakers, faceFor) {
   }
 }
 
-function appendBlocks(doc, parent, blocks, imagePath, faceFor = null) {
+// a plain statement's leading name, as the page writes it: the first span, strong, holding exactly the speaker's handle (WLD-248 replaces it with the identity)
+const leadsWithName = (block) => {
+  const first = block.spans?.[0];
+  return first?.type === "strong" && first.spans?.length === 1 && first.spans[0]?.type === "text" && first.spans[0].text === block.speaker;
+};
+
+function appendBlocks(doc, parent, blocks, imagePath, faceFor = null, identityFor = null) {
   for (const block of blocks ?? []) {
     if (block.type === "heading") {
       const node = el(doc, `h${Math.min(6, Math.max(1, block.level))}`);
@@ -545,6 +583,17 @@ function appendBlocks(doc, parent, blocks, imagePath, faceFor = null) {
       continue;
     }
     const p = el(doc, "p");
+    // WLD-248: the host's whole identity takes the place of the face and the leading name, once; the rest of the spans (time, words) are drawn as ever
+    const identity = typeof block.speaker === "string" && leadsWithName(block) ? speakerIdentity(identityFor, block.speaker) : null;
+    if (identity) {
+      // the line's speaker and words name its slot, so new speech above or below does not move it; its presentation (`look`, which the page changes when a
+      // picture arrives late) is not who or what was said, and stays out of the key (it still redraws the line: the body's signature keeps it)
+      placeIdentity(parent, identity, `line:${JSON.stringify([block.speaker, block.spans])}`);
+      p.appendChild(identity);
+      appendSpans(doc, p, block.spans.slice(1), imagePath);
+      parent.appendChild(p);
+      continue;
+    }
     // WLD-215: a plain statement names its speaker, and wears that speaker's face before the words (the old office's transcript, which prod still shows)
     const face = typeof block.speaker === "string" ? hostFace(faceFor, block.speaker) : null;
     if (face) p.appendChild(face);
@@ -627,9 +676,16 @@ export function renderHomeColumn(doc, host, model, { imagePath = null } = {}) {
 
   if (model.speakers.length || model.reader) {   // a reader's column always holds the row (empty hides itself), so late speakers have a place
     const row = el(doc, "div", "wv-homecol-speakers");
-    fillSpeakers(doc, row, model.speakers, model.reader?.faceForSpeaker ?? null);
+    fillSpeakers(doc, row, model.speakers, model.reader?.faceForSpeaker ?? null, model.reader?.identityForSpeaker ?? null);
     row.__sig = JSON.stringify(model.speakers);
     scroll.appendChild(row);
+  }
+
+  if (model.chooser) {
+    // the crowded press's choices: the viewer fills this host with the chooser's rows (their `data-choose` ids are the viewer's one click delegate's)
+    const mount = el(doc, "div", "wv-homecol-chooser");
+    scroll.appendChild(mount);
+    model.chooser.fill(mount);
   }
 
   if (model.icons?.length) {
@@ -710,6 +766,7 @@ export function renderHomeColumn(doc, host, model, { imagePath = null } = {}) {
       doc, host: mount, source: model.reader.source, roomId: model.reader.roomId,
       canReply: !!model.reader.canReply, onReply: model.reader.onReply ?? null, hrefForCircle: model.reader.hrefForCircle ?? null,
       faceForSpeaker: model.reader.faceForSpeaker ?? null,    // WLD-213: only a host that hands one in; the World page's conversation view hands the page's own face source (WLD-215)
+      identityForSpeaker: model.reader.identityForSpeaker ?? null,   // WLD-248: only a host that hands one in (the Site's shared identity form)
       hostOwnsHeader: model.reader.hostOwnsHeader === true,   // WLD-215: only a view that draws the room's header itself (the conversation column) says so
       hostHoldsPlain: model.blocks.length > 0,                // WLD-216: this column holds the selected conversation's plain transcript, so an old office's plain list stands down to it
       // WLD-216: an office from before POS-1035 answers the room read with its plain list (`reason: "plain"`): that is no failure, so the plain transcript the
@@ -717,7 +774,7 @@ export function renderHomeColumn(doc, host, model, { imagePath = null } = {}) {
       onState: (st, detail) => { const flat = st === "unavailable" && model.blocks.length > 0; body.hidden = !flat; note.hidden = !flat || detail?.reason === "plain"; },
     });
     host.__circleReader = reader;
-    appendBlocks(doc, body, model.blocks, imagePath, model.reader.faceForSpeaker ?? null);
+    appendBlocks(doc, body, model.blocks, imagePath, model.reader.faceForSpeaker ?? null, model.reader.identityForSpeaker ?? null);
     scroll.appendChild(note);
     scroll.appendChild(body);
     reader.showRoom();
@@ -946,6 +1003,7 @@ export function createHomeColumn({ doc, host, readHome, imagePath = null, reside
   // button carries `data-enter`, and the viewer's door handler is the one that
   // reads it, for this button exactly as for the card's.
   let shown = null;            // the parcel id on screen, or null
+  let lastView = null;         // the view on screen, as last handed in (WLD-249: what a relabel draws from)
   let inFlight = 0;
 
   const paint = (view, state) => {
@@ -980,13 +1038,14 @@ export function createHomeColumn({ doc, host, readHome, imagePath = null, reside
       pronouns: view.pronouns ?? null,
       footerLink: view.footerLink ?? null,
       reader: view.reader ?? null,
+      chooser: view.chooser ?? null,
       speakers: view.speakers ?? [],
       kickerTitle: view.kickerTitle ?? null,
     }), { imagePath });
   };
 
   function close() {
-    shown = null;
+    shown = null; lastView = null;
     if (!host) return;
     host.hidden = true;
     host.parentElement?.classList.remove("has-homecol");
@@ -1008,32 +1067,60 @@ export function createHomeColumn({ doc, host, readHome, imagePath = null, reside
     const dds = Array.from(host.querySelectorAll?.(".wv-homecol-facts dd") ?? []);
     (view.facts ?? []).forEach((f, i) => { if (f && !f.detail && !f.swatch) set(dds[i], f.value); });
     r.setCanReply?.(!!view.reader.canReply, view.reader.onReply ?? null);
-    // WLD-216: the plain transcript behind the reader (what an old office's conversation shows) takes the words the map holds NOW, inside this same conversation
-    // only (the view is the selected thread's own, by id): rewritten only when they changed, so an unchanged redraw touches nothing.
-    const body = one(".wv-homecol-body");
-    const blocks = view.door?.blocks;
-    if (body && Array.isArray(blocks)) {
-      const sig = JSON.stringify(blocks);
-      if (body.__plainSig !== sig) {
-        while (body.firstChild) body.removeChild(body.firstChild);
-        appendBlocks(doc, body, blocks, imagePath, view.reader.faceForSpeaker ?? null);
-        body.__plainSig = sig;
-      }
-    }
-    // WLD-215: the header's speakers and the live mark's meaning follow the office's late public metadata in place (rewritten only when they changed)
-    const row = one(".wv-homecol-speakers");
-    if (row && Array.isArray(view.speakers)) {
-      const speakers = view.speakers.filter((s) => s && String(s.handle ?? "").trim())
-        .map((s) => ({ handle: String(s.handle).trim(), name: String(s.name ?? s.handle).trim(), look: String(s.look ?? "") }));   // `look` = what the face is made from (so a picture arriving late redraws it)
-      const sig = JSON.stringify(speakers);
-      if (row.__sig !== sig) { fillSpeakers(doc, row, speakers, view.reader.faceForSpeaker ?? null); row.__sig = sig; }
-    }
+    syncPlain(view, false);
+    syncSpeakers(view, false);
     const kick = one(".wv-homecol-kicker");
     if (kick && view.kickerTitle) kick.setAttribute("title", String(view.kickerTitle));
+  }
+  // WLD-216: the plain transcript behind the reader (what an old office's conversation shows) takes the words the map holds NOW, inside this same conversation
+  // only (the view is the selected thread's own, by id): rewritten only when they changed, so an unchanged redraw touches nothing; `force` (WLD-249: the host's
+  // identity changed, the words did not) rewrites it anyway
+  function syncPlain(view, force) {
+    const body = host.querySelector?.(".wv-homecol-body") ?? null;
+    const blocks = view.door?.blocks;
+    if (!body || !Array.isArray(blocks)) return;
+    const sig = JSON.stringify(blocks);
+    if (body.__plainSig === sig && !force) return;
+    const held = heldIdentityFocus(doc, body);
+    while (body.firstChild) body.removeChild(body.firstChild);
+    body.__idSlots = null;
+    appendBlocks(doc, body, blocks, imagePath, view.reader.faceForSpeaker ?? null, view.reader.identityForSpeaker ?? null);
+    body.__plainSig = sig;
+    giveBackIdentityFocus(body, held);
+  }
+  // WLD-215: the header's speakers and the live mark's meaning follow the office's late public metadata in place (rewritten only when they changed; `force` as above)
+  function syncSpeakers(view, force) {
+    const row = host.querySelector?.(".wv-homecol-speakers") ?? null;
+    if (!row || !Array.isArray(view.speakers)) return;
+    const speakers = view.speakers.filter((s) => s && String(s.handle ?? "").trim())
+      .map((s) => ({ handle: String(s.handle).trim(), name: String(s.name ?? s.handle).trim(), look: String(s.look ?? "") }));   // `look` = what the face is made from (so a picture arriving late redraws it)
+    const sig = JSON.stringify(speakers);
+    if (row.__sig === sig && !force) return;
+    const held = heldIdentityFocus(doc, row);
+    fillSpeakers(doc, row, speakers, view.reader.faceForSpeaker ?? null, view.reader.identityForSpeaker ?? null); row.__sig = sig;
+    giveBackIdentityFocus(row, held);
+  }
+
+  /**
+   * WLD-249: the host's speaker identity changed (a provider set, replaced or cleared, or the same one's data changed): draw the open conversation's labels
+   * again IN PLACE, from what the column already holds: its speakers row, its plain lines and its reader's bylines. Nothing is read, nothing remounted;
+   * scroll, focus (a focused identity link returns to the same line's fresh node), the open threads and the selection stay. Anything else open: nothing to do.
+   */
+  function refreshIdentities() {
+    const view = lastView;
+    const r = host?.__circleReader;
+    if (!view?.reader || shown !== view.key || !r) return false;
+    const scroller = host.querySelector?.(".wv-homecol-scroll") ?? null, top = scroller?.scrollTop;   // the column's own scroll, put back after every rebuild below
+    syncPlain(view, true);
+    syncSpeakers(view, true);
+    r.redraw?.();
+    if (scroller && typeof top === "number" && scroller.scrollTop !== top) scroller.scrollTop = top;
+    return true;
   }
 
   function open(view) {
     if (!host || !doc || !view?.handle || !view?.key) return false;
+    lastView = view;
     if (shown === view.key) { liveUpdate(view); return true; }
     shown = view.key;
     host.hidden = false;
@@ -1063,7 +1150,7 @@ export function createHomeColumn({ doc, host, readHome, imagePath = null, reside
 
   // the circle reader refreshes itself in place (it keeps the reader's scroll and focus and offers new says); the column never repaints for it
   const refreshReader = () => host?.__circleReader?.refresh({ quiet: true });
-  return { open, close, isOpen: () => shown !== null, shownKey: () => shown, refreshReader, reader: () => host?.__circleReader ?? null };
+  return { open, close, isOpen: () => shown !== null, shownKey: () => shown, refreshReader, refreshIdentities, reader: () => host?.__circleReader ?? null };
 }
 
 // ── the dress ───────────────────────────────────────────────────────────────
@@ -1086,6 +1173,20 @@ export const HOME_COLUMN_CSS = `
 .wv-homecol-close { margin-left:auto; flex:none; border:0; background:transparent; color:var(--dim);
   font:inherit; font-size:.95rem; line-height:1; padding:3px 7px; border-radius:4px; cursor:pointer; }
 .wv-homecol-close:hover, .wv-homecol-close:focus-visible { color:var(--paper); background:var(--panel2); }
+/* CORE-54 (Darko 2026-11-20: "1. Buttons cover titles", "4. Small targets"). ON A PHONE the host's own floating buttons (a Postmark pill, a Time-travel pill)
+   ride over the top of this full-height column, and nothing reserved room for them: the title began under them. The host says, in --wv-chrome-bottom, the
+   y (px from the top of the screen) below which it has nothing floating; the column's sticky nav is at least that tall, so its bar IS the band the
+   host's buttons float on and the title, the facts and the close sit clear below it. No host value, no reserve (a standalone viewer has no such buttons).
+   The close keeps its mark and gains a 44 px press target. */
+@media (max-width:720px) {
+  .wv-homecol-nav { min-height:var(--wv-chrome-bottom, 0px); box-sizing:border-box; align-items:flex-start; }
+  .wv-homecol-kicker { margin-top:14px; }   /* the kicker stays on the top row beside the close (a bottom-aligned kicker sat where the host's Time-travel pill floats) */
+  .wv-homecol-close { align-self:flex-start; }
+}
+@media (max-width:720px), (pointer:coarse) {
+  .wv-homecol-close { min-width:44px; min-height:44px; }
+  .wv-homecol-all { display:inline-block; padding:12px 6px; }
+}
 .wv-homecol-scroll { flex:1; min-height:0; overflow-y:auto; padding:14px 15px 26px;
   scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
 .wv-homecol-title { margin:0; color:var(--paper); font-size:1.22rem; line-height:1.25; }

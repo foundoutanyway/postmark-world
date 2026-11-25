@@ -16,6 +16,7 @@ import {
   centredWithin, sameScale, dragMoved, sameVersion, sameFrame, freshnessMoved, versionOf, FRAME_KEYS, TAG_KEYS, FRESHNESS_KEYS,
   pillOffsetM, standingNear, classifyRequests, NEAR_CENTRE_M,
   sampleProblems, auditRow, readTown, repoPathOf, PLACES, MIN_CAMERA_WRITES, MIN_TRAVEL_PX, INTERACTIVE_BOUND_MS, QUIET_MS,
+  panStalled, PAN_P95_BAR_MS, PAN_TASK_BAR_MS,
 } from "./perf/world-page-audit.mjs";
 
 test("prod context comes from the viewer's API snapshot, never the legacy export or a guessed build stamp", async () => {
@@ -85,6 +86,52 @@ test("a place is 'located' only when it is under the middle of the map", () => {
   assert.equal(sameScale(1.2, 0.6), false);
   assert.equal(dragMoved({ writes: MIN_CAMERA_WRITES, travelPx: MIN_TRAVEL_PX }), true);
   assert.equal(dragMoved({ writes: 0, travelPx: 0 }), false);
+});
+
+// ── a slow pan is a finding, not an invalid drag (WLD-226, Wright 2026-11-22 21:09Z) ─────────────────────────
+
+test("slow pan: real travel but fewer than 5 writes is pan_stalled when a bar is crossed, read from the phase's own fields", () => {
+  const slow = (over) => place({ camera_writes: 4, travel_px: 94.6, frame_p95_ms: 3316.5, longest_task_ms: 3305, frames: 9, long_tasks: 14, ...over });
+  // ordinary validity is unchanged: enough writes and travel is valid and not stalled, whatever the bars say
+  assert.equal(panStalled(place({ camera_writes: MIN_CAMERA_WRITES, travel_px: MIN_TRAVEL_PX, frame_p95_ms: 5000 })), false);
+  assert.deepEqual(row([sample(), sample(), sample()]).pan_stalled, []);
+  // the exception: both bars, and each bar alone
+  assert.equal(panStalled(slow()), true);
+  assert.equal(panStalled(slow({ frame_p95_ms: 50 })), true, "longest task alone");
+  assert.equal(panStalled(slow({ longest_task_ms: 0 })), true, "p95 alone");
+  // exact boundaries: p95 >= 100 crosses, task > 200 crosses
+  assert.equal(panStalled(slow({ longest_task_ms: 0, frame_p95_ms: PAN_P95_BAR_MS })), true);
+  assert.equal(panStalled(slow({ longest_task_ms: 0, frame_p95_ms: PAN_P95_BAR_MS - 0.1 })), false);
+  assert.equal(panStalled(slow({ frame_p95_ms: 50, longest_task_ms: PAN_TASK_BAR_MS })), false);
+  assert.equal(panStalled(slow({ frame_p95_ms: 50, longest_task_ms: PAN_TASK_BAR_MS + 1 })), true);
+  assert.equal(panStalled(slow({ camera_writes: MIN_CAMERA_WRITES - 1, travel_px: MIN_TRAVEL_PX })), true, "exactly the travel minimum");
+  // insufficient travel, or below the bars, stays an inert drag
+  assert.equal(panStalled(slow({ travel_px: MIN_TRAVEL_PX - 0.1 })), false);
+  assert.equal(panStalled(slow({ frame_p95_ms: 50, longest_task_ms: 100 })), false);
+  assert.equal(panStalled(slow({ frame_p95_ms: null })), false, "no frames: nothing to read the bar from");
+  assert.equal(panStalled(null), false);
+  for (const w of [null, undefined, NaN, Infinity, "4"]) assert.equal(panStalled(slow({ camera_writes: w })), false, `camera_writes ${String(w)} is no count`);
+  assert.equal(sampleProblems(sample({ places: { town_centre: slow({ camera_writes: null }), spire: place() } }), { official: true }).some((m) => /did not move the camera/.test(m)), true, "a missing count stays invalid");
+  assert.equal(panStalled(place({ camera_writes: MIN_CAMERA_WRITES, travel_px: MIN_TRAVEL_PX - 0.1, frame_p95_ms: 3000 })), false);
+  assert.equal(sampleProblems(sample({ places: { town_centre: place({ camera_writes: MIN_CAMERA_WRITES, travel_px: MIN_TRAVEL_PX - 0.1, frame_p95_ms: 3000 }), spire: place() } }), { official: true }).some((m) => /did not move the camera/.test(m)), true, "5 writes but 59.9 px is invalid");
+  const bad = (over) => sampleProblems(sample({ places: { town_centre: slow(over), spire: place() } }), { official: true });
+  assert.deepEqual(bad({}), [], "a slow pan is not an invalidity");
+  assert.equal(bad({ travel_px: 30 }).some((m) => /did not move the camera/.test(m)), true);
+  assert.equal(bad({ frame_p95_ms: 50, longest_task_ms: 100 }).some((m) => /did not move the camera/.test(m)), true, "low observations below the bars are inert");
+  // a caller's flag cannot make one: only the phase's own numbers do
+  assert.equal(bad({ travel_px: 30, pan_stalled: true }).some((m) => /did not move the camera/.test(m)), true);
+});
+
+test("slow pans keep their raw numbers on the row, and every other failure still invalidates", () => {
+  const tc = place({ camera_writes: 4, travel_px: 94.6, frame_p95_ms: 3316.5, longest_task_ms: 3305, frames: 9, long_tasks: 14 });
+  const r = row([sample({ places: { town_centre: tc, spire: place() } }), sample(), sample()]);
+  assert.equal(r.valid, true, r.invalid.join("; "));
+  assert.deepEqual(r.pan_stalled, [{ sample: 1, place: "town_centre", camera_writes: 4, travel_px: 94.6, frame_p95_ms: 3316.5, longest_task_ms: 3305, frames: 9, long_tasks: 14 }]);
+  const wrongFrame = row([sample({ places: { town_centre: tc, spire: place() }, version_after: versionOf({ ...BUILD, world_sha: "other" }) }), sample(), sample()]);
+  assert.equal(wrongFrame.valid, false, "a mixed frame still invalidates a slow pan");
+  const notThere = row([sample({ places: { town_centre: { ...tc, located: false }, spire: place() } }), sample(), sample()]);
+  assert.equal(notThere.valid, false);
+  assert.equal(row([sample({ places: { town_centre: { ...tc, still_in_view: false }, spire: place() } }), sample(), sample()]).valid, false);
 });
 
 // ── C: exact, and censored ─────────────────────────────────────────────────────────────────────────────────

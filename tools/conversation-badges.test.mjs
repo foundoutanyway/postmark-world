@@ -12,11 +12,13 @@ const SOURCE = readFileSync(new URL("../spectator/viewer.mjs", import.meta.url),
 const ruleOf = (sel) => { const at = SOURCE.indexOf(`
 ${sel} {`); return at < 0 ? "" : SOURCE.slice(at, SOURCE.indexOf("}", at)); };
 
-test("the bubbles layer defaults ON, and its button says so", () => {
+test("the bubbles layer defaults ON, and its switch (in the Filters panel since CORE-147; the 💬 button is gone) says so", () => {
   assert.ok(SOURCE.includes("let convoVisible = convoStored() ?? true;"), "on unless the reader chose off");
   assert.match(SOURCE, /convoLayer\.style\.display = convoVisible \? "" : "none";/);
   assert.match(SOURCE, /convoHoverLayer\.style\.display = convoVisible \? "" : "none";/);
-  assert.ok(SOURCE.includes("classList.toggle(\"on\", convoVisible)"), "the lit button matches the layer");
+  assert.ok(SOURCE.includes("bubblesOn: bubblesVisible()"), "the lit switch matches the layer (the panel is drawn from the layer's own state)");
+  assert.match(SOURCE, /const bubblesVisible = \(\) => \{ try \{ return convoVisible; \} catch \{ return true; \} \};/);
+  assert.match(SOURCE, /syncDisplayControls\(\);\s*\/\/ the speech bubbles' switch/, "the switch is redrawn when the map mounts, remembered or default");
   assert.match(SOURCE, /if \(convoVisible\) Promise\.resolve\(\)\.then\(\(\) => loadConversations\(\)\)\.then\(drawConversations\)/, "it loads with the map, not on a first click");
 });
 
@@ -42,17 +44,18 @@ test("the hit reach is a badge's, in metres, at the current zoom — nearest fir
 
 test("review: a reader who can act opens a thread only from its own disc; the ground beside it still walks (POS-779)", () => {
   assert.match(SOURCE, /const convoClickAt = \(wx, wy\) => \(canAct\(\) \? convosAt\(wx, wy, \{ disc: true \}\)\[0\] \?\? null : convoAt\(wx, wy\)\);/);
-  assert.match(SOURCE, /const hit = convoClickAt\(wp\.x, wp\.y\); \/\/ visibility-gated/);
+  // CORE-54: the click also takes the drawn badge disc on screen, a finger's reach (22 px) rather than the world-space one
+  assert.match(SOURCE, /const hit = convoClickAt\(wp\.x, wp\.y\) \?\? convoDiscsAt\(e\.clientX, e\.clientY, e\.pointerType\)\[0\] \?\? null; \/\/ visibility-gated/);
   assert.match(SOURCE, /const hit = wp \? convoClickAt\(wp\.x, wp\.y\) : null;/, "the hand cursor promises what the click does");
   assert.doesNotMatch(SOURCE, /Toggled off \(the default\)/, "the stale comment is gone");
 });
 
-test("review: the reader's own choice persists per viewer, in try/catch, and the lit button follows the layer", () => {
+test("review: the reader's own choice persists per viewer, in try/catch, and the lit switch follows the layer", () => {
   assert.match(SOURCE, /let convoVisible = convoStored\(\) \?\? true;/);
   assert.match(SOURCE, /const convoStored = \(\) => \{ try \{ const v = globalThis\.localStorage\?\.getItem\(CONVO_KEY\)/);
   assert.match(SOURCE, /try \{ globalThis\.localStorage\?\.setItem\(CONVO_KEY, on \? "on" : "off"\); \} catch/);
   assert.match(SOURCE, /convoStore\(on\);/);
-  assert.match(SOURCE, /classList\.toggle\("on", convoVisible\)/);
+  assert.match(SOURCE, /bubblesOn: bubblesVisible\(\)/);
 });
 
 // ── POS-779 whole-carrier review W1: a thread on the deck keeps its dashed ring ──
