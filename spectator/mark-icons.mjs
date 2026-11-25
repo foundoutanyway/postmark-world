@@ -138,7 +138,7 @@ export function markWhat(mark, { cls = "", creatureClasses = new Set(["creature"
   if (cls === "idea" || cls === "bounty") return null;
   if (isDungeon(mark) || cls === "dungeon") return "dungeon";
   if (isStairs(mark) || cls === "stairs") return "stairs";
-  if (cls === "portal-ground" || entryLawOf(mark)?.into) return "door";
+  if (cls === "door" || cls === "portal-ground" || entryLawOf(mark)?.into) return "door"; // door is a class (WLD-253)
   if (cls === "vehicle") return "vehicle";
   if (creatureClasses.has(cls)) return "creature";
   // a kind of thing is a thing (QA 10-17: a halloween-candy-bowl read "A place")

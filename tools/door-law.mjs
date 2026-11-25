@@ -115,8 +115,10 @@ export function doorFieldWrites(mark) {
   const out = [];
   const scan = (obj, where) => {
     if (!obj || typeof obj !== "object" || Array.isArray(obj)) return;
-    for (const [key, value] of Object.entries(obj))
+    for (const [key, value] of Object.entries(obj)) {
+      if (value === undefined) continue; // no record carries undefined (a written null does count)
       for (const field of DOOR_FIELDS) if (SPELLINGS[field].test(key)) out.push({ field, key, where, value: valueOf(field, value) });
+    }
   };
   scan(mark, "flat");
   scan(mark?.entry, "entry");

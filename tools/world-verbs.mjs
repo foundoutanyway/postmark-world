@@ -471,14 +471,18 @@ export function enter(state, targetId, world, {
   // A mark a dungeon hides from you is no mark at all to you: the same answer
   // as an id that does not exist, so naming one from outside learns nothing.
   if (named && hiddenFrom(marks, held).has(targetId)) return { error: `no mark '${targetId}' to enter` };
-  // ENTERING A MARK ENTERS ITS `into` (WLD-5's ruling, restored by WLD-63): any
-  // mark carrying one is passed through it, the dungeon itself included. The
-  // Starforge Spire carries `into` its vestibule, so entering it from anywhere
-  // in its outline sets you down inside the Gilded Doors; a list asks which.
+  // ENTERING A DOOR ENTERS ITS `into` (WLD-5's ruling, restored by WLD-63): a
+  // mark carrying one is passed through it, and a list asks which. NARROWED
+  // 2026-11-25 (WLD-253, CORE-129 layer 1): `into` is door's alone, so a dungeon
+  // (or a stairs, or any other class) no longer names a way in of its own; a
+  // record that still writes one is passed here only to be refused by name at
+  // its threshold (door-law.mjs). The Starforge Spire, re-kinded to door,
+  // carries `into` its vestibule, so entering it from anywhere in its outline
+  // sets you down inside the Gilded Doors.
   if (named && entryLawOf(named)?.into) return enterThroughPortal(state, named, world, { held, handle, at, iso, accepted, into, lockedOut, holdings });
   // Inside a dungeon the only enter is through a portal (G3: the cure for the
-  // Swiss-cheese exit must not leak on the way in), and a dungeon that names no
-  // `into` of its own is entered by the portals that lead into it.
+  // Swiss-cheese exit must not leak on the way in), and a dungeon is entered by
+  // the doors that lead into it.
   if (named && dungeonIndex(marks).dungeons.length) {
     const inside = heldDungeon(held, marks);
     const governs = dungeonsOf(named, marks);
@@ -488,7 +492,7 @@ export function enter(state, targetId, world, {
       return {
         error: inside
           ? `you are inside ${d}, a dungeon — inside one, the only way to enter anything is a portal. The portals where you stand: ${ways.map((p) => p.id).join(", ") || "(none)"}`
-          : `${d} is a dungeon that names no way in of its own (no \`into\`), so it is entered through the portals that lead into it. Its ways in: ${ways.map((p) => p.id).join(", ") || "(none)"}`,
+          : `${d} is a dungeon, so it is entered through the doors that lead into it (a dungeon names no way in of its own: \`into\` is a door's). Its ways in: ${ways.map((p) => p.id).join(", ") || "(none)"}`,
         refused: "dungeon", dungeon: d, portals: ways,
       };
     }

@@ -507,7 +507,10 @@ export function enterTargetOf(intoMark, marks) {
  *  through `portal` is itself a portal standing inside it (the Chapel's front
  *  door, set in its wall), the passage enters the room that door stands in and
  *  sets you down at the door; nobody is put inside a doorway. Every other way
- *  is `enterTargetOf`, unchanged. */
+ *  is `enterTargetOf`, unchanged. NARROWED 2026-11-25 (WLD-253): the Chapel
+ *  was a dungeon naming its doors; `into` is a door's alone now, so this holds
+ *  for a door whose extent holds the doors it lists (as the re-kinded Spire's
+ *  does), never for a dungeon's own list. */
 export function passageTargetOf(portal, intoMark, marks) {
   const law = intoMark && intoMark.id !== portal?.id ? entryLawOf(intoMark) : null;
   if (law?.into?.length && !law.into.includes(intoMark.id) && markInside(portal, intoMark))

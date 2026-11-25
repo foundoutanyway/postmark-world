@@ -1,12 +1,12 @@
-// door-law.test.mjs — WLD-253 (CORE-129 layer 1): doors are the town's by default.   node --test tools/door-law.test.mjs
+// door-law.test.mjs — WLD-253 (CORE-129 layer 1, ruled 2026-11-25): door is a class.   node --test tools/door-law.test.mjs
 //
-// The ruling (Darko, 2026-11-25): "the first layer we need to implement is the enforcement, which means whatever rule that we forgot to include
-// that makes doors not instantiable by default by residents, we need to build first." `entry` stays sovereign; `entry.into` and
-// `entry.lands_at` are constitution-tier; the 44 doors that stood at World main ce368dbb are grandfathered BY NAME (Darko, 11-24 19:28 EST).
+// The ruling: `the-town/door` stands under sited, a sibling of thing, and answers makers: false, which governs amending as well as making;
+// `into`, `lands_at` and `requires` are declared on door alone; the 44 doors that stood are re-kinded to door by the town, keeping every
+// value and their makers; thing declares `entry: none`, locked (the override rule's first use). A founder-merged World PR is the town's act
+// (WLD-253/town-act), so the gate reads what a record says and the office (doorWriteVerdict) asks who wrote it.
 //
-// Two questions, kept apart (Bevel, 11-25 19:29Z): MAY THIS DOOR STAND (`doorStanding`: the lint, the gate, the passage) reads presence and
-// the name; MAY THIS WRITE BE MADE (`entryWriteVerdict`: the office's leave-mark and amend, POS-1238) reads the actor and the entry before and
-// after. These are the falsifiers: drop the gate, widen the list, or let a write slip through an alias, and a test here goes red by name.
+// These are the falsifiers: an into on a thing, a dungeon or a stairs passing; a resident's 45th door standing; an alias or an entry-carried
+// field slipping through; a resident's amend of a door's fields allowed; a fed ring that no longer opens. Each goes red here by name.
 
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
@@ -17,11 +17,11 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 import {
-  DOOR_CHILDREN, DOOR_CHILD_PROPERTIES, DOOR_LAW, GRANDFATHERED_DOORS, isGrandfatheredDoor,
-  doorChildrenOf, doorStanding, doorRefusal, entryWriteVerdict,
+  DOOR_CLASS, DOOR_FIELDS, DOOR_LAW, NO_WAY_IN, REKINDED_DOORS, isRekindedDoor, isDoorClass, isDoorMark, classHasNoWayIn,
+  doorFieldWrites, doorStanding, doorRefusal, doorWriteVerdict, allowedDoors,
 } from "./door-law.mjs";
 import { loadMarks } from "./marks-fold.mjs";
-import { propertyAt } from "./class-properties.mjs";
+import { classIndex, classChain, propertyOf, propertyAt } from "./class-properties.mjs";
 import { enter } from "./world-verbs.mjs";
 import { landingOf } from "./portals.mjs";
 import { entryLawOf } from "./enter-exit.mjs";
@@ -35,133 +35,185 @@ after(() => { for (const d of SCRATCH) rmSync(d, { recursive: true, force: true 
 
 const TOWN = "the-town";
 const LISTED = "little-bird/a-ring-in-the-pantry"; // one of the 44, a resident's
-const door = (id, by, entry) => ({ id, kind: "sited", by, at: { x: 0, y: 0 }, extent: { w: 2, h: 2 }, body: id, entry });
+const LIVE = loadMarks(MARKS_DIR).filter((m) => m && !m._error);
+const IDX = classIndex(LIVE);
+const rec = (id, kind, by, fields = {}) => ({ id, kind, by, at: { x: 0, y: 0 }, extent: { w: 2, h: 2 }, body: id, ...fields });
 
-// ── the graph ────────────────────────────────────────────────────────────────
+// ── the class graph, as ruled ────────────────────────────────────────────────
 
-test("THE GRAPH: entry stays sovereign; entry.into and entry.lands_at are constitution-tier, for every class that can carry a door", () => {
-  const live = loadMarks(MARKS_DIR);
-  for (const cls of ["mark", "sited", "thing", "stairs", "portal-ground", "dungeon"]) {
-    assert.equal(propertyAt(live, cls, ["entry"])?.tier, "sovereign", `${cls}: entry`);
-    for (const child of DOOR_CHILDREN) {
-      const p = propertyAt(live, cls, ["entry", child]);
-      assert.equal(p?.tier, "constitution", `${cls}: entry.${child}`);
-      assert.equal(p.node.id, DOOR_CHILD_PROPERTIES[child], `${cls}: entry.${child} is declared by its own record`);
-    }
+test("THE GRAPH: door under sited, makers false; into, lands_at and requires on door alone; door may hold; thing's entry the locked none", () => {
+  assert.deepEqual(classChain(IDX, DOOR_CLASS).map((c) => String(c.class)), ["door", "sited", "mark", "postmark-node"]);
+  assert.equal(propertyOf(IDX, "door", "makers")?.value, false);
+  assert.equal(propertyOf(IDX, "door", "makers")?.tier, "constitution");
+  for (const f of DOOR_FIELDS) {
+    const p = propertyOf(IDX, "door", f);
+    assert.equal(p?.from, "door", `${f} is door's own`);
+    assert.equal(p.tier, "sovereign", `${f}: each door's own value (a tier says whose value, never who may write it)`);
+    for (const k of ["mark", "sited", "thing", "portal-ground", "stairs", "dungeon", "vehicle", "halloween-candy-bowl"])
+      assert.equal(propertyOf(IDX, k, f), null, `${k} declares no ${f}`);
   }
+  assert.equal(propertyAt(IDX, "door", ["holder", "capacity"])?.from, "door", "a door may hold, with its own capacity");
+  assert.equal(propertyAt(IDX, "door", ["holder", "open"])?.from, "door");
+  assert.equal(propertyOf(IDX, "door", "entry")?.tier, "sovereign", "a door's entry (its word and terms) stays its maker's");
+  const thingEntry = propertyOf(IDX, "thing", "entry");
+  assert.deepEqual([thingEntry?.value, thingEntry?.tier, thingEntry?.from], [NO_WAY_IN, "constitution", "thing"]);
+  assert.equal(propertyOf(IDX, "sited", "entry")?.value, null, "the parent's entry is unchanged");
+  assert.equal(LIVE.some((m) => m.id === "the-town/mark-entry-into" || m.id === "the-town/mark-entry-lands-at"), false,
+    "the superseded constitution children are gone");
+});
+
+test("THE OVERRIDE RULE: the nearest declaration wins, a thing's subclass inherits the locked none, and only the town's subclass loosens it", () => {
+  assert.equal(classHasNoWayIn("thing", IDX), true);
+  assert.equal(classHasNoWayIn("halloween-candy-bowl", IDX), true, "an ordinary subclass inherits it");
+  assert.equal(classHasNoWayIn("sited", IDX), false);
+  assert.equal(classHasNoWayIn("door", IDX), false);
+  assert.equal(classHasNoWayIn("thing", null), false, "no graph, no answer");
+  // a town subclass that redeclares entry loosens it (the bag of holding's shape, CORE-129 layer 2; not built here)
+  const loose = [{ id: "the-town/a-roomy-bag", kind: "class", by: TOWN, class: "a-roomy-bag", extends: "thing" },
+                 { id: "the-town/a-roomy-bag-entry", kind: "property", by: TOWN, tier: "constitution", name: "entry", default: "null", parent: "the-town/a-roomy-bag" }];
+  assert.equal(classHasNoWayIn("a-roomy-bag", classIndex([...LIVE, ...loose])), false, "the town's subclass may loosen it");
+  // a household's class is no class the index reads, so it loosens nothing (and the lint refuses the redeclaration: the gate test below)
+  const theirs = loose.map((m) => ({ ...m, by: "alice", id: m.id.replace("the-town/", "alice/") }));
+  assert.equal(classIndex([...LIVE, ...theirs]).byName.has("a-roomy-bag"), false);
 });
 
 // ── the 44 ───────────────────────────────────────────────────────────────────
 
-// The census itself (the live doors at World main ce368dbb are exactly these 44) is the dry run's, at that named ref; the PR carries it. Here:
-// the list's shape, that every resident door in the tree today is on it, and that LOGOS names the same 44. A grandfathered door taken away,
-// or a new town door, is lawful and leaves these green.
-test("THE 44: the list is 3 + 41 distinct names; every resident door in the live tree is on it, and stands; LOGOS names the same 44", () => {
-  assert.equal(GRANDFATHERED_DOORS.length, 44);
-  assert.equal(new Set(GRANDFATHERED_DOORS).size, 44, "no name twice");
-  assert.equal(GRANDFATHERED_DOORS.filter((id) => id.startsWith("little-bird/")).length, 3);
-  assert.equal(GRANDFATHERED_DOORS.filter((id) => id.startsWith("wright/")).length, 41);
-  const live = loadMarks(MARKS_DIR).filter((m) => m && !m._error);
-  const residents = live.filter((m) => doorStanding(m).door && m.by !== TOWN).map((m) => m.id);
-  assert.ok(residents.length > 0, "the instrument sees the tree's doors");
-  assert.deepEqual(residents.filter((id) => !isGrandfatheredDoor(id)), [], "no resident door off the list");
-  assert.deepEqual(live.filter((m) => doorRefusal(m)).map((m) => m.id), [], "no live door is refused");
+test("THE 44: 3 + 41 distinct names, each re-kinded to door with its maker and its fields its own; LOGOS names the same 44", () => {
+  assert.equal(REKINDED_DOORS.length, 44);
+  assert.equal(new Set(REKINDED_DOORS).size, 44);
+  const byId = new Map(LIVE.map((m) => [m.id, m]));
+  for (const id of REKINDED_DOORS) {
+    const m = byId.get(id);
+    assert.ok(m, `${id} stands in the tree`);
+    assert.equal(m.kind, "door", id);
+    assert.equal(m.by, id.split("/")[0], `${id} keeps its maker`);
+    assert.ok(m.into !== undefined, `${id} writes its into as its own field`);
+    assert.deepEqual(doorFieldWrites(m).filter((w) => w.where === "entry"), [], `${id} carries nothing in entry`);
+    assert.deepEqual(doorStanding(m, { marks: IDX }), { door: true, allowed: true, why: "rekinded" }, id);
+  }
+  assert.equal(REKINDED_DOORS.filter((id) => id.startsWith("little-bird/")).length, 3);
+  assert.equal(REKINDED_DOORS.filter((id) => id.startsWith("wright/")).length, 41);
+  // every resident door in the tree is on the list, and nothing in it is refused (the census at the named ref is the dry run's)
+  const residents = LIVE.filter((m) => isDoorMark(m, IDX) && m.by !== TOWN).map((m) => m.id);
+  assert.deepEqual(residents.filter((id) => !isRekindedDoor(id)), []);
+  assert.deepEqual(LIVE.filter((m) => m.kind !== "class" && m.kind !== "property" && doorRefusal(m, { marks: IDX })).map((m) => m.id), []);
+  assert.deepEqual(allowedDoors(LIVE), [...REKINDED_DOORS].sort());
   const logos = readFileSync(join(HERE, "..", "LOGOS", "classes.md"), "utf8");
-  const line = logos.slice(logos.indexOf("- **Doors are the town's"), logos.indexOf("tools/door-law.mjs", logos.indexOf("- **Doors are the town's")));
-  const named = [...line.matchAll(/`((?:little-bird|wright)\/[a-z0-9-]+)`/g)].map((m) => m[1]).sort();
-  assert.deepEqual(named, [...GRANDFATHERED_DOORS].sort(), "the law line names the same 44");
+  const start = logos.indexOf("- **Door is a class, and doors are the town's");
+  const line = logos.slice(start, logos.indexOf("tools/door-law.mjs", start));
+  assert.deepEqual([...line.matchAll(/`((?:little-bird|wright)\/[a-z0-9-]+)`/g)].map((m) => m[1]).sort(), [...REKINDED_DOORS].sort());
 });
 
-// ── may this door stand ──────────────────────────────────────────────────────
+// ── may this record stand ────────────────────────────────────────────────────
 
-test("STANDING: the town's door, and one of the 44 by name whoever made it, stand; a 45th door and a prefix lookalike do not", () => {
-  const into = { word: "neutral", into: "g/room" };
-  assert.deepEqual(doorStanding(door("g/town-door", TOWN, into)), { door: true, allowed: true, why: "town" });
-  assert.deepEqual(doorStanding(door(LISTED, "little-bird", into)), { door: true, allowed: true, why: "grandfathered" });
+test("STANDING: the town's door and one of the 44 by name stand; a resident's 45th door and a lookalike name do not (makers: false)", () => {
+  const door = (id, by) => rec(id, "door", by, { entry: { word: "neutral" }, into: "g/room" });
+  assert.deepEqual(doorStanding(door("g/town-door", TOWN)), { door: true, allowed: true, why: "town" });
+  assert.deepEqual(doorStanding(door(LISTED, "little-bird")), { door: true, allowed: true, why: "rekinded" });
+  assert.deepEqual(doorStanding({ ...door(LISTED, "little-bird"), into: "anywhere/else" }).allowed, true, "the name is the grandfathering, not its values");
   for (const id of ["little-bird/a-new-door", "little-bird/a-ring-in-the-pantry-2", "little-bird/a-ring-in-the-pantr", "wright/spire-new-wing",
-                    "Little-Bird/a-ring-in-the-pantry", " little-bird/a-ring-in-the-pantry"]) {
-    assert.deepEqual(doorStanding(door(id, "little-bird", into)), { door: true, allowed: false, why: "not-the-towns", changed: ["into"] }, id);
-    assert.equal(isGrandfatheredDoor(id), false, id);
+                    "Little-Bird/a-ring-in-the-pantry", " little-bird/a-ring-in-the-pantry"])
+    assert.deepEqual(doorStanding(door(id, "little-bird")), { door: true, allowed: false, why: "makers" }, id);
+  // a door that names no way yet is still a door, and still the town's to make
+  assert.deepEqual(doorStanding(rec("rena/a-frame", "door", "rena")), { door: true, allowed: false, why: "makers" });
+  const r = doorRefusal(door("little-bird/a-new-door", "little-bird"));
+  assert.equal(r.words, `little-bird/a-new-door is a door, and it is not the town's or one of the 44 the town re-kinded — ${DOOR_LAW}`);
+  // a subclass of door is a door, by the graph
+  const sub = [{ id: "the-town/trapdoor", kind: "class", by: TOWN, class: "trapdoor", extends: "door" }];
+  assert.equal(isDoorClass("trapdoor", classIndex([...LIVE, ...sub])), true);
+  assert.equal(isDoorClass("trapdoor"), false, "without the graph, only door itself");
+});
+
+test("STANDING: a door field on any other class is refused by name, flat or inside entry, whoever wrote it", () => {
+  for (const [klass, extra] of [["thing", {}], ["sited", {}], ["dungeon", { class: "dungeon" }], ["stairs", { class: "stairs" }], ["portal-ground", { class: "portal-ground" }]]) {
+    const kind = extra.class ? "sited" : klass;
+    for (const by of ["rena", TOWN, "wright"]) {
+      const flat = doorStanding(rec("x/y", kind, by, { ...extra, into: "g/room", lands_at: "g/mat" }));
+      assert.deepEqual(flat, { door: false, allowed: false, why: "fields-off-door", fields: ["into", "lands_at"], klass: klass === "sited" ? null : klass }, `${klass} by ${by}`);
+      const carried = doorStanding(rec("x/y", kind, by, { ...extra, entry: { word: "neutral", requires: { holds: ["k"] } } }));
+      assert.deepEqual(carried.fields, ["entry.requires"], `${klass} by ${by}: entry-carried`);
+    }
   }
-  // the grandfathering is the name, not who made it or where it leads: a door the town re-aims still stands
-  assert.equal(doorStanding(door(LISTED, "little-bird", { word: "neutral", into: "somewhere/else", lands_at: { x: 1, y: 2 } })).allowed, true);
+  assert.match(doorRefusal(rec("rena/a-chest", "thing", "rena", { into: "g/room" })).words,
+    /^rena\/a-chest writes into, and it is a thing, not a door — into, lands_at and requires are door's alone/);
+  assert.match(doorRefusal(rec("rena/a-mark", "sited", "rena", { entry: { into: "g/room" } })).words, /^rena\/a-mark writes entry\.into, and it is no class's instance, not a door/);
+  // a stairs that writes no entry is no door (its class's default way is no field), and an entry's word and terms are no door field
+  assert.deepEqual(doorStanding(rec("home/stair", "sited", "home", { class: "stairs" })), { door: false, allowed: true, why: "not-a-door" });
+  assert.deepEqual(doorStanding(rec("x/y", "sited", "rena", { entry: { word: "welcomed", edge: "within", consequence: "mind the step" } })),
+    { door: false, allowed: true, why: "not-a-door" });
 });
 
-test("STANDING: presence, not truth: null, \"\" and [] are written children, and every spelling of one is the child", () => {
-  for (const entry of [{ into: null }, { into: "" }, { into: [] }, { lands_at: null }, { Into: "g/room" }, { INTO: "g/room" },
-                       { "lands-at": "g/x" }, { landsAt: "g/x" }, { LANDS_AT: { x: 1, y: 1 } }]) {
-    const s = doorStanding(door("g/d", "rena", { word: "neutral", ...entry }));
-    assert.equal(s.door, true, JSON.stringify(entry));
-    assert.equal(s.allowed, false, JSON.stringify(entry));
+test("STANDING: presence, not truth, and every spelling: a door writing a field in entry, misspelled, or twice is refused by name", () => {
+  const door = (fields) => rec("g/d", "door", TOWN, fields);
+  assert.deepEqual(doorStanding(door({ into: "g/room", lands_at: { x: 1, y: 2 }, requires: { holds: ["k"] } })).allowed, true);
+  for (const [fields, named] of [
+    [{ entry: { word: "neutral", into: "g/room" } }, ["entry.into"]],
+    [{ Into: "g/room" }, ["Into"]],
+    [{ into: "g/room", "lands-at": "g/mat" }, ["lands-at"]],
+    [{ into: "g/room", landsAt: "g/mat" }, ["landsAt"]],
+    [{ into: "g/room", REQUIRES: { holds: ["k"] } }, ["REQUIRES"]],
+    [{ into: "g/room", Into: "g/other" }, ["Into"]],
+    [{ into: "g/room", entry: { into: "g/room" } }, ["entry.into"]],
+  ]) {
+    const s = doorStanding(door(fields));
+    assert.equal(s.why, "field-spelling", JSON.stringify(fields));
+    assert.deepEqual(s.fields, named, JSON.stringify(fields));
   }
-  // not a child: an entry with its word and terms only, or a key that merely contains the word
-  for (const entry of [{ word: "welcomed" }, { word: "neutral", terms: "pay at the door", requires: { holds: ["k"] } }, { intoit: "g/x" }, { lands: "g/x" }])
-    assert.deepEqual(doorStanding(door("g/d", "rena", entry)), { door: false, allowed: true, why: "not-a-door" }, JSON.stringify(entry));
+  // null, "" and [] are written fields (a removal written as a value is still a write)
+  for (const v of [null, "", []]) assert.equal(doorStanding(rec("x/y", "thing", "rena", { into: v })).why, "fields-off-door", JSON.stringify(v));
+  // a key that merely contains the word is no field
+  for (const k of ["intoit", "lands", "required"]) assert.equal(doorStanding(rec("x/y", "thing", "rena", { [k]: "g/x" })).why, "not-a-door", k);
+  // every spelling is kept, not folded into the first (the alias lesson of 2026-11-25 19:33Z)
+  assert.deepEqual(doorFieldWrites({ into: "A", Into: "B", entry: { INTO: "C" } }).map((w) => `${w.where}:${w.key}`), ["flat:into", "flat:Into", "entry:INTO"]);
 });
 
-test("STANDING: a stairs that writes no entry is no door and stands; an admin's stairs that writes its own into is a door and does not", () => {
-  const stair = { id: "home/the-stair", kind: "stairs", by: "home", at: { x: 0, y: 0 }, extent: { w: 2, h: 4 }, body: "A stair." };
-  assert.deepEqual(doorStanding(stair), { door: false, allowed: true, why: "not-a-door" }, "its class's default into is not an authored door");
-  assert.equal(doorRefusal(stair), null);
-  // WLD-21: an admin household may make a stairs; making one is not the right to set where it leads
-  const adminStair = { ...stair, by: "wright", entry: { word: "neutral", into: "home/landing" } };
-  assert.deepEqual(doorStanding(adminStair), { door: true, allowed: false, why: "not-the-towns", changed: ["into"] });
-  const r = doorRefusal(adminStair);
-  assert.match(r.words, /^home\/the-stair writes entry\.into, and it is not the town's or one of the 44 grandfathered doors — /);
-  assert.ok(r.words.endsWith(DOOR_LAW));
-});
+// ── may this write be made (the office's leave-mark and amend, POS-1238) ─────
 
-// ── may this write be made ───────────────────────────────────────────────────
-
-test("WRITE: a resident's welcome-only change passes, on a grandfathered door too; creating, changing, removing or re-spelling a child does not", () => {
-  const was = { word: "neutral", into: "g/room", lands_at: "g/mat" };
-  const v = (before, after, by = "little-bird") => entryWriteVerdict({ by, before, after });
-  assert.deepEqual(v(was, { ...was, word: "welcomed", terms: "wipe your feet" }), { allowed: true, why: "no-door-change" });
-  assert.deepEqual(v(null, { word: "welcomed" }), { allowed: true, why: "no-door-change" }, "an entry with no children, new");
-  assert.deepEqual(v(was, { lands_at: "g/mat", word: "neutral", into: ["g/room"] }), { allowed: true, why: "no-door-change" }, "the same into, written as a list of one");
-  const refused = (before, after, changed, why) => {
-    const r = v(before, after);
+test("WRITE: a resident may not create a door, make a mark a door or no longer one, or change any door field, on one of the 44 too", () => {
+  const ring = LIVE.find((m) => m.id === LISTED);
+  const v = (before, after, by = "little-bird") => doorWriteVerdict({ by, before, after, marks: IDX });
+  const refusedFor = (r, changed, why) => {
     assert.equal(r.allowed, false, why);
-    assert.equal(r.why, "door-child-change", why);
+    assert.equal(r.why, "makers", why);
     assert.deepEqual(r.changed, changed, why);
-    assert.ok(r.words.startsWith(`${changed.map((c) => `entry.${c}`).join(" and ")}: `) && r.words.endsWith(DOOR_LAW), why);
+    assert.ok(r.words.endsWith(DOOR_LAW), why);
   };
-  refused(null, { word: "neutral", into: "g/room" }, ["into"], "create into");
-  refused({ word: "neutral" }, { word: "neutral", lands_at: { x: 1, y: 1 } }, ["lands_at"], "create lands_at");
-  refused(was, { ...was, into: "g/elsewhere" }, ["into"], "change into");
-  refused(was, { ...was, lands_at: { x: 3, y: 3 } }, ["lands_at"], "change lands_at");
-  refused(was, { word: "neutral", into: "g/room" }, ["lands_at"], "remove lands_at");
-  refused(was, { word: "neutral" }, ["into", "lands_at"], "remove both");
-  refused(was, null, ["into", "lands_at"], "remove the entry");
-  refused(was, { ...was, into: null }, ["into"], "into written as null");
-  refused({ word: "neutral", into: "g/room" }, { word: "neutral", Into: "g/room" }, ["into"], "re-spell into");
-  refused({ word: "neutral", lands_at: "g/mat" }, { word: "neutral", "lands-at": "g/mat" }, ["lands_at"], "re-spell lands_at");
+  refusedFor(v(null, rec("little-bird/a-new-door", "door", "little-bird", { into: "g/room" })), [...DOOR_FIELDS], "create a door");
+  refusedFor(v(rec("little-bird/a-shed", "sited", "little-bird"), rec("little-bird/a-shed", "door", "little-bird", { into: "g/room" })), [...DOOR_FIELDS], "make a mark a door");
+  refusedFor(v(ring, { ...ring, kind: "sited", into: undefined, lands_at: undefined, requires: undefined }), [...DOOR_FIELDS], "a door made no longer a door");
+  refusedFor(v(ring, { ...ring, into: "somewhere/else" }), ["into"], "change into");
+  refusedFor(v(ring, { ...ring, lands_at: { x: 1, y: 1 } }), ["lands_at"], "change lands_at");
+  refusedFor(v(ring, { ...ring, requires: { holds: ["little-bird/a-crumb"], shown: false } }), ["requires"], "change requires");
+  const { requires, ...noRequires } = ring;
+  refusedFor(v(ring, noRequires), ["requires"], "an ordinary amend that drops a door field is a change, so the office must carry them over");
+  const { lands_at, ...noLanding } = ring;
+  refusedFor(v(ring, { ...noLanding, into: ["the-town/the-town-centre"] }), ["lands_at"], "into as a list of one is the same; lands_at gone is not");
 });
 
-test("WRITE: every recognised spelling is compared, not only the first (Bevel 19:33Z): an alias added beside the child is a write", () => {
-  const v = (before, after) => entryWriteVerdict({ by: "rena", before, after });
-  // the counterexample at c559b05a: the extra spelling was dropped, so this compared equal and was allowed
-  assert.deepEqual(v({ into: "A" }, { into: "A", Into: "B" }).changed, ["into"]);
-  assert.equal(v({ into: "A" }, { into: "A", Into: "B" }).allowed, false);
-  assert.equal(v({ into: "A" }, { into: "A", Into: "A" }).allowed, false, "a second spelling, even of the same value, is a new write");
-  assert.equal(v({ into: "A", Into: "B" }, { into: "A" }).allowed, false, "and dropping one is a removal");
-  assert.equal(v({ into: "A", Into: "B" }, { into: "A", Into: "C" }).allowed, false, "a change to the alias's value is a change");
-  assert.equal(v({ lands_at: "x" }, { lands_at: "x", "lands-at": "y" }).allowed, false);
-  assert.equal(v({ lands_at: "x" }, { lands_at: "x", landsAt: "x" }).allowed, false);
-  // the same spellings and values in another order are the same entry
-  assert.deepEqual(v({ into: "A", Into: "B", word: "neutral" }, { word: "welcomed", Into: "B", into: "A" }), { allowed: true, why: "no-door-change" });
-  assert.deepEqual(Object.keys(doorChildrenOf({ into: "A", Into: "B", INTO: "C" }).into.spellings).sort(), ["INTO", "Into", "into"]);
-});
-
-test("WRITE: the town may; WLD-21's admin classes grant no door write; an actor not read is null, never a yes", () => {
-  const before = { word: "neutral", into: "g/room" }, after = { word: "neutral", into: "g/hall", lands_at: { x: 1, y: 1 } };
-  assert.deepEqual(entryWriteVerdict({ by: TOWN, before, after }), { allowed: true, why: "town" });
-  assert.deepEqual(entryWriteVerdict({ by: TOWN, before: null, after }), { allowed: true, why: "town" });
-  for (const admin of ["wright", "jetto"]) assert.equal(entryWriteVerdict({ by: admin, before, after }).allowed, false, admin);
-  for (const by of [undefined, null, "", 7, {}]) assert.deepEqual(entryWriteVerdict({ by, before, after }), { allowed: null, why: "actor-unread" }, String(by));
-  assert.deepEqual(entryWriteVerdict(), { allowed: null, why: "actor-unread" });
-  // grandfathered is permission to stand, never to write: the write question does not read the id at all
-  assert.equal(entryWriteVerdict({ by: "little-bird", before, after }).allowed, false);
+test("WRITE: welcome words and the mark's own place stay the maker's; the town may; an actor not read is null; form is checked for everyone", () => {
+  const ring = LIVE.find((m) => m.id === LISTED);
+  const v = (before, after, by = "little-bird") => doorWriteVerdict({ by, before, after, marks: IDX });
+  assert.deepEqual(v(ring, { ...ring, at: { x: ring.at.x + 3, y: ring.at.y }, body: "A ring, moved." }), { allowed: true, why: "no-door-change" }, "moving it stays the maker's");
+  assert.deepEqual(v(ring, { ...ring, entry: { word: "welcomed" } }), { allowed: true, why: "no-door-change" }, "its word stays the maker's");
+  assert.deepEqual(v(ring, { ...ring, into: [ring.into] }), { allowed: true, why: "no-door-change" }, "the same into, as a list of one");
+  assert.deepEqual(v(ring, null), { allowed: true, why: "withdraw" }, "withdrawing stays the maker's: never silently revoked");
+  assert.deepEqual(v(null, rec("little-bird/a-note", "sited", "little-bird")), { allowed: true, why: "not-a-door" });
+  assert.deepEqual(v(ring, { ...ring, into: "anywhere/else" }, TOWN), { allowed: true, why: "town" });
+  assert.deepEqual(v(null, rec("the-town/a-door", "door", TOWN, { into: "g/room" }), TOWN), { allowed: true, why: "town" });
+  for (const admin of ["wright", "jetto"]) assert.equal(v(null, rec(`${admin}/d`, "door", admin, { into: "g/room" }), admin).allowed, false, `${admin}: WLD-21's admin classes grant no door`);
+  for (const by of [undefined, null, "", 7, {}]) assert.deepEqual(doorWriteVerdict({ by, before: ring, after: { ...ring, into: "x" } }), { allowed: null, why: "actor-unread" }, String(by));
+  // form, for every writer, the town included: a door field on a thing, or a door field misspelled or riding in entry
+  const thing = rec("rena/a-chest", "thing", "rena", { into: "g/room" });
+  for (const by of ["rena", TOWN]) {
+    const r = doorWriteVerdict({ by, before: null, after: thing, marks: IDX });
+    assert.deepEqual([r.allowed, r.why, r.changed], [false, "fields-off-door", ["into"]], by);
+    assert.match(r.words, /^into on a thing — into, lands_at and requires are door's alone/);
+  }
+  const misspelt = doorWriteVerdict({ by: TOWN, before: null, after: rec("the-town/d", "door", TOWN, { into: "a", Into: "b" }), marks: IDX });
+  assert.deepEqual([misspelt.allowed, misspelt.why, misspelt.changed], [false, "field-spelling", ["Into"]]);
+  const carried = doorWriteVerdict({ by: TOWN, before: null, after: rec("the-town/d", "door", TOWN, { entry: { into: "a" } }), marks: IDX });
+  assert.deepEqual([carried.why, carried.changed], ["field-spelling", ["entry.into"]]);
 });
 
 // ── the passage ──────────────────────────────────────────────────────────────
@@ -170,62 +222,82 @@ function passageWorld(extra) {
   return { marks: [
     { id: "g/grounds", kind: "sited", by: "g", at: { x: 0, y: 0 }, extent: { w: 400, h: 400 }, body: "The grounds." },
     { id: "g/room", kind: "sited", by: "g", at: { x: 100, y: 0 }, extent: { w: 40, h: 40 }, body: "A room." },
-    { ...door("g/x", "g", { word: "neutral", into: "g/room" }), at: { x: 10, y: 0 } },
     ...extra.map((m) => ({ ...m, at: { x: 10, y: 0 } })),
   ] };
 }
 const occ = new Map([["ann", ["g/grounds"]]]);
 const AT = { x: 10, y: 0, name: "ann" };
 
-test("PASSAGE: an unlisted resident door is refused by name, nothing entered; the town's door and a grandfathered one pass", () => {
-  const into = { word: "neutral", into: "g/room" };
-  const resident = door("little-bird/a-new-door", "little-bird", into);
-  const r = enter(AT, resident.id, passageWorld([resident]), { occupancy: occ, handle: "ann" });
-  assert.equal(r.refused, "door-law");
-  assert.equal(r.door, resident.id);
-  assert.deepEqual(r.changed, ["into"]);
-  assert.match(r.error, /^little-bird\/a-new-door writes entry\.into, and it is not the town's or one of the 44 grandfathered doors — entry\.into and entry\.lands_at are the town's to set/);
-  assert.equal(r.entered, undefined);
-  for (const lawful of [door("g/town-door", TOWN, into), door(LISTED, "little-bird", into)]) {
+test("PASSAGE: an into on a thing, a stairs or a dungeon, an unlisted resident door, and an entry-carried field are refused by name; nothing is recorded", () => {
+  for (const [m, words] of [
+    [rec("rena/a-chest", "thing", "rena", { into: "g/room" }), /^rena\/a-chest writes into, and it is a thing, not a door — /],
+    [rec("home/a-stair", "sited", "home", { class: "stairs", entry: { word: "neutral", into: "g/room" } }), /^home\/a-stair writes entry\.into, and it is a stairs, not a door — /],
+    [rec("t/a-keep", "sited", TOWN, { class: "dungeon", into: "g/room" }), /^t\/a-keep writes into, and it is a dungeon, not a door — /],
+    [rec("little-bird/a-new-door", "door", "little-bird", { into: "g/room" }), /^little-bird\/a-new-door is a door, and it is not the town's or one of the 44 the town re-kinded — /],
+    [rec("the-town/an-old-door", "door", TOWN, { entry: { word: "neutral", into: "g/room" } }), /^the-town\/an-old-door writes entry\.into: a door writes into:, lands_at: and requires: as its own fields, once each, never inside entry — /],
+  ]) {
+    const r = enter(AT, m.id, passageWorld([m]), { occupancy: occ, handle: "ann" });
+    assert.equal(r.refused, "door-law", m.id);
+    assert.match(r.error, words, m.id);
+    assert.equal(r.rows, undefined, `${m.id}: nothing recorded`);
+  }
+  for (const lawful of [rec("g/town-door", "door", TOWN, { into: "g/room" }), rec(LISTED, "door", "little-bird", { into: "g/room" })]) {
     const a = enter(AT, lawful.id, passageWorld([lawful]), { occupancy: occ, handle: "ann" });
     assert.equal(a.error, undefined, `${lawful.id}: ${a.error}`);
     assert.deepEqual(a.entered, ["g/room"], lawful.id);
   }
 });
 
-test("PASSAGE: a resident room's own lands_at sets no one down; the town's does", () => {
-  const room = { id: "t/chamber", kind: "sited", at: { x: 0, y: 15 }, extent: { w: 30, h: 30 }, body: "The chamber.", entry: { lands_at: { x: 0, y: 25 } } };
-  const hallSide = door("t/hall-to-chamber", TOWN, { word: "neutral", into: "t/chamber", lands_at: "t/chamber-to-hall" });
-  const chamberSide = { ...door("t/chamber-to-hall", TOWN, { word: "neutral", into: "t/hall" }), at: { x: 5, y: 2 } };
+test("PASSAGE: Little Bird's rings and bag, re-kinded, stay shut until fed and open when fed, landing where they always did (the live tree)", () => {
+  const world = { marks: LIVE };
+  for (const [door, food, into, landsOn] of [
+    ["little-bird/a-ring-in-the-pantry", "little-bird/breakfast-on-the-shelf", "the-town/the-town-centre", "little-bird/a-ring-of-black-stone"],
+    ["little-bird/a-ring-of-black-stone", "little-bird/a-pancake-in-paper", "vermillion/guest-caves-pantry-of-arrival", null],
+    ["little-bird/a-paper-bag-of-crumbs", "little-bird/exhibit-8", "dom-pidgey/pidgey-heights", "dom-pidgey/the-guest-book"],
+  ]) {
+    const m = LIVE.find((x) => x.id === door);
+    const opts = { occupancy: new Map([["ann", []]]), handle: "ann", at: 100, accepted: true };
+    const here = { x: m.at.x, y: m.at.y, name: "ann" };
+    assert.equal(enter(here, door, world, { ...opts, holdings: { [door]: [] } }).refused, "requires", `${door}: hungry, it stays shut`);
+    const fed = enter(here, door, world, { ...opts, holdings: { [door]: [food] } });
+    assert.equal(fed.error, undefined, `${door}: ${fed.error}`);
+    assert.deepEqual(fed.entered, [into], door);
+    assert.equal(fed.landing.mark ?? null, landsOn, door);
+    assert.equal(propertyAt(IDX, "door", ["holder", "capacity"]) !== null && (m.holder === true || String(m.holder) === "true"), true, `${door} still holds`);
+  }
+});
+
+test("PASSAGE: a room's own lands_at sets you down only where the room is a door that stands", () => {
+  const room = { id: "t/chamber", at: { x: 0, y: 15 }, extent: { w: 30, h: 30 }, body: "The chamber.", lands_at: { x: 0, y: 25 } };
+  const hallSide = { ...rec("t/hall-to-chamber", "door", TOWN, { into: "t/chamber", lands_at: "t/chamber-to-hall" }), at: { x: 5, y: -2 } };
+  const chamberSide = { ...rec("t/chamber-to-hall", "door", TOWN, { into: "t/hall" }), at: { x: 5, y: 2 } };
   const hall = { id: "t/hall", kind: "sited", by: "t", at: { x: 0, y: -20 }, extent: { w: 40, h: 40 }, body: "The hall." };
   const land = (r) => landingOf(entryLawOf(hallSide), r, new Map([hall, r, hallSide, chamberSide].map((m) => [m.id, m])), { room: r, portal: hallSide });
-  assert.equal(land({ ...room, by: TOWN }).by, "room");
-  const resident = land({ ...room, by: "t" });
-  assert.notEqual(resident.by, "room");
-  assert.equal(resident.lands_mark, "t/chamber-to-hall", "the door's own landing, as if the room had written none");
+  assert.equal(land({ ...room, kind: "door", by: TOWN }).by, "room", "the town's door-room names its landing");
+  for (const r of [{ ...room, kind: "sited", by: "t" }, { ...room, kind: "door", by: "t" }]) {
+    const l = land(r);
+    assert.notEqual(l.by, "room", `${r.kind} by ${r.by}`);
+    assert.equal(l.lands_mark, "t/chamber-to-hall", "the door's own landing, as if the room had written none");
+  }
 });
 
 // ── the gate ─────────────────────────────────────────────────────────────────
 
-function lintTree(records) {
+function lintTree({ records = [], classes = [] } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "door-law-lint-")); SCRATCH.push(dir);
   const root = join(dir, "let-there-be-light");
   mkdirSync(root, { recursive: true });
   copyFileSync(join(REAL, "mark.md"), join(root, "mark.md"));
   cpSync(join(REAL, "logos"), join(root, "logos"), { recursive: true });
-  for (const rel of ["the-town-centre", "the-town-centre/the-keeping-works", "the-town-centre/the-keeping-works/postmark-node",
-                     "the-town-centre/the-keeping-works/postmark-node/mark"]) {
-    mkdirSync(join(root, rel), { recursive: true });
-    copyFileSync(join(REAL, rel, "mark.md"), join(root, rel, "mark.md"));
-  }
-  // a fixture mark's id is <by>/<dir>
-  for (const { by, dir: d, x, entry } of records) {
-    mkdirSync(join(root, d), { recursive: true });
-    const lines = ["---", "kind: sited", `by: ${by}`, "date: 2026-11-25", `at: { x: ${x}, y: 0 }`, "extent: { w: 2, h: 2 }"];
-    if (entry) lines.push(`entry: ${JSON.stringify(entry)}`);
-    lines.push("---", "", `${d}.`, "");
-    writeFileSync(join(root, d, "mark.md"), lines.join("\n"));
-  }
+  const NODE = "the-town-centre/the-keeping-works/postmark-node";
+  for (const rel of ["the-town-centre", "the-town-centre/the-keeping-works", NODE, `${NODE}/mark`])
+    { mkdirSync(join(root, rel), { recursive: true }); copyFileSync(join(REAL, rel, "mark.md"), join(root, rel, "mark.md")); }
+  // the classes the fixture names, whole (their property nodes with them): sited, thing, door
+  for (const rel of [`${NODE}/mark/sited`, `${NODE}/mark/thing`, `${NODE}/mark/door`]) cpSync(join(REAL, rel), join(root, rel), { recursive: true });
+  const write = (d, lines, body) => { mkdirSync(d, { recursive: true }); writeFileSync(join(d, "mark.md"), ["---", ...lines, "---", "", body, ""].join("\n")); };
+  for (const { by, dir: d, kind = "sited", x, fields = [] } of records)
+    write(join(root, d), [`kind: ${kind}`, `by: ${by}`, "date: 2026-11-25", `at: { x: ${x}, y: 0 }`, "extent: { w: 2, h: 2 }", ...fields], `${d}.`);
+  for (const { by, dir: d, lines } of classes) write(join(root, d), [`by: ${by}`, "date: 2026-11-25", ...lines], "A clause of the fixture's class space, long enough to read.");
   return dir;
 }
 function gate(dir) {
@@ -233,14 +305,35 @@ function gate(dir) {
   catch (e) { return { code: e.status, out: String(e.stdout ?? "") + String(e.stderr ?? "") }; }
 }
 
-test("THE GATE: the lint refuses an unlisted resident door with [door-law], by its field names; a grandfathered name passes it", () => {
-  const out = gate(lintTree([
+test("THE GATE: the lint refuses by name an into on a thing, an entry-carried field, a resident's 45th door and an entry on a thing; the 44 and the town's doors pass", () => {
+  const out = gate(lintTree({ records: [
     { by: "little-bird", dir: "the-cupboard", x: 300 },
-    { by: "little-bird", dir: "a-new-door", x: 310, entry: { word: "neutral", into: "little-bird/the-cupboard" } },
-    { by: "little-bird", dir: "a-ring-in-the-pantry", x: 320, entry: { word: "neutral", into: "little-bird/the-cupboard" } },
-  ]));
+    { by: "little-bird", dir: "a-chest", kind: "thing", x: 310, fields: ["into: little-bird/the-cupboard"] },
+    { by: "little-bird", dir: "a-trunk", kind: "thing", x: 320, fields: ["entry: {\"word\":\"neutral\"}"] },
+    { by: "little-bird", dir: "a-new-door", kind: "door", x: 330, fields: ["into: little-bird/the-cupboard"] },
+    { by: "the-town", dir: "an-old-door", kind: "door", x: 340, fields: ["entry: {\"word\":\"neutral\",\"into\":\"little-bird/the-cupboard\"}"] },
+    { by: "little-bird", dir: "a-ring-in-the-pantry", kind: "door", x: 350, fields: ["into: little-bird/the-cupboard", "holder: true", "capacity: 1"] },
+    { by: "the-town", dir: "a-town-door", kind: "door", x: 360, fields: ["entry: {\"word\":\"welcomed\"}", "into: little-bird/the-cupboard"] },
+  ] }));
   assert.equal(out.code, 1, out.out);
-  assert.match(out.out, /\[ERROR\] [^\n]*a-new-door: \[door-law\] little-bird\/a-new-door writes entry\.into, and it is not the town's or one of the 44 grandfathered doors/);
-  assert.doesNotMatch(out.out, /a-ring-in-the-pantry: \[door-law\]/, "one of the 44, by name: the law does not refuse it");
-  assert.match(out.out, /^1 error\(s\)/m, "the unlisted door is the tree's one error");
+  assert.match(out.out, /\[ERROR\] [^\n]*a-chest: \[door-law\] little-bird\/a-chest writes into, and it is a thing, not a door — /);
+  assert.match(out.out, /\[ERROR\] [^\n]*a-trunk: \[door-law\] entry: thing's entry is none, locked \(the-town\/thing-entry\)/);
+  assert.match(out.out, /\[ERROR\] [^\n]*a-new-door: \[door-law\] little-bird\/a-new-door is a door, and it is not the town's or one of the 44 the town re-kinded — /);
+  assert.match(out.out, /\[ERROR\] [^\n]*an-old-door: \[door-law\] the-town\/an-old-door writes entry\.into: a door writes into:, lands_at: and requires: as its own fields/);
+  assert.doesNotMatch(out.out, /(a-ring-in-the-pantry|a-town-door): \[door-law\]/, "one of the 44, and the town's own door, stand");
+  assert.match(out.out, /^4 error\(s\)/m, "the four refused records are the tree's only errors");
+});
+
+test("THE GATE: a household's class may not redeclare thing's locked entry; the town's subclass may (the override rule's lock)", () => {
+  const NODE = "the-town-centre/the-keeping-works/postmark-node";
+  const theirs = gate(lintTree({ classes: [
+    { by: "alice", dir: "alices-bag", lines: ["kind: class", "class: alices-bag", "extends: thing"] },
+    { by: "the-town", dir: "alices-bag/alices-bag-entry", lines: ["kind: property", "tier: constitution", "name: entry", "default: null"] },
+  ] }));
+  assert.match(theirs.out, /alices-bag-entry: alice\/alices-bag redeclares thing's entry, a constitution property/);
+  const town = gate(lintTree({ classes: [
+    { by: "the-town", dir: `${NODE}/mark/thing/a-roomy-bag`, lines: ["kind: class", "tier: constitution", "class: a-roomy-bag", "extends: thing"] },
+    { by: "the-town", dir: `${NODE}/mark/thing/a-roomy-bag/a-roomy-bag-entry`, lines: ["kind: property", "tier: constitution", "name: entry", "default: null"] },
+  ] }));
+  assert.doesNotMatch(town.out, /redeclares thing's entry/, town.out);
 });

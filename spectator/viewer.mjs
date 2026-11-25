@@ -5578,15 +5578,17 @@ export function enterableMark(mark, { thingClasses = null } = {}) {
 
 /** A THING IS NOT GROUND (the-town/the-not-ground): "nothing files under it by
  *  geometry, and a walk onto it sets you down on what it stands on." A bag, a bowl
- *  or a pot has a footprint and no inside, so its card offers no enter. The one way
- *  in is a door it carries: a thing may hold an `entry` naming an `into` (Bevel,
- *  2026-11-19), and entering it passes you through to that room, so that thing keeps
- *  the button. A kind of thing is a thing (W2 final): the caller passes the page's
- *  thing classes; without them, only the class `thing` itself is known. */
+ *  or a pot has a footprint and no inside, so its card offers no enter. NARROWED
+ *  2026-11-25 (WLD-253, CORE-129 layer 1): a thing may no longer carry a door. Its
+ *  class's entry is the locked none (the-town/thing-entry) and `into` is a door's
+ *  alone, so a thing that still writes one is refused by name at the passage, and its
+ *  card offers no enter either (until then "a thing may hold an `entry` naming an
+ *  `into`", Bevel 2026-11-19; a bag of holding is CORE-129 layer 2). A kind of thing
+ *  is a thing (W2 final): the caller passes the page's thing classes; without them,
+ *  only the class `thing` itself is known. The name keeps its callers. */
 export function thingWithoutDoor(mark, { thingClasses = null } = {}) {
   const cls = classToken(instanceClassOf(mark));
-  const isThing = cls === "thing" || (!!cls && !!thingClasses?.has?.(cls));
-  return isThing && !entryLawOf(mark)?.into;
+  return cls === "thing" || (!!cls && !!thingClasses?.has?.(cls));
 }
 
 /** Whether THIS reader may cross THIS threshold, and if not, why not.

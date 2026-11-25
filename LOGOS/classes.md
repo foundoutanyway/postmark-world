@@ -2046,6 +2046,10 @@ that already stood: a mark's `entry: {word, edge, consequence}` is its fixed ans
   a mark receives you: its word and its terms. A door may hold (`the-town/door-holder`, with its capacity and its
   open), so a fed door still opens. WLD-21's admin households keep exactly their three classes, dungeon, stairs and
   portal-ground, and no door; a stairs that writes no `entry` leads where its class says, and writes no door field.
+  **Three things this narrows**, each refused by name now: a dungeon naming its own way in (WLD-63: "from ANYWHERE
+  in the Chapel's extent, you can enter, and pick your into"), which a door drawn round the place now carries; a
+  stair writing its own way up (WLD-21; below); and a room of a class other than door naming its own landing (row 68
+  (a); below). None of the records that stood on 2026-11-25 used any of the three.
   **A World PR merged by a founder is the town's act** (WLD-253/town-act, Darko 2026-11-25: "yes to bevel's open
   question"): a PR carries no actor, so the gate reads what a record says (its class, its fields, its `by`, its id)
   and refuses what may not stand, and a founder's merge is what makes a change to a door the town's; the office,
@@ -2079,8 +2083,9 @@ that already stood: a mark's `entry: {word, edge, consequence}` is its fixed ans
   case by case under governance, not this line. The one law the lint, the passage and the office read is
   `tools/door-law.mjs`.
 - **Where a passage sets you down** (Darko 2026-10-16 19:15, row 68 (a)): fully inside the room it enters, first
-  match wins: the room's own `lands_at` (a place may say where its entrants land without naming an `into`; since
-  2026-11-25 a place that writes one is a door);
+  match wins: the room's own `lands_at`, when the room is a door (a door may say where its entrants land without
+  naming an `into`; *narrowed 2026-11-25, WLD-253:* until then any place could, and a room of any other class now
+  names no landing of its own, since `lands_at` is a door's);
   a portal `lands_at` that points inside the room, as written (a point in it, or a mark in it that is not a door);
   a step in from the door (the paired door, the door picked from a list, or the portal itself when it stands at the
   room), 1.5 m past the door's own edge, so never on the door's square that touches or straddles the wall, and a
@@ -2223,9 +2228,11 @@ answers **"Moving to higher/lower floors has not been implemented yet. Coming So
   mark keeps the standing sentence.
 - **A stair that writes its own `entry:` is read by that entry alone, as any mark is**, and keeps the class. Nothing
   of the default carries over, its refusal included: a stair that writes its own opposed entry says the standing
-  sentence. *Amended 2026-11-25 (WLD-253):* "A later floor is reached by writing `into`, `lands_at` and a word" no
-  longer holds: those are door's alone, so a stair writes no door field, and how a later floor is reached is not
-  ruled here.
+  sentence. *Narrowed 2026-11-25 (WLD-253, CORE-129 layer 1):* until then "a later floor is reached by writing
+  `into`, `lands_at` and a word" (WLD-21). `into`, `lands_at` and `requires` are door's alone now, so this rule
+  gives stairs no door fields, and it adds no replacement floor mechanism: a stair that writes its own way up is
+  refused by name. A stair that writes no `entry` keeps the class's answer above, and a stair's own word and terms
+  are read as any mark's.
 - **A stair is a box inside a room, not a door in a wall.** Until 2026-11-01 it was held to the rule that siblings
   inside a dungeon do not overlap, as a room is. It is not a room unless the dungeon lists it in `rooms`, so it
   overlaps freely now (Darko, 2026-11-01 07:59: "Everything should be allowed to overlap like normal").
