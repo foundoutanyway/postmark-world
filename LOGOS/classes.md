@@ -2025,8 +2025,8 @@ that already stood: a mark's `entry: {word, edge, consequence}` is its fixed ans
   `the-town/mark-entry-lands-at`), so the town alone sets them, as 08-17's binding rule meant when it kept `portal`
   and `entry` town-only. WLD-21's admin households keep exactly their three classes, dungeon, stairs and
   portal-ground; making one is not the right to set a door's destination. A stairs that writes no `entry` leads where
-  its class says and writes no door. **The doors that stood before the rule are grandfathered, by name, as they
-  stood** (Darko, 2026-11-24 19:28 EST: *"we'll just make a special case for whatever was grandfathered because it's
+  its class says and writes no door. **The doors that stood before the rule are grandfathered by name** (Darko,
+  2026-11-24 19:28 EST: *"we'll just make a special case for whatever was grandfathered because it's
   a feels bad to create something and then have it taken away"*): Little Bird's three, `little-bird/a-paper-bag-of-crumbs`,
   `little-bird/a-ring-in-the-pantry` and `little-bird/a-ring-of-black-stone` (world #416, #427, #434), and the
   Starforge Spire's 41, `wright/the-starforge-spire`, `wright/spire-blue-room-to-north-walk`,
