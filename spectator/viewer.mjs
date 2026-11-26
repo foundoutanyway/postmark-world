@@ -62,7 +62,7 @@ export { setViewerIdentityForSpeaker };
 import { homeOf, homesOnParcel } from "../tools/where-is.mjs";
 // WHAT A MARK IS, AS ICONS (Darko, playground sitting 2026-10-15): the closed
 // vocabulary, its one-line meanings and its three renderings live in one file.
-import { markIcons, markWhat, iconSVG, iconsHTML, creatureClassesOf, thingClassesOf, MARK_ICON_CSS, MARK_ICONS } from "./mark-icons.mjs";
+import { markIcons, markWhat, iconSVG, iconsHTML, creatureClassesOf, thingClassesOf, doorClassesOf, MARK_ICON_CSS, MARK_ICONS } from "./mark-icons.mjs";
 // LOGOS v2 part 2 on the page (POS-678): what a holder holds, who carries what,
 // and the say card's numbers, each from the office's own reads.
 import { holderLines, residentHoldLines, handsLines, holdingParts, heldWords, sayCardNote, thingKindLedger, isThingId } from "./holdings.mjs";
@@ -9510,6 +9510,13 @@ export function mountViewer(appEl) {
     }
     return thingClassMemo.set;
   }
+  // and the door classes (WLD-253): door and every class under it, by the one door reader spineDoors uses, so the glyph and
+  // the display switch call a door subclass a door as the map's pip does, whether or not it writes `into`
+  let doorClassMemo = { epoch: -1, set: null };
+  function doorClasses() {
+    if (doorClassMemo.epoch !== worldEpoch || !doorClassMemo.set) doorClassMemo = { epoch: worldEpoch, set: doorClassesOf(allMarks(), classToken) };
+    return doorClassMemo.set;
+  }
   // the thing classes for a containment question over `marks`: each kind among them
   // with no answer yet is asked of the class layer (once), so a place line stops
   // naming a bowl as ground as soon as the office says what a bowl is
@@ -9527,7 +9534,7 @@ export function mountViewer(appEl) {
     const cls = classToken(instanceClassOf(full));
     askLineage(cls);   // a kind with no class mark in hand: its chain, asked once
     return markIconsOf(full, {
-      cls, creatureClasses: creatureClasses(), thingClasses: thingClasses(),
+      cls, creatureClasses: creatureClasses(), thingClasses: thingClasses(), doorClasses: doorClasses(),
       yours: isOwnMark(full), inside: (occupants.get(full.id) ?? []).length,
       ...(map ? { ownStake: householdStakeOn(full.id, { signedIn: !!pmKey(), portfolio: state.portfolio }) } : {}),
     });
@@ -9847,7 +9854,7 @@ export function mountViewer(appEl) {
   // be drawn, listed, hovered nor take a click that belongs to a smaller match.
   const displayHides = () => displaySelectionHides(state.display);
   // the icon a mark wears is the switch it answers to: `markWhat`, the very function the pip and the column read (CORE-147), asked with the page's own classes
-  const whatOfMark = (m) => markWhat(m, { cls: classToken(instanceClassOf(m)), creatureClasses: creatureClasses(), thingClasses: thingClasses() });
+  const whatOfMark = (m) => markWhat(m, { cls: classToken(instanceClassOf(m)), creatureClasses: creatureClasses(), thingClasses: thingClasses(), doorClasses: doorClasses() });
   const shownByDisplay = (m) => !displayHides() || markInDisplaySelection(byId.get(m?.id) ?? m, state.display, { isMine, isDraft, whatOf: whatOfMark });
   // the layers that are not marks: the residents (with their walking lines) and the speech bubbles have a switch of their own and no mark to ask
   const residentsOff = () => (state.display?.off ?? []).includes("residents");
