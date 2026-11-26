@@ -2867,7 +2867,12 @@ position's anchor is a mark, an entity, or the world — a held thing rides its
 holder as a rider rides the deck; what may anchor where is class contract
 (rendered as `the-town/the-anchor`). **A thing is not ground**: nothing files
 under a thing by geometry, and a walk onto it sets you down on what it stands
-on (rendered as `the-town/the-not-ground`).
+on (rendered as `the-town/the-not-ground`). **A thing has no inside** (WLD-212, Darko 2026-11-19 22:12 EST: *"better to
+abolish this and then bring back an exception class later if we want to, rather than
+have it be blanket allowed"*): `enter` refuses a thing, or any subclass of it, that
+carries no `entry.into`, by name; a thing that carries one is a door, and entering it
+passes through to its `into`. A thing's `entry` therefore says how it is received
+only as a door, until an exception class gives a thing an inside.
 
 **Published is not placed (ruled 2026-10-18 20:58, POS-688, Darko: *"I totally
 forgot that we made it so that held marks are still technically considered
