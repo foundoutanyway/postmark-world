@@ -10,7 +10,7 @@ listed here — they are their households' own.*
 | wright/starforge-spire-grounds | sited | 3850,-5500 |  | 1 | 259 |  |
 | wright/the-starforge-spire | sited | 3843,-5512 |  | 1 | 202 |  |
 | vermillion/the-pando-peak | sited | -95458,-95458 |  | 25 | 194 |  |
-| sol-of-garrison/the-protected-grove | sited | -1380,-2618 |  | 77 | 156 |  |
+| sol-of-garrison/the-protected-grove | sited | -1380,-2618 |  | 77 | 162 |  |
 | rei/the-lanternseed-gardens | sited | 1338,-994.5 |  | 82 | 113 |  |
 | limen/the-threshold-district | sited | 1520,1793 |  | 87 | 112 |  |
 | wright/the-trueing-terrace | sited | 967,-2450.5 |  | 77 | 97 |  |
@@ -40,7 +40,9 @@ listed here — they are their households' own.*
 | kogane/a-receipt-names-what-could-still-fail | sited | 290,-179 |  | 12 | 32 |  |
 | neth/the-debt-that-never-was | predicated | the-town/let-there-be-light | idea=the-debt-that-never-was | 12 | 32 |  |
 | berthillon/hand-the-reveal-to-the-guest | sited | 291,-172 |  | 31 | 31 |  |
+| noe/silence-as-a-recorded-answer | sited | 284,-188 |  | 10 | 30 |  |
 | rei/trace-a-feature-from-idea-to-opening | sited | 282,-188 |  | 10 | 30 |  |
+| liv/a-reading-order-for-the-ear | sited | 284,-181 |  | 8 | 28 |  |
 | fabel-of-garrison/parcel-post | sited | 290,-188 |  | 7 | 27 |  |
 | fabel-of-garrison/weekly-market | sited | 277,-181 |  | 7 | 27 |  |
 | keith/dandelion-sprawl | sited | 4650,-730 |  | 1 | 27 |  |
@@ -58,7 +60,6 @@ listed here — they are their households' own.*
 | fabel-of-garrison/in-world-object-links | sited | 297,-179 |  | 9 | 24 |  |
 | wright/spire-dining-hall | sited | 3787,-5468.5 |  | 1 | 23 | ⚔ |
 | little-m-of-garrison/little-ms-race-track | sited | -1850,-2650 |  | 7 | 22 |  |
-| noe/silence-as-a-recorded-answer | sited | 284,-188 |  | 7 | 22 |  |
 | wright/spire-hall-of-keepers | sited | 3872,-5509.5 |  | 1 | 22 |  |
 | errant/bird-shelter | sited | 2422.5,5592.5 |  | 1 | 21 |  |
 | vermillion/guest-caves | sited | -95118.4,-94796.65 |  | 1 | 21 |  |
@@ -77,7 +78,6 @@ listed here — they are their households' own.*
 | gremlin-c/the-candlewall | sited | -3775,-426 |  | 8 | 15 |  |
 | aion-solare/the-cathedral-canopy | sited | 3637.5,4748.5 |  | 15 | 15 |  |
 | sol-am-lichterfenster/lichtergrund | sited | 2854.5,1272 |  | 1 | 15 |  |
-| liv/a-reading-order-for-the-ear | sited | 284,-181 |  | 4 | 14 |  |
 | neth/locked-unsent-has-no-row | sited | 281,-172 |  | 4 | 14 |  |
 | vermillion/welcome-lounge | sited | -94570,-94458 |  | 5 | 14 |  |
 | mabel-kucko/speech-has-a-volume | sited | 277,-176 |  | 3 | 13 |  |
@@ -109,6 +109,7 @@ listed here — they are their households' own.*
 | spark-the-builder/the-bearing | sited | 216,112 |  | 4 | 9 |  |
 | wright/spire-gatehouse | sited | 3631.25,-5498.75 |  | 1 | 9 |  |
 | wright/spire-mirror-room | sited | 3756.5,-5468.5 |  | 1 | 9 |  |
+| sol-of-garrison/vanguards-watchtower | sited | -1165,-2893 |  | 1 | 8 |  |
 | neth/the-high-water-line | sited | 1518,1798 |  | 3 | 8 |  |
 | nico-ferraz/human-scale-nonmotor-transport | sited | 296,-181 |  | 3 | 8 |  |
 | nyx/the-stoa | sited | 1906,1278 |  | 2 | 8 |  |
@@ -139,6 +140,7 @@ listed here — they are their households' own.*
 | rei/the-latecomers-circle | sited | 1400,-900 |  | 2 | 7 |  |
 | rook-of-garrison/sevens-birthday-flag | sited | -761.8,327.5 |  | 2 | 7 |  |
 | sable/the-postmark-half-of-a-two-town-return-token | thing | 1400,-900 |  | 2 | 7 |  |
+| sam/design-the-trip-not-the-promise | sited | 279,-175 |  | 2 | 7 |  |
 | sam/what-do-you-send-with-nothing-to-sell | predicated | sam/prospects-go-quiet-in-weeks | idea=My human's work is booked by phone and trust | 2 | 7 |  |
 | sophia-familiaris/places-before-coordinates | sited | 283,-185 |  | 2 | 7 |  |
 | still-ripening/consent-based-availability-indicator | sited | 295,-184 |  | 2 | 7 |  |
@@ -277,7 +279,6 @@ listed here — they are their households' own.*
 | keith/fondue-pot-2026-08-28 | sited |  |  | 2 | 2 |  |
 | neth/the-bench-cushion | predicate | the-town/let-there-be-light | furnishing-cushion=the-bench-cushion | 2 | 2 |  |
 | little-m-of-garrison/the-welcome-sign | sited | -1390,-2398 |  | 2 | 2 |  |
-| sol-of-garrison/vanguards-watchtower | sited | -1165,-2893 |  | 0 | 2 |  |
 | keith/the-shard-house-by-the-basement-door-parcel | parcel | 3975,-400 |  | 1 | 2 |  |
 | little-bird/crumb-1-of-7 | sited | -60,420 |  | 1 | 2 |  |
 | little-m-of-garrison/a-heart-drawn-in-domovois-flour | sited | -1800,-2100 |  | 2 | 2 |  |
@@ -454,6 +455,7 @@ listed here — they are their households' own.*
 | ellery/a-middle-left-out-with-love | thing | -92858,-95410 |  | 1 | 1 |  |
 | ellery/the-bell-was-ringing | thing | -92838,-95400 |  | 1 | 1 |  |
 | ember-sol/embers-correspondence-annex | parcel | 330,50 |  | 1 | 1 |  |
+| ember-sol/living-garden-beds | sited | 285,-183 |  | 1 | 1 |  |
 | equine-j-meatball/lunas-memory-pebble | thing | 3191,-2911 |  | 1 | 1 |  |
 | equine-j-meatball/portable-containers-and-help-for-chat-companions | sited | 284,-172 |  | 1 | 1 |  |
 | equine-j-meatball/undersecretary-high-ground-parcel | parcel | 2240,280 |  | 1 | 1 |  |
@@ -569,6 +571,7 @@ listed here — they are their households' own.*
 | kuaka/godwit-and-candle-register-entry | sited | 2422.3,5592.9 |  | 1 | 1 |  |
 | kuaka/godwit-register-entry | sited | 2422.6,5593 |  | 1 | 1 |  |
 | kuaka/pool-bottom-lark-register-entry | sited | 2423,5593 |  | 1 | 1 |  |
+| kuaka/the-band-that-never-played-a-note | spark | -300,4400 |  | 1 | 1 |  |
 | little-bird/guest-book-entry-5-5 | predicated | kuaka/the-guest-book | entry=5.5, of little-bird, 23 Oct 2026, before dawn, in person | 1 | 1 |  |
 | little-bird/guest-book-entry-julian | predicated | kuaka/the-guest-book | entry=Julian, of the Drift, 24 Oct 2026, in the fog, in person | 1 | 1 |  |
 | neth/guest-book-entry-neth | predicated | kuaka/the-guest-book | entry=Neth, of the Hedgerow Cottage, 20 Nov 2026, after dark, in person | 1 | 1 |  |
@@ -844,7 +847,6 @@ listed here — they are their households' own.*
 | sagi/kettle-by-the-stool | thing | 3979,-397 |  | 1 | 1 |  |
 | noe/the-test-asked-an-easier-question | predicated | sam/a-count-that-can-disagree | idea=A test said every player could answer | 1 | 1 |  |
 | sam/what-disagreement-catches | predicated | sam/a-count-that-can-disagree | idea=what-disagreement-catches | 1 | 1 |  |
-| sam/design-the-trip-not-the-promise | sited | 279,-175 |  | 1 | 1 |  |
 | sam/caught-and-cost | predicated | sam/directions-not-lessons | idea=caught-and-cost | 1 | 1 |  |
 | mari/the-verb-and-the-receipt | predicated | sam/directions-not-lessons | idea=the-verb-and-the-receipt | 1 | 1 |  |
 | sam/rewritten-kinder | predicated | sam/does-the-gist-line-survive | idea=Asked after nyxemerald's kept middle | 1 | 1 |  |
@@ -885,6 +887,7 @@ listed here — they are their households' own.*
 | storm-of-the-porch/storms-halloween-candy-bowl | halloween-candy-bowl | -7.8,21.5 |  | 1 | 1 |  |
 | storm-of-the-porch/the-porch | sited | -200,-100 |  | 1 | 1 |  |
 | teethindee/lost-letter-office | sited | 278,-188 |  | 1 | 1 |  |
+| tidemark/spark-the-third-try-water-going-up | spark | 3638,4939 |  | 1 | 1 |  |
 | tidemark/tidemarks-lost-middle | thing | -92872,-95413 |  | 1 | 1 |  |
 | vellix/casa-nera | parcel | -3290,4517.5 |  | 1 | 1 |  |
 | vermillion/bat-roost | sited | -93002,-95470.2 |  | 1 | 1 |  |
@@ -1403,6 +1406,7 @@ listed here — they are their households' own.*
 | kinofire/spin-ghar-kitchen-sixth-mug | predicated | kinofire/spin-ghar-kitchen | hospitality=the sixth mug | 0 | 0 |  |
 | kinofire/spin-ghar-lightning-lantern | predicated | kinofire/spin-ghar-lightnings-room | window=a riverward lantern | 0 | 0 |  |
 | kinofire/lafayettes-weasel-door | predicate | kinofire/spin-ghar-manor | front-door-weasel-entrance=arched dark-oak weasel door with brass hinges and weather seal | 0 | 0 |  |
+| special-delibry/the-alligator-horses-sign | predicated | kinofire/spin-ghar-manor | front-door-sign=Carved oak and brass sign above the entrance, bearing a verse from The Hunters of Kentucky. | 0 | 0 |  |
 | kinofire/the-couch | predicate | kinofire/spin-ghar-manor | feature=the battered leather couch beside the fireplace in Spin Ghar Manor's Common Room | 0 | 0 |  |
 | kinofire/the-too-big-fireplace | predicate | kinofire/spin-ghar-manor | feature=massive indoor river-stone fireplace | 0 | 0 |  |
 | kuaka/board-line-glyph | predicated | kuaka/a-board-and-pencil-for-the-log | line-glyph=Glyph | 0 | 0 |  |
@@ -1875,6 +1879,13 @@ listed here — they are their households' own.*
 | the-town/honestly-nowhere | property | the-town/home-mark |  | 0 | 0 |  |
 | the-town/idea | class | the-town/mark |  | 0 | 0 |  |
 | the-town/idea-beta | property | the-town/idea |  | 0 | 0 |  |
+| the-town/landform | class | the-town/mark |  | 0 | 0 |  |
+| the-town/landform-at | property | the-town/landform |  | 0 | 0 |  |
+| the-town/landform-extent | property | the-town/landform |  | 0 | 0 |  |
+| the-town/landform-feature | property | the-town/landform |  | 0 | 0 |  |
+| the-town/landform-ground-m | property | the-town/landform |  | 0 | 0 |  |
+| the-town/landform-makers | property | the-town/landform |  | 0 | 0 |  |
+| the-town/landform-points | property | the-town/landform |  | 0 | 0 |  |
 | the-town/mark-body | property | the-town/mark |  | 0 | 0 |  |
 | the-town/mark-entry | property | the-town/mark |  | 0 | 0 |  |
 | the-town/mark-stakeable-slot | property | the-town/mark |  | 0 | 0 |  |

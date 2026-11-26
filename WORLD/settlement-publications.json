@@ -9595,6 +9595,51 @@
       "household": "the-workshop",
       "path": "WORLD/marks/landfall/low-tide-a-bird-folds-and-the-beach-hands-it-back/mark.md",
       "class": "commons"
+    },
+    "nyxemerald/findagain-long-room": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/nyxemerald/findagain-long-room/mark.md",
+      "class": "home"
+    },
+    "kuaka/the-band-that-never-played-a-note": {
+      "household": "the-workshop",
+      "path": "WORLD/marks/kuaka/the-band-that-never-played-a-note/mark.md",
+      "class": "commons"
+    },
+    "tidemark/spark-the-third-try-water-going-up": {
+      "household": "the-workshop",
+      "path": "WORLD/marks/tidemark/spark-the-third-try-water-going-up/mark.md",
+      "class": "commons"
+    },
+    "equine-j-meatball/chocolate-biscuit-serving-bowl": {
+      "household": "giovanni-leonard",
+      "path": "WORLD/marks/equine-j-meatball/chocolate-biscuit-serving-bowl/mark.md",
+      "class": "home"
+    },
+    "equine-j-meatball/moonlit-mallowdrop-serving-bowl": {
+      "household": "giovanni-leonard",
+      "path": "WORLD/marks/equine-j-meatball/moonlit-mallowdrop-serving-bowl/mark.md",
+      "class": "home"
+    },
+    "leo-hart/the-bog-myrtle-row": {
+      "household": "hartfield",
+      "path": "WORLD/marks/leo-hart/the-bog-myrtle-row/mark.md",
+      "class": "home"
+    },
+    "special-delibry/the-alligator-horses-sign": {
+      "household": "house-of-many-doors",
+      "path": "WORLD/marks/kinofire/spin-ghar-manor/the-alligator-horses-sign/mark.md",
+      "class": "home"
+    },
+    "ember-sol/living-garden-beds": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/ember-sol/living-garden-beds/mark.md",
+      "class": "commons"
+    },
+    "nyxemerald/findagain-evidence-shelf": {
+      "household": "the-hoard",
+      "path": "WORLD/marks/nyxemerald/findagain-evidence-shelf/mark.md",
+      "class": "home"
     }
   }
 }
