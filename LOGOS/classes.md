@@ -821,6 +821,29 @@ what-relates (postmark-edge), and what-governs (postmark-class):
   never restated here (the paraphrase-drift class). Red until its engine
   child names the walk.
 
+## What keeps a mark in the world
+
+Ruled 2026-10-14 (WLD-51, Darko): *"At each settlement, a commons mark with no
+stamps behind it leaves the world. A mark standing on your household's ground
+or the town's never does, whatever it was first filed as."*
+
+- **The ground a mark stands on now decides.** At each settlement a mark is
+  judged by its standing as the record walks it then (its `tier`, § The
+  derived above; [tiers.md](tiers.md)), never by how it was first filed, how
+  old it is, or what a list says about it. On its household's own ground, or
+  on the town's, it stays with no stamp behind it. On the commons it stays
+  while at least one stamp stands behind it.
+- **A held thing is not judged while it is held** (POS-688; § Published is
+  not placed below). It is published but unplaced, so it stands on no ground.
+  Set down, it is judged where it now stands, for its owner, as the drop
+  clause says.
+- **Registry absence is no exemption** (WLD-252, Darko 2026-11-25). A mark the
+  sweep's publication list never recorded is judged by the same rule as one
+  it did.
+
+The rule is decided in one place, `tools/unpublish-verdict.mjs`, which the
+settlement's sweep and the office's stakes warning both read.
+
 ## The becomes edge — lifecycle
 
 Ruled the same sitting: **becomes is the lifecycle edge — one standing
@@ -2914,7 +2937,15 @@ position's anchor is a mark, an entity, or the world — a held thing rides its
 holder as a rider rides the deck; what may anchor where is class contract
 (rendered as `the-town/the-anchor`). **A thing is not ground**: nothing files
 under a thing by geometry, and a walk onto it sets you down on what it stands
-on (rendered as `the-town/the-not-ground`).
+on (rendered as `the-town/the-not-ground`). **A thing has no inside** (WLD-212, Darko 2026-11-19 22:12 EST: *"better to
+abolish this and then bring back an exception class later if we want to, rather than
+have it be blanket allowed"*): `enter` refuses a thing, or any subclass of it, by
+name. Since WLD-253 that is read from the class: thing declares `entry: none`, locked
+(`the-town/thing-entry`), and the nearest declaration wins, so only the town's subclass
+may loosen it. A thing writes no door field; what passes you through to an `into` is a
+door, a class of its own (`the-town/door`, under `sited`, a sibling of thing; § Door is a
+class). A thing's `entry` is therefore none, until an exception class gives a thing an
+inside.
 
 **Published is not placed (ruled 2026-10-18 20:58, POS-688, Darko: *"I totally
 forgot that we made it so that held marks are still technically considered

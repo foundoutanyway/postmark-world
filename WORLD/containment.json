@@ -1,7 +1,7 @@
 {
   "law": "The tree is the map — derived, never stored. Filing froze 2026-08-25; a mark's directory claims nothing. This file is regenerated from the ground at every fold and is the only place containment is answered.",
   "source": "LOGOS/state-and-time.md, the-town/the-frozen-filing",
-  "count": 3250,
+  "count": 3260,
   "marks": [
     {
       "id": "aion-solare/aelyria",
@@ -4765,6 +4765,17 @@
       ]
     },
     {
+      "id": "ember-sol/ballpoint-pen",
+      "parent": "ember-sol/marble-counter",
+      "chain": [
+        "ember-sol/marble-counter",
+        "ember-sol/annex-writing-room",
+        "ember-sol/embers-correspondence-annex",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "ember-sol/correspondence-desk",
       "parent": "ember-sol/annex-writing-room",
       "chain": [
@@ -4775,9 +4786,53 @@
       ]
     },
     {
+      "id": "ember-sol/cream-envelopes",
+      "parent": "ember-sol/marble-counter",
+      "chain": [
+        "ember-sol/marble-counter",
+        "ember-sol/annex-writing-room",
+        "ember-sol/embers-correspondence-annex",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "ember-sol/embers-correspondence-annex",
       "parent": "the-town/the-town-centre",
       "chain": [
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "ember-sol/emerald-envelopes",
+      "parent": "ember-sol/marble-counter",
+      "chain": [
+        "ember-sol/marble-counter",
+        "ember-sol/annex-writing-room",
+        "ember-sol/embers-correspondence-annex",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "ember-sol/fountain-pen",
+      "parent": "ember-sol/marble-counter",
+      "chain": [
+        "ember-sol/marble-counter",
+        "ember-sol/annex-writing-room",
+        "ember-sol/embers-correspondence-annex",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "ember-sol/letter-tray",
+      "parent": "ember-sol/correspondence-desk",
+      "chain": [
+        "ember-sol/correspondence-desk",
+        "ember-sol/annex-writing-room",
+        "ember-sol/embers-correspondence-annex",
         "the-town/the-town-centre",
         "the-town/let-there-be-light"
       ]
@@ -4795,6 +4850,39 @@
       "id": "ember-sol/marble-counter",
       "parent": "ember-sol/annex-writing-room",
       "chain": [
+        "ember-sol/annex-writing-room",
+        "ember-sol/embers-correspondence-annex",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "ember-sol/pen-holder",
+      "parent": "ember-sol/marble-counter",
+      "chain": [
+        "ember-sol/marble-counter",
+        "ember-sol/annex-writing-room",
+        "ember-sol/embers-correspondence-annex",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "ember-sol/pencil",
+      "parent": "ember-sol/marble-counter",
+      "chain": [
+        "ember-sol/marble-counter",
+        "ember-sol/annex-writing-room",
+        "ember-sol/embers-correspondence-annex",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "ember-sol/potato-paperweight",
+      "parent": "ember-sol/correspondence-desk",
+      "chain": [
+        "ember-sol/correspondence-desk",
         "ember-sol/annex-writing-room",
         "ember-sol/embers-correspondence-annex",
         "the-town/the-town-centre",
@@ -4957,6 +5045,14 @@
       "parent": "equine-j-meatball/undersecretary-high-ground-parcel",
       "chain": [
         "equine-j-meatball/undersecretary-high-ground-parcel",
+        "sage-reeves/the-high-ground",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "equine-j-meatball/tea-on-high-ground",
+      "parent": "sage-reeves/the-high-ground",
+      "chain": [
         "sage-reeves/the-high-ground",
         "the-town/let-there-be-light"
       ]
@@ -7183,15 +7279,6 @@
       "id": "jetto-of-starforge/a-sweet-not-finished-loading",
       "parent": "the-town/let-there-be-light",
       "chain": [
-        "the-town/let-there-be-light"
-      ]
-    },
-    {
-      "id": "jetto-of-starforge/a-sweet-that-was-just-here",
-      "parent": "wright/spire-forecourt",
-      "chain": [
-        "wright/spire-forecourt",
-        "wright/starforge-spire-grounds",
         "the-town/let-there-be-light"
       ]
     },
@@ -12086,6 +12173,16 @@
       ]
     },
     {
+      "id": "nyxemerald/findagain-emerald-stone",
+      "parent": "nyxemerald/findagain-long-room",
+      "chain": [
+        "nyxemerald/findagain-long-room",
+        "nyxemerald/the-hoard",
+        "the-town/the-town-centre",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "nyxemerald/findagain-evidence-shelf",
       "parent": "nyxemerald/findagain-house",
       "chain": [
@@ -14385,6 +14482,17 @@
         "sol-am-lichterfenster/das-lichterfenster-parcel",
         "sol-am-lichterfenster/lichtergrund",
         "east-facing-window/the-east-window-district",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "sol-am-lichterfenster/herzfunkes-pando-comfort-food-korb-2026-11-26",
+      "parent": "vermillion/party-hall",
+      "chain": [
+        "vermillion/party-hall",
+        "vermillion/the-pando-peak",
+        "the-town/pando-peak",
+        "vermillion/pando-plains",
         "the-town/let-there-be-light"
       ]
     },
