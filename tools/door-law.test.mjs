@@ -281,6 +281,37 @@ test("THE MAP: a door the camera stands within keeps its own pip, by its class (
   assert.deepEqual(spineDoors([{ id: porch.id }], { byId: new Map([[porch.id, porch]]), marks: LIVE }).map((m) => m.id), []);
 });
 
+test("THE SIGN: the glyph and the display switch call a door subclass a door with or without into, by the same graph as the map's pip; no graph, no door", async () => {
+  const { doorClassesOf, thingClassesOf, markWhat } = await import("../spectator/mark-icons.mjs");
+  const { markInDisplaySelection, DISPLAY_MARK_KINDS } = await import("../spectator/viewer.mjs");
+  const doors = doorClassesOf(WITH_PORCH);
+  assert.deepEqual([...doorClassesOf(LIVE)], [DOOR_CLASS], "the live graph: door alone");
+  assert.deepEqual([...doors].sort(), ["door", "porch"], "a town subclass joins by the graph");
+  for (const not of ["thing", "sited", "creature", "mark"]) assert.equal(doors.has(not), false, `${not} is no door class`);
+  const opts = { doorClasses: doors, thingClasses: thingClassesOf(WITH_PORCH) };
+  const ring = LIVE.find((m) => m.id === LISTED);
+  const porch = rec("the-town/a-porch", "porch", TOWN);
+  const porchInto = rec("the-town/a-porch-into", "porch", TOWN, { into: "g/room" });
+  const room = rec("g/room", "sited", "g");
+  const bowl = rec("g/bowl", "thing", "g");
+  assert.equal(markWhat(ring, { ...opts, cls: "door" }), "door", "an ordinary door");
+  assert.equal(markWhat(porch, { ...opts, cls: "porch" }), "door", "a door subclass without into");
+  assert.equal(markWhat(porchInto, { ...opts, cls: "porch" }), "door", "a door subclass with into");
+  assert.equal(markWhat(room, { ...opts, cls: "" }), "place", "a plain room stays a place");
+  assert.equal(markWhat(bowl, { ...opts, cls: "thing" }), "thing", "a thing stays a thing");
+  // the unknown-graph boundary: without porch in the graph (or with no graph at all), only an `into` makes it read as a door
+  for (const o of [{ doorClasses: doorClassesOf(LIVE) }, {}]) {
+    assert.equal(markWhat(porch, { ...o, cls: "porch" }), "place", "no graph, no door");
+    assert.equal(markWhat(porchInto, { ...o, cls: "porch" }), "door", "an into is still a door's sign");
+  }
+  // the display switch answers to the same key: doors off hides the porch, places off does not
+  assert.ok(DISPLAY_MARK_KINDS.includes("door") && DISPLAY_MARK_KINDS.includes("place"));
+  const whatOf = (m) => markWhat(m, { ...opts, cls: String(m.kind) === "sited" ? "" : String(m.kind) });
+  assert.equal(markInDisplaySelection(porch, { off: ["door"] }, { whatOf }), false, "doors off: the porch is hidden");
+  assert.equal(markInDisplaySelection(porch, { off: ["place"] }, { whatOf }), true, "places off: the porch stays");
+  assert.equal(markInDisplaySelection(room, { off: ["door"] }, { whatOf }), true, "doors off: a room stays");
+});
+
 // ── the passage ──────────────────────────────────────────────────────────────
 
 function passageWorld(extra) {
