@@ -2939,8 +2939,9 @@ holder as a rider rides the deck; what may anchor where is class contract
 under a thing by geometry, and a walk onto it sets you down on what it stands
 on (rendered as `the-town/the-not-ground`). **A thing has no inside** (WLD-212, Darko 2026-11-19 22:12 EST: *"better to
 abolish this and then bring back an exception class later if we want to, rather than
-have it be blanket allowed"*): `enter` refuses a thing, or any subclass of it, by
-name. Since WLD-253 that is read from the class: thing declares `entry: none`, locked
+have it be blanket allowed"*): `enter` refuses, by name, a thing, or any subclass of it
+whose effective `entry` is still none (every subclass the town's own has not loosened).
+Since WLD-253 that is read from the class: thing declares `entry: none`, locked
 (`the-town/thing-entry`), and the nearest declaration wins, so only the town's subclass
 may loosen it. A thing writes no door field; what passes you through to an `into` is a
 door, a class of its own (`the-town/door`, under `sited`, a sibling of thing; § Door is a
