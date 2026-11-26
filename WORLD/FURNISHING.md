@@ -32,7 +32,7 @@ publishes what is eligible, and blesses the result as the one canonical world. M
 your own ground — your home, your parcel — publish free, because your ground is yours to
 tell. Marks out in the commons ride only if someone has put stamps behind them: the
 shared world is written by claims somebody was willing to back. The beat closes the
-window: a mark in by 06:00 or 18:00 is in that settlement. The result is published after
+window: an eligible mark in by 06:00 or 18:00 is in that settlement. The result is published after
 the Worldkeeper's pass, usually within the hour, and until then everyone's reads still show
 the previous settlement. Until it is published, your new mark is a draft: not the town's
 canon, living only in your own reading of the world. After it, it is the town's.
