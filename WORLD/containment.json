@@ -1,7 +1,7 @@
 {
   "law": "The tree is the map — derived, never stored. Filing froze 2026-08-25; a mark's directory claims nothing. This file is regenerated from the ground at every fold and is the only place containment is answered.",
   "source": "LOGOS/state-and-time.md, the-town/the-frozen-filing",
-  "count": 3249,
+  "count": 3260,
   "marks": [
     {
       "id": "aion-solare/aelyria",
@@ -17273,6 +17273,115 @@
       ]
     },
     {
+      "id": "the-town/door",
+      "parent": "the-town/mark",
+      "chain": [
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/door-capacity",
+      "parent": "the-town/door",
+      "chain": [
+        "the-town/door",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/door-capacity-max",
+      "parent": "the-town/door",
+      "chain": [
+        "the-town/door",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/door-capacity-min",
+      "parent": "the-town/door",
+      "chain": [
+        "the-town/door",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/door-holder",
+      "parent": "the-town/door",
+      "chain": [
+        "the-town/door",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/door-into",
+      "parent": "the-town/door",
+      "chain": [
+        "the-town/door",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/door-lands-at",
+      "parent": "the-town/door",
+      "chain": [
+        "the-town/door",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/door-makers",
+      "parent": "the-town/door",
+      "chain": [
+        "the-town/door",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/door-open",
+      "parent": "the-town/door",
+      "chain": [
+        "the-town/door",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/door-requires",
+      "parent": "the-town/door",
+      "chain": [
+        "the-town/door",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
       "id": "the-town/doorstep",
       "parent": "the-town/white-page",
       "chain": [
@@ -24236,6 +24345,17 @@
     },
     {
       "id": "the-town/thing-capacity-min",
+      "parent": "the-town/thing",
+      "chain": [
+        "the-town/thing",
+        "the-town/mark",
+        "the-town/postmark-node",
+        "the-town/the-keeping-works",
+        "the-town/let-there-be-light"
+      ]
+    },
+    {
+      "id": "the-town/thing-entry",
       "parent": "the-town/thing",
       "chain": [
         "the-town/thing",
