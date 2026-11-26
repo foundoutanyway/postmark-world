@@ -24,6 +24,7 @@
 import { isGround, instanceClassOf, isPredicate, heldBy, ownedBy, isLandform, kindIndexOf } from "../tools/mark-kind.mjs"; // what a record is and how it stands, in either form (LOGOS v2 part 2, W2)
 import { openYourEyes, investigate, containmentChain, mistsSentence, veilSentence, standpointSight, shelterOf } from "../tools/world-verbs.mjs";
 import { ringRoomOf, ringRoomOutline } from "../tools/portals.mjs"; // a creature's ring stops at its room's walls (WLD-25)
+import { isDoorMark } from "../tools/door-law.mjs"; // a door keeps its own map marker, by its class (WLD-253)
 import { assembleWorld } from "../tools/world-build.mjs";
 import { DIALS, bearingDeg, quantizeBearing, mistsAt, mistsHere, mistsRoad } from "../tools/world-engine.mjs";
 import { marksContain, pointInPolygon, pointInRect, polygonBBox, polygonOf, rect } from "../tools/geometry.mjs"; // read-only: home color + point-destination labels
@@ -2480,6 +2481,24 @@ const isPortalGround = (classes) => /(?:^|\s)c-portal-ground(?:\s|$)/.test(Strin
 // a glyph centred on the dot (mark-icons.mjs § iconSVG), drawn the same way the
 // doorway is — over the circle, never instead of it — and it replaces the
 // doorway, which is the door glyph's older, smaller self.
+/** A DOOR KEEPS ITS OWN MARKER (WLD-253; Wright, 2026-11-26: "Door keeps its own map marker and label, reusing the existing
+ *  door sign, with no former-thing exception"). A door is sited ground, so one the reader or the camera stands within is on
+ *  the spine (`within`), not a bearing: the field of view lists it nowhere and the painting drew it no pip, so a 3×3 ring was
+ *  lost under the room around it. These are the doors on the spine, as marks, each once, to be drawn as any pip is (its
+ *  door sign from mark-icons, its own label and its own hit, so its own card). By CLASS only (door-law.mjs § isDoorMark, the
+ *  class graph's answer: a town subclass of door too), never by id or by what a mark used to be. */
+export function spineDoors(within, { byId = new Map(), marks = null } = {}) {
+  const idx = kindIndexOf(marks ?? [...byId.values()]);
+  const out = [], seen = new Set();
+  for (const w of within ?? []) {
+    const m = byId.get(w?.id) ?? w;
+    if (!m?.id || seen.has(m.id) || !Number.isFinite(Number(m.at?.x)) || !Number.isFinite(Number(m.at?.y)) || !isDoorMark(m, idx)) continue;
+    seen.add(m.id);
+    out.push(m);
+  }
+  return out;
+}
+
 export function overlayPipSVG({ at, id, classes = "", fan = null, title = null, inner = "", badges = [] } = {}) {
   const x = Number(at?.x), y = Number(at?.y);
   if (![x, y].every(Number.isFinite)) return "";
@@ -12311,6 +12330,12 @@ export function mountViewer(appEl) {
           if (!m?.id || !m.at || typeof m.at.x !== "number" || seen.has(m.id)) continue;
           seen.add(m.id); if (shownByDisplay(m)) out.push(m);
         }
+    // A DOOR ON THE SPINE KEEPS ITS OWN PIP (WLD-253; spineDoors above): a door the reader or camera stands within is no
+    // bearing, so it is added here by its class, to be drawn, labelled and hit as its own mark
+    for (const m of spineDoors(radial?.within, { byId, marks: allMarks() })) {
+      if (seen.has(m.id)) continue;
+      seen.add(m.id); if (shownByDisplay(m)) out.push(m);
+    }
     // the radial's own entries come first and are KEPT: they carry distM and
     // bearing, which the bare record mark does not
     //

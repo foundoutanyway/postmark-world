@@ -261,6 +261,26 @@ test("A DOOR SUBCLASS IS A DOOR wherever a door is asked: the write, the ring ro
   }
 });
 
+test("THE MAP: a door the camera stands within keeps its own pip, by its class (a town subclass too); no thing, no plain room, nothing by id", async () => {
+  const { spineDoors } = await import("../spectator/viewer.mjs");
+  const byId = new Map(WITH_PORCH.map((m) => [m.id, m]));
+  // the live spine at the pantry ring: the world, the guest caves' pantry, the ring itself
+  const spine = [{ id: "the-town/let-there-be-light" }, { id: "vermillion/guest-caves-pantry-of-arrival" }, { id: LISTED }];
+  assert.deepEqual(spineDoors(spine, { byId, marks: WITH_PORCH }).map((m) => m.id), [LISTED], "the ring, not the pantry around it");
+  const porch = rec("the-town/a-porch", "porch", TOWN, { into: "g/room" });
+  const marks = [...WITH_PORCH, porch];
+  const ids = (within) => spineDoors(within, { byId: new Map(marks.map((m) => [m.id, m])), marks }).map((m) => m.id);
+  assert.deepEqual(ids([{ id: porch.id }, { id: LISTED }, { id: LISTED }]), [porch.id, LISTED], "a door subclass by the graph, each door once");
+  // no former-thing exception: a thing (whatever it once was), a plain room and a mark with no place get none
+  const asThing = { ...LIVE.find((m) => m.id === LISTED), id: "little-bird/a-thing-ring", kind: "thing" };
+  const placeless = rec("the-town/a-door-nowhere", "door", TOWN, { into: "g/room", at: undefined });
+  const more = [...marks, asThing, placeless];
+  assert.deepEqual(spineDoors([{ id: asThing.id }, { id: "vermillion/guest-caves-pantry-of-arrival" }, { id: placeless.id }],
+    { byId: new Map(more.map((m) => [m.id, m])), marks: more }).map((m) => m.id), []);
+  // without the porch class in the graph, a porch is no door: the class decides, not the kind's spelling
+  assert.deepEqual(spineDoors([{ id: porch.id }], { byId: new Map([[porch.id, porch]]), marks: LIVE }).map((m) => m.id), []);
+});
+
 // ── the passage ──────────────────────────────────────────────────────────────
 
 function passageWorld(extra) {
