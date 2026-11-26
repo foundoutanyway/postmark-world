@@ -5585,7 +5585,12 @@ export function enterableMark(mark, { thingClasses = null } = {}) {
  *  card offers no enter either (until then "a thing may hold an `entry` naming an
  *  `into`", Bevel 2026-11-19; a bag of holding is CORE-129 layer 2). A kind of thing
  *  is a thing (W2 final): the caller passes the page's thing classes; without them,
- *  only the class `thing` itself is known. The name keeps its callers. */
+ *  only the class `thing` itself is known. The name keeps its callers.
+ *  LAYER 2 NOTE (not built): the engine follows the class's EFFECTIVE `entry`
+ *  (door-law.mjs § classHasNoWayIn: the nearest declaration wins), and no thing
+ *  subclass loosens it today. When layer 2 adds one (a bag of holding), this card
+ *  must follow that effective entry too, not "every thing class", or the page will
+ *  hide an enter the passage allows. */
 export function thingWithoutDoor(mark, { thingClasses = null } = {}) {
   const cls = classToken(instanceClassOf(mark));
   return cls === "thing" || (!!cls && !!thingClasses?.has?.(cls));

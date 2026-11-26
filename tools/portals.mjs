@@ -20,7 +20,7 @@
 // so what a portal does and what the lint holds it to are one definition. Pure:
 // no fs, no engine import, browser-safe like geometry.mjs.
 
-import { isSited, instanceClassOf, heldBy } from "./mark-kind.mjs"; // what a record is and how it stands, in either form (LOGOS v2 part 2, W2)
+import { isSited, instanceClassOf, heldBy, kindIndexOf } from "./mark-kind.mjs"; // what a record is and how it stands, in either form (LOGOS v2 part 2, W2)
 import { marksContain, overlapArea, pointInPolygon, pointInRect, polygonBBox, polygonOf, rect, rectCorners } from "./geometry.mjs";
 import { entryLawOf, REQUIRES_AT_SETTLEMENT, requiresHoldersIn } from "./enter-exit.mjs";
 import { nameInSentence } from "./mark-name.mjs";
@@ -113,8 +113,9 @@ export function roomHolds(room, mk, marks) {
 export function ringRoomOf(point, marks) {
   if (!point || !Number.isFinite(Number(point.x)) || !Number.isFinite(Number(point.y))) return null;
   let best = null;
+  const idx = kindIndexOf(marks ?? []); // a door is asked of the class graph, so a town subclass of door is no room either (WLD-253)
   for (const c of marks ?? []) {
-    if (!isSited(c) || !c.extent || c.entry || isDoorMark(c) || instanceClassOf(c) === "thing") continue;
+    if (!isSited(c) || !c.extent || c.entry || isDoorMark(c, idx) || instanceClassOf(c) === "thing") continue;
     if (best && !(area(c) < area(best))) continue;
     if (pointInMark(point, c)) best = c;
   }
@@ -464,7 +465,8 @@ export function landingOf(law, intoMark, byId, { room = intoMark, portal = null 
   const here = room ?? intoMark;
   // 1. the room's own word: honored only where the door law lets it stand (WLD-253: lands_at is door's alone, so a room that writes one is a
   // door, the town's or one of the 44; door-law.mjs)
-  const own = room && room.id !== portal?.id && doorStanding(room).allowed ? entryLawOf(room) : null;
+  // asked of the class graph in hand (byId's records), so a town subclass of door stands here as it does at the gate
+  const own = room && room.id !== portal?.id && doorStanding(room, { marks: kindIndexOf(byId) }).allowed ? entryLawOf(room) : null;
   if (own && !own.into && own.lands_at !== undefined) {
     const r = resolve(own.lands_at, `${room.id}'s `);
     if (r.error) return r.error;

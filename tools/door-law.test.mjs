@@ -23,7 +23,7 @@ import {
 import { loadMarks } from "./marks-fold.mjs";
 import { classIndex, classChain, propertyOf, propertyAt } from "./class-properties.mjs";
 import { enter } from "./world-verbs.mjs";
-import { landingOf } from "./portals.mjs";
+import { landingOf, ringRoomOf } from "./portals.mjs";
 import { entryLawOf } from "./enter-exit.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -214,6 +214,51 @@ test("WRITE: welcome words and the mark's own place stay the maker's; the town m
   assert.deepEqual([misspelt.allowed, misspelt.why, misspelt.changed], [false, "field-spelling", ["Into"]]);
   const carried = doorWriteVerdict({ by: TOWN, before: null, after: rec("the-town/d", "door", TOWN, { entry: { into: "a" } }), marks: IDX });
   assert.deepEqual([carried.why, carried.changed], ["field-spelling", ["entry.into"]]);
+});
+
+test("WRITE FAILS CLOSED on the class graph: no graph, an empty one, one without door, or a class it cannot place answers null, never a yes", () => {
+  const create = rec("rena/a-porch", "porch", "rena", { into: "g/room" });
+  const amend = { before: rec("rena/a-porch", "porch", "rena", { into: "g/room" }), after: rec("rena/a-porch", "porch", "rena", { into: "g/elsewhere" }) };
+  const noDoor = classIndex(LIVE.filter((m) => !(m.kind === "class" && m.class === "door")));
+  for (const [label, marks] of [["no graph", null], ["no graph (undefined)", undefined], ["an empty graph", []], ["a graph without door", noDoor]]) {
+    assert.deepEqual(doorWriteVerdict({ by: "rena", before: null, after: create, marks }), { allowed: null, why: "classes-unread", classes: ["door"] }, `${label}: create`);
+    assert.equal(doorWriteVerdict({ by: "rena", ...amend, marks }).allowed, null, `${label}: amend`);
+    assert.equal(doorWriteVerdict({ by: "rena", before: null, after: rec("rena/a-note", "sited", "rena"), marks }).allowed, null, `${label}: even a plain mark is unjudged`);
+  }
+  // the graph in hand, but not the record's class: unresolved, so null (a resident cannot pass a door subclass off by naming it)
+  assert.deepEqual(doorWriteVerdict({ by: "rena", before: null, after: create, marks: IDX }), { allowed: null, why: "classes-unread", classes: ["porch"] });
+  assert.deepEqual(doorWriteVerdict({ by: "rena", before: rec("rena/x", "porch", "rena"), after: rec("rena/x", "sited", "rena"), marks: IDX }).classes, ["porch"]);
+  // what stays as it was: an unread actor is null first, and withdrawing (the office's own ownership rule decides who) needs no class
+  assert.deepEqual(doorWriteVerdict({ by: null, before: null, after: create }), { allowed: null, why: "actor-unread" });
+  assert.deepEqual(doorWriteVerdict({ by: "rena", before: amend.before, after: null }), { allowed: true, why: "withdraw" });
+});
+
+// a town-made subclass of door, as layer 2 or the town might add one: the graph says it is a door, everywhere a door is asked
+const PORCH_CLASS = { id: "the-town/porch", kind: "class", by: TOWN, tier: "constitution", class: "porch", extends: "door" };
+const WITH_PORCH = [...LIVE, PORCH_CLASS];
+
+test("A DOOR SUBCLASS IS A DOOR wherever a door is asked: the write, the ring room and a room's own landing (the class graph, never the kind's spelling)", () => {
+  const idx = classIndex(WITH_PORCH);
+  assert.equal(isDoorClass("porch", idx), true);
+  // the write: a resident's porch is a door, refused by makers; the town's stands
+  const r = doorWriteVerdict({ by: "rena", before: null, after: rec("rena/a-porch", "porch", "rena", { into: "g/room" }), marks: idx });
+  assert.deepEqual([r.allowed, r.why], [false, "makers"]);
+  assert.deepEqual(doorWriteVerdict({ by: TOWN, before: null, after: rec("the-town/a-porch", "porch", TOWN, { into: "g/room" }), marks: idx }), { allowed: true, why: "town" });
+  assert.equal(doorStanding(rec("the-town/a-porch", "porch", TOWN, { into: "g/room" }), { marks: idx }).why, "town");
+  // the ring room: inside a dungeon, a door is never the room a creature hears in, and a porch is no room either
+  const keep = { id: "d/keep", kind: "sited", class: "dungeon", at: { x: 50, y: 0 }, extent: { w: 100, h: 40 } };
+  const inner = (kind) => ({ id: "d/inner", kind, by: TOWN, at: { x: 50, y: 0 }, extent: { w: 20, h: 20 }, into: "d/keep" });
+  for (const kind of ["door", "porch"]) assert.equal(ringRoomOf({ x: 50, y: 0 }, [...WITH_PORCH, keep, inner(kind)])?.id, "d/keep", kind);
+  assert.equal(ringRoomOf({ x: 50, y: 0 }, [...WITH_PORCH, keep, { ...inner("sited"), into: undefined }])?.id, "d/inner", "CONTROL: a plain room is the ring room");
+  // a room's own landing: a porch-room names its landing as a door-room does
+  const hallSide = { ...rec("t/hall-to-chamber", "door", TOWN, { into: "t/chamber", lands_at: "t/chamber-to-hall" }), at: { x: 5, y: -2 } };
+  const chamberSide = { ...rec("t/chamber-to-hall", "door", TOWN, { into: "t/hall" }), at: { x: 5, y: 2 } };
+  const hall = { id: "t/hall", kind: "sited", by: "t", at: { x: 0, y: -20 }, extent: { w: 40, h: 40 }, body: "The hall." };
+  const land = (room) => landingOf(entryLawOf(hallSide), room, new Map([PORCH_CLASS, ...LIVE.filter((m) => m.kind === "class"), hall, room, hallSide, chamberSide].map((m) => [m.id, m])), { room, portal: hallSide });
+  for (const kind of ["door", "porch"]) {
+    const l = land({ id: "t/chamber", kind, by: TOWN, at: { x: 0, y: 15 }, extent: { w: 30, h: 30 }, body: "The chamber.", lands_at: { x: 0, y: 25 } });
+    assert.deepEqual({ by: l.by, x: l.x, y: l.y }, { by: "room", x: 0, y: 25 }, kind);
+  }
 });
 
 // ── the passage ──────────────────────────────────────────────────────────────

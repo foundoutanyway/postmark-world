@@ -177,6 +177,9 @@ export function doorRefusal(mark, opts = {}) {
  * are read from (records or a class index); `registry` is the household registry admin-makers reads (WORLD/households.json).
  *   actor-unread     `by` is not a handle: `allowed: null`, and a null is never a yes
  *   withdraw         `after` null: moving and withdrawing stay the maker's (who may withdraw is the office's own rule)
+ *   classes-unread   no class graph in `marks`, one that does not declare door, or a record whose class it does not declare
+ *                    (`classes` names them): `allowed: null`. Whether a record is a door is the graph's answer (a town subclass of
+ *                    door is a door), so a write the graph cannot place is never judged as no door; a null is never a yes
  *   fields-off-door  `after` writes a door field on a class other than door (any writer)
  *   field-spelling   `after` is a door writing a door field inside entry, misspelled or twice (any writer)
  *   town             the town may make and amend doors
@@ -191,6 +194,12 @@ export function doorWriteVerdict({ by = null, before = null, after = null, marks
   if (after == null) return { allowed: true, why: "withdraw" };
   const refuse = (why, changed, words) => ({ allowed: false, why, ...(changed ? { changed } : {}), words: `${words} — ${DOOR_LAW}` });
   const afterKlass = instanceClassOf(after) ?? null, beforeKlass = before ? instanceClassOf(before) ?? null : null;
+  // FAIL CLOSED on the class graph: a create or amend is judged only where the graph can say what each record is
+  const idx = marks && marks.byName && marks.propsUnder ? marks : marks ? classIndex(marks) : null;
+  if (!idx || !idx.byName.has(DOOR_CLASS)) return { allowed: null, why: "classes-unread", classes: [DOOR_CLASS] };
+  const unread = uniq([afterKlass, beforeKlass].filter((k) => k != null && !idx.byName.has(String(k))));
+  if (unread.length) return { allowed: null, why: "classes-unread", classes: unread };
+  marks = idx;
   const afterDoor = isDoorClass(afterKlass, marks), beforeDoor = before ? isDoorClass(beforeKlass, marks) : false;
   const writes = doorFieldWrites(after);
   if (!afterDoor && writes.length)

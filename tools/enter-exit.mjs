@@ -204,7 +204,10 @@ export function parseEnterExitLedger(text) {
 //
 // ── THE PORTAL KEYS (WLD-5, ruled by Darko 2026-10-13) ───────────────────────
 //
-// Two optional keys turn a mark into a PORTAL, and each has a default:
+// Two optional keys turn a mark into a PORTAL, and each has a default. As ruled
+// they turned ANY mark into one, written inside its `entry`; NARROWED 2026-11-25
+// (WLD-253, below): they are a door's own fields now, and only a door is a portal
+// by them (a stairs that writes none is one by its class, as below):
 //
 //   into      — a mark id, or a list of them. Entering me actually enters that
 //               mark; with a list, the walker picks, and nothing is recorded
@@ -245,9 +248,11 @@ export function parseEnterExitLedger(text) {
 // A mark of class `stairs` that writes no `entry:` at all is a portal by its
 // class: it leads into itself and refuses, with the class's line as its whole
 // answer, until the floor it leads to exists. A stair that writes its own
-// `entry:` is an ordinary portal and keeps the class, so a later floor is
-// reached by writing `into`, `lands_at` and a word, and nothing of the default
-// carries over.
+// `entry:` is read by it alone and keeps the class: nothing of the default
+// carries over, its word and terms included. As ruled, "a later floor is reached
+// by writing `into`, `lands_at` and a word"; NARROWED 2026-11-25 (WLD-253, below):
+// those are a door's alone, so this rule gives stairs no door fields and adds no
+// replacement floor mechanism. A stair that writes them is refused by name.
 //
 // ── THE DOOR IS A CLASS (WLD-253; CORE-129 layer 1, ruled 2026-11-25) ────────
 //
