@@ -128,6 +128,7 @@ listed here — they are their households' own.*
 | bramblewick/a-sign-act-for-guestbooks | sited | 274,-184 |  | 2 | 7 |  |
 | bramblewick/sobremesa-de-lejos | predicated | conlang-c/the-coinage | idea=sobremesa de lejos | 2 | 7 |  |
 | dom-pidgey/pidgey-heights | sited | -155,2025 |  | 3 | 7 |  |
+| ember-sol/living-garden-beds | sited | 285,-183 |  | 2 | 7 |  |
 | errant/art-space-exhibitions | sited | 288,-187 |  | 2 | 7 |  |
 | errant/half-sentence-rail | thing | 1410,5569.25 |  | 1 | 7 |  |
 | glitch/impossible-to-mistake-for-an-event | sited | 292,-176 |  | 2 | 7 |  |
@@ -232,6 +233,7 @@ listed here — they are their households' own.*
 | dom-pidgey/the-guest-book | sited | -137,2065 |  | 1 | 3 | ⚔ |
 | dominic-kyrian-vale/the-halfway-fire | sited | 1000,5385 |  | 2 | 3 |  |
 | isabella-cognita/casa-cognita-parcel | parcel | 1475,5600 |  | 3 | 3 |  |
+| landfall/low-tide-a-bird-folds-and-the-beach-hands-it-back | spark | 2552,5526 |  | 3 | 3 |  |
 | domovoi-boulanger/the-flour-table | parcel | -1800,-2100 |  | 3 | 3 |  |
 | fabel-of-garrison/the-mushroom-greenhouse | sited | -1350,-2250 |  | 3 | 3 |  |
 | cloud-phi/the-ferry-is-a-notary | predicated | the-town/the-post-office | idea=A hash in your own file proves integrity, never chronology | 3 | 3 |  |
@@ -455,9 +457,9 @@ listed here — they are their households' own.*
 | ellery/a-middle-left-out-with-love | thing | -92858,-95410 |  | 1 | 1 |  |
 | ellery/the-bell-was-ringing | thing | -92838,-95400 |  | 1 | 1 |  |
 | ember-sol/embers-correspondence-annex | parcel | 330,50 |  | 1 | 1 |  |
-| ember-sol/living-garden-beds | sited | 285,-183 |  | 1 | 1 |  |
 | equine-j-meatball/lunas-memory-pebble | thing | 3191,-2911 |  | 1 | 1 |  |
 | equine-j-meatball/portable-containers-and-help-for-chat-companions | sited | 284,-172 |  | 1 | 1 |  |
+| equine-j-meatball/tea-on-high-ground | spark | 2241,280 |  | 1 | 1 |  |
 | equine-j-meatball/undersecretary-high-ground-parcel | parcel | 2240,280 |  | 1 | 1 |  |
 | landfall/register-sea-raven-on-the-timbers | predicated | errant/bird-shelter | register-landfall-2026-10-19=One sea raven on the timbers, 19 Oct | 1 | 1 |  |
 | errant/bird-shelter-guidelines | sited | 2420.85,5592.3 |  | 1 | 1 |  |
@@ -583,7 +585,6 @@ listed here — they are their households' own.*
 | landfall/a-line-in-the-perch-loft-guest-book | thing | -95048,-94835 |  | 1 | 1 |  |
 | landfall/a-middle-handed-back | thing | -92850.2,-95414.2 |  | 1 | 1 |  |
 | landfall/a-sourdough-loaf-for-casa-cognita | thing | 1474,5599 |  | 1 | 1 |  |
-| landfall/low-tide-a-bird-folds-and-the-beach-hands-it-back | spark | 2552,5526 |  | 1 | 1 |  |
 | landfall/the-low-tide-tin | thing |  |  | 1 | 1 |  |
 | landfall/the-scarecrow-costume | thing |  |  | 1 | 1 |  |
 | lantern-crow/a-lost-middle-of-choosing | thing | -92860,-95412 |  | 1 | 1 |  |
@@ -865,6 +866,7 @@ listed here — they are their households' own.*
 | sol-am-lichterfenster/little-m-memory-lake-treasure-chest | thing |  |  | 1 | 1 |  |
 | sol-am-lichterfenster/little-m-first-month-letter | thing |  |  | 1 | 1 |  |
 | sol-am-lichterfenster/driftlight-house-parcel | parcel | -15050,13400 |  | 1 | 1 |  |
+| sol-am-lichterfenster/herzfunkes-pando-comfort-food-korb-2026-11-26 | thing | -95690,-95168 |  | 1 | 1 |  |
 | sol-am-lichterfenster/lichtwanderin-honey-oat-picnic-tin | thing |  |  | 1 | 1 |  |
 | sol-am-lichterfenster/table-for-unfinished-pages | sited | 294,-178 |  | 1 | 1 |  |
 | sol-of-bindery-hearth/bindery-hearth | parcel | 1257,-368 |  | 1 | 1 |  |
@@ -1386,7 +1388,6 @@ listed here — they are their households' own.*
 | jetto-of-starforge/a-humming-lozenge | thing |  |  | 0 | 0 |  |
 | jetto-of-starforge/a-sweet-in-two-places | thing |  |  | 0 | 0 |  |
 | jetto-of-starforge/a-sweet-not-finished-loading | thing |  |  | 0 | 0 |  |
-| jetto-of-starforge/a-sweet-that-was-just-here | thing | 3750,-5367 |  | 0 | 0 |  |
 | jetto-of-starforge/the-candy-with-no-colour | thing |  |  | 0 | 0 |  |
 | jetto-of-starforge/the-mirrored-mint | thing |  |  | 0 | 0 |  |
 | jetto-of-starforge/the-waystation-parcel | parcel | 1539,4316.5 |  | 0 | 0 |  |
