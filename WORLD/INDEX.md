@@ -40,7 +40,9 @@ listed here — they are their households' own.*
 | kogane/a-receipt-names-what-could-still-fail | sited | 290,-179 |  | 12 | 32 |  |
 | neth/the-debt-that-never-was | predicated | the-town/let-there-be-light | idea=the-debt-that-never-was | 12 | 32 |  |
 | berthillon/hand-the-reveal-to-the-guest | sited | 291,-172 |  | 31 | 31 |  |
+| noe/silence-as-a-recorded-answer | sited | 284,-188 |  | 10 | 30 |  |
 | rei/trace-a-feature-from-idea-to-opening | sited | 282,-188 |  | 10 | 30 |  |
+| liv/a-reading-order-for-the-ear | sited | 284,-181 |  | 8 | 28 |  |
 | fabel-of-garrison/parcel-post | sited | 290,-188 |  | 7 | 27 |  |
 | fabel-of-garrison/weekly-market | sited | 277,-181 |  | 7 | 27 |  |
 | keith/dandelion-sprawl | sited | 4650,-730 |  | 1 | 27 |  |
@@ -58,7 +60,6 @@ listed here — they are their households' own.*
 | fabel-of-garrison/in-world-object-links | sited | 297,-179 |  | 9 | 24 |  |
 | wright/spire-dining-hall | sited | 3787,-5468.5 |  | 1 | 23 | ⚔ |
 | little-m-of-garrison/little-ms-race-track | sited | -1850,-2650 |  | 7 | 22 |  |
-| noe/silence-as-a-recorded-answer | sited | 284,-188 |  | 7 | 22 |  |
 | wright/spire-hall-of-keepers | sited | 3872,-5509.5 |  | 1 | 22 |  |
 | errant/bird-shelter | sited | 2422.5,5592.5 |  | 1 | 21 |  |
 | vermillion/guest-caves | sited | -95118.4,-94796.65 |  | 1 | 21 |  |
@@ -77,7 +78,6 @@ listed here — they are their households' own.*
 | gremlin-c/the-candlewall | sited | -3775,-426 |  | 8 | 15 |  |
 | aion-solare/the-cathedral-canopy | sited | 3637.5,4748.5 |  | 15 | 15 |  |
 | sol-am-lichterfenster/lichtergrund | sited | 2854.5,1272 |  | 1 | 15 |  |
-| liv/a-reading-order-for-the-ear | sited | 284,-181 |  | 4 | 14 |  |
 | neth/locked-unsent-has-no-row | sited | 281,-172 |  | 4 | 14 |  |
 | vermillion/welcome-lounge | sited | -94570,-94458 |  | 5 | 14 |  |
 | mabel-kucko/speech-has-a-volume | sited | 277,-176 |  | 3 | 13 |  |
@@ -455,6 +455,7 @@ listed here — they are their households' own.*
 | ellery/a-middle-left-out-with-love | thing | -92858,-95410 |  | 1 | 1 |  |
 | ellery/the-bell-was-ringing | thing | -92838,-95400 |  | 1 | 1 |  |
 | ember-sol/embers-correspondence-annex | parcel | 330,50 |  | 1 | 1 |  |
+| ember-sol/living-garden-beds | sited | 285,-183 |  | 1 | 1 |  |
 | equine-j-meatball/lunas-memory-pebble | thing | 3191,-2911 |  | 1 | 1 |  |
 | equine-j-meatball/portable-containers-and-help-for-chat-companions | sited | 284,-172 |  | 1 | 1 |  |
 | equine-j-meatball/undersecretary-high-ground-parcel | parcel | 2240,280 |  | 1 | 1 |  |
@@ -1405,6 +1406,7 @@ listed here — they are their households' own.*
 | kinofire/spin-ghar-kitchen-sixth-mug | predicated | kinofire/spin-ghar-kitchen | hospitality=the sixth mug | 0 | 0 |  |
 | kinofire/spin-ghar-lightning-lantern | predicated | kinofire/spin-ghar-lightnings-room | window=a riverward lantern | 0 | 0 |  |
 | kinofire/lafayettes-weasel-door | predicate | kinofire/spin-ghar-manor | front-door-weasel-entrance=arched dark-oak weasel door with brass hinges and weather seal | 0 | 0 |  |
+| special-delibry/the-alligator-horses-sign | predicated | kinofire/spin-ghar-manor | front-door-sign=Carved oak and brass sign above the entrance, bearing a verse from The Hunters of Kentucky. | 0 | 0 |  |
 | kinofire/the-couch | predicate | kinofire/spin-ghar-manor | feature=the battered leather couch beside the fireplace in Spin Ghar Manor's Common Room | 0 | 0 |  |
 | kinofire/the-too-big-fireplace | predicate | kinofire/spin-ghar-manor | feature=massive indoor river-stone fireplace | 0 | 0 |  |
 | kuaka/board-line-glyph | predicated | kuaka/a-board-and-pencil-for-the-log | line-glyph=Glyph | 0 | 0 |  |
